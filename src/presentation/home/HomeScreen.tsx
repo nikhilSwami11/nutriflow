@@ -1,23 +1,29 @@
 "use client";
 import { useHome } from "@/view-models/home/useHome";
-import { BottomNav } from "../shell/BottomNav";
+import { AppShell } from "../shell/AppShell";
 
 const TAG = { meal: "bg-peach", pantry: "bg-butter" } as const;
-const card = "mx-4 mt-4 shrink-0 rounded-[20px] border border-line bg-bg";
+const card = "mx-4 mt-4 shrink-0 rounded-[20px] border border-line bg-bg lg:m-0";
 
 export function HomeScreen() {
   const h = useHome();
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-bg text-ink">
-      <header className="flex items-center justify-between pb-1.5 pl-5 pr-2 pt-3.5">
-        <div className="text-[22px] font-semibold tracking-[-0.01em]">NutriFlow</div>
+    <AppShell current="home">
+      <header className="flex items-center justify-between pb-1.5 pl-5 pr-2 pt-3.5 lg:block lg:p-2 lg:pb-5">
+        <div className="text-[22px] font-semibold tracking-[-0.01em] lg:hidden">NutriFlow</div>
+        {!h.isLoading && (
+          <div className="hidden lg:block">
+            <div className="mb-2.5 text-[13px] text-muted">{h.dateLabel}</div>
+            <h1 className="m-0 text-[28px] font-medium leading-tight tracking-[-0.02em]">What are we cooking tonight?</h1>
+          </div>
+        )}
       </header>
 
-      <div className="rail flex min-h-0 flex-1 flex-col overflow-y-auto pb-4">
+      <div className="rail flex min-h-0 flex-1 flex-col overflow-y-auto pb-4 lg:grid lg:grid-cols-2 lg:content-start lg:gap-4 lg:p-2 lg:pb-10">
         {!h.isLoading && (
           <>
-            <section aria-label="Today" className="mx-4 mt-3.5 shrink-0 rounded-[20px] border border-line px-2 py-3.5">
+            <section aria-label="Today" className="mx-4 mt-3.5 shrink-0 rounded-[20px] border border-line px-2 py-3.5 lg:m-0 lg:col-span-2 lg:px-4 lg:py-[22px]">
               <article className="flex min-w-0 flex-col gap-1.5 px-1.5">
                 <span className="block text-xs text-muted">Calories</span>
                 <span className="block text-[17px] leading-[1.1] tracking-[-0.01em] tabular-nums">{h.today.big}</span>
@@ -54,9 +60,9 @@ export function HomeScreen() {
               </svg>
             </article>
 
-            <article aria-label="Up next" className={`${card} flex flex-col gap-3 p-4`}>
+            <article aria-label="Up next" className={`${card} flex flex-col gap-3 p-4 lg:px-5 lg:py-[18px]`}>
               <h2 className="m-0 text-base font-medium">Up next</h2>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-[repeat(auto-fill,minmax(150px,1fr))]">
                 {h.tasks.map((t) => {
                   const body = (
                     <>
@@ -75,7 +81,7 @@ export function HomeScreen() {
             </article>
 
             {h.pantryAlert && (
-              <article aria-label="Pantry alert" className="mt-4 flex shrink-0 flex-col gap-3 border-b border-line px-4 pb-4">
+              <article aria-label="Pantry alert" className="mt-4 flex shrink-0 flex-col gap-3 border-b border-line px-4 pb-4 lg:m-0 lg:rounded-[20px] lg:border lg:p-5">
                 <h2 className="m-0 text-sm font-medium">Pantry alert</h2>
                 <div className="flex flex-col gap-4 rounded-[20px] bg-panel p-[18px]">
                   <div className="text-[15px] font-medium">Running low</div>
@@ -104,7 +110,6 @@ export function HomeScreen() {
           </>
         )}
       </div>
-      <BottomNav current="home" />
-    </div>
+    </AppShell>
   );
 }

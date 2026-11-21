@@ -57,6 +57,7 @@ export function useHome() {
 
   return {
     isLoading: false as const,
+    dateLabel: now.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }),
     today: {
       big: total === null ? "–" : num(total),
       pct: total === null ? 0 : Math.min(100, (total / r.max) * 100),

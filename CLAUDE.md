@@ -27,6 +27,10 @@ Next.js App Router, strict TS, Tailwind v4 (CSS variables in `src/app/globals.cs
 - `domain/nutrition`: meal logs (cook or photo only), target range (default 1800 to 2100 until set), seed rule (15 seeds, in range only), `weekSeries` returns null for unlogged days, `rankUpNext`.
 - Home v1 shows only personal parts of the design. Out of v1: household, chores, chat, spend, macros, streak. Suggested/Tonight (needs recipes) and Planned vs eaten (needs the weekly plan) come later.
 
+## Layout
+- Mobile is the design. `presentation/shell/AppShell` wraps every screen: bottom nav below `lg`, sidebar from `lg` up (nav items Today, Pantry, Recipes only; Chores, Shopping, Insights and the roommates card are out of v1). Screens add `lg:` classes for the desktop grid.
+- E2E runs two Playwright projects: `mobile` (Pixel 7) and `desktop` (1440x900).
+
 ## Style
 - Light theme first, tokens in `:root`. Palette: mint, rose, sky, lavender, butter, peach. IBM Plex Sans, thin strokes, black only on small accents.
 - 44px min touch targets (`touch` utility). Respect `prefers-reduced-motion` (global rule).

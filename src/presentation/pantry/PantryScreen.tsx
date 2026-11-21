@@ -1,6 +1,6 @@
 "use client";
 import { usePantryScreen } from "@/view-models/pantry/usePantryScreen";
-import { BottomNav } from "../shell/BottomNav";
+import { AppShell } from "../shell/AppShell";
 import { Orb } from "./Orb";
 
 const TINTS = ["bg-peach", "bg-rose", "bg-butter", "bg-sky", "bg-lavender", "bg-mint"];
@@ -19,8 +19,8 @@ export function PantryScreen() {
       : "Say it like “I have 3 onions, 2 tomatoes and butter”.";
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-bg text-ink">
-      <header className="flex shrink-0 items-end justify-between px-5 pb-2 pt-4">
+    <AppShell current="pantry">
+      <header className="flex shrink-0 items-end justify-between px-5 pb-2 pt-4 lg:max-w-3xl">
         <div>
           <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">Pantry</h1>
           <p className="mt-1 text-[13px] text-muted tabular-nums">{s.countText}</p>
@@ -30,7 +30,7 @@ export function PantryScreen() {
         </button>
       </header>
 
-      <div className="rail flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4 pt-1">
+      <div className="rail flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4 pt-1 lg:max-w-3xl">
         <div className="flex shrink-0 flex-col gap-3.5 rounded-3xl bg-panel p-4">
           <div className="flex items-center gap-3.5">
             <button
@@ -128,7 +128,6 @@ export function PantryScreen() {
           </section>
         ))}
       </div>
-      <BottomNav current="pantry" />
-    </div>
+    </AppShell>
   );
 }
