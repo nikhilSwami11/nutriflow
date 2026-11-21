@@ -38,7 +38,11 @@ export class SupabaseMealLogRepository implements MealLogRepository {
     const { error } = await this.db.from("meal_logs").upsert(logToRow(log), { onConflict: "id" });
     if (error) throw error;
   }
-}
+
+  async remove(id: string) {
+    const { error } = await this.db.from("meal_logs").delete().eq("id", id);
+    if (error) throw error;
+  }}
 
 export class SupabaseProfileRepository implements ProfileRepository {
   constructor(private db: SupabaseClient) {}

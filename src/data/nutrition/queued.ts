@@ -2,6 +2,7 @@ import type { DateKey, MealLog, MealLogRepository } from "@/domain/nutrition";
 import type { KeyValueStore } from "../feed/local";
 
 const KEY = "nutriflow.mealLogQueue";
+const REMOVALS = "nutriflow.mealLogRemovals";
 
 /**
  * Meal logs go to the database first. If that fails (offline, table missing, server down) the meal is kept in a
@@ -17,6 +18,23 @@ export class QueuedMealLogRepository implements MealLogRepository {
       return raw ? (JSON.parse(raw) as MealLog[]) : [];
     } catch {
       return [];
+    }
+  }
+
+  private removals(): string[] {
+    try {
+      const raw = this.store.getItem(REMOVALS);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private writeRemovals(ids: string[]) {
+    try {
+      this.store.setItem(REMOVALS, JSON.stringify(ids));
+    } catch {
+      /* storage blocked */
     }
   }
 
@@ -37,6 +55,17 @@ export class QueuedMealLogRepository implements MealLogRepository {
     }
   }
 
+  /** Undo. A meal still waiting in the queue is simply dropped; one already saved is deleted, and if the database is down the delete waits and retries. */
+  async remove(id: string) {
+    this.write(this.read().filter((l) => l.id !== id));
+    try {
+      await this.primary.remove(id);
+    } catch {
+      const r = this.removals();
+      if (!r.includes(id)) this.writeRemovals([...r, id]);
+    }
+  }
+
   async listBetween(from: DateKey, to: DateKey) {
     let remote: MealLog[] = [];
     try {
@@ -44,6 +73,8 @@ export class QueuedMealLogRepository implements MealLogRepository {
     } catch {
       /* offline: show what is queued */
     }
+    const gone = new Set(this.removals());
+    remote = remote.filter((l) => !gone.has(l.id));
     const ids = new Set(remote.map((l) => l.id));
     const waiting = this.read().filter((l) => l.date >= from && l.date <= to && !ids.has(l.id));
     return [...remote, ...waiting];
@@ -51,6 +82,15 @@ export class QueuedMealLogRepository implements MealLogRepository {
 
   /** Try to send everything waiting. Returns how many are still waiting. */
   async flush(): Promise<number> {
+    const stillGone: string[] = [];
+    for (const id of this.removals()) {
+      try {
+        await this.primary.remove(id);
+      } catch {
+        stillGone.push(id);
+      }
+    }
+    this.writeRemovals(stillGone);
     const left: MealLog[] = [];
     for (const log of this.read()) {
       try {
@@ -60,10 +100,10 @@ export class QueuedMealLogRepository implements MealLogRepository {
       }
     }
     this.write(left);
-    return left.length;
+    return left.length + stillGone.length;
   }
 
   pending(): number {
-    return this.read().length;
+    return this.read().length + this.removals().length;
   }
 }

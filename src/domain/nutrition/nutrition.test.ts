@@ -74,7 +74,7 @@ describe("rankUpNext", () => {
 describe("logMeal", () => {
   const repo = (): MealLogRepository & { rows: MealLog[] } => {
     const rows: MealLog[] = [];
-    return { rows, listBetween: async () => rows, add: async (l) => void rows.push(l) };
+    return { rows, listBetween: async () => rows, add: async (l) => void rows.push(l), remove: async () => undefined };
   };
   it("saves a valid meal", async () => {
     const r = repo();

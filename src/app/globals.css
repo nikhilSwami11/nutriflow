@@ -235,3 +235,41 @@ button:not(:disabled):not([data-nopress]):active {
 .story-in {
   animation: story-in 0.22s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
+
+/* Meal photo: scan line and pulsing boxes (from the Meal detector design). */
+.scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 70px;
+  top: -70px;
+  background: linear-gradient(180deg, rgba(158, 200, 243, 0), rgba(158, 200, 243, 0.5));
+  border-bottom: 2px solid #9ec8f3;
+  animation: scan 2.6s ease-in-out infinite;
+}
+@keyframes scan {
+  0% {
+    top: -70px;
+  }
+  100% {
+    top: 100%;
+  }
+}
+.bx {
+  animation: bxp 2s ease-in-out infinite;
+}
+@keyframes bxp {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan,
+  .bx {
+    animation: none;
+  }
+}

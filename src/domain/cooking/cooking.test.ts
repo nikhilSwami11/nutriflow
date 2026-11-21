@@ -126,7 +126,7 @@ describe("finishCooking", () => {
   const setup = (over: { habitFails?: boolean; pantryFails?: boolean } = {}) => {
     const p = fakePantry(pantry());
     const rows: MealLog[] = [];
-    const logs: MealLogRepository = { listBetween: async () => rows, add: async (l) => void rows.push(l) };
+    const logs: MealLogRepository = { listBetween: async () => rows, add: async (l) => void rows.push(l), remove: async () => undefined };
     const habits = new Map<string, ServingHabit>();
     const repo: ServingHabitRepository = {
       get: async (id) => (over.habitFails ? Promise.reject(new Error("x")) : (habits.get(id) ?? null)),

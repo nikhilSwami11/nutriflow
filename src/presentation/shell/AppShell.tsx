@@ -1,3 +1,4 @@
+import { CaptureSheet } from "../capture/CaptureSheet";
 import { BottomNav } from "./BottomNav";
 import { Sidebar } from "./Sidebar";
 import type { Page } from "./pages";
@@ -9,6 +10,7 @@ export function AppShell({ current, children }: { current: Page; children: React
       <Sidebar current={current} />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
       <BottomNav current={current} />
+      <CaptureSheet />
     </div>
   );
 }

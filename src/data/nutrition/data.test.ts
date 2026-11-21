@@ -9,6 +9,12 @@ describe("nutrition data", () => {
     const r = new InMemoryMealLogRepository([{ ...l, date: "2026-11-19" }, l, { ...l, date: "2026-11-22" }]);
     expect(await r.listBetween("2026-11-19", "2026-11-20")).toHaveLength(2);
   });
+  it("remove deletes a log and ignores unknown ids", async () => {
+    const r = new InMemoryMealLogRepository([l]);
+    await r.remove("nope");
+    await r.remove(l.id);
+    expect(await r.listBetween("2026-11-01", "2026-11-30")).toEqual([]);
+  });
   it("profile round-trips", async () => {
     const r = new InMemoryProfileRepository();
     expect(await r.get()).toBeNull();

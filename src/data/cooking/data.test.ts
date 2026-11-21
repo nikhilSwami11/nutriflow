@@ -17,6 +17,7 @@ const flaky = () => {
   const repo: MealLogRepository = {
     add: async (l) => (state.down ? Promise.reject(new Error("offline")) : inner.add(l)),
     listBetween: async (a, b) => (state.down ? Promise.reject(new Error("offline")) : inner.listBetween(a, b)),
+    remove: async (id) => (state.down ? Promise.reject(new Error("offline")) : inner.remove(id)),
   };
   return { repo, inner, state };
 };
@@ -67,6 +68,37 @@ describe("QueuedMealLogRepository", () => {
     f.state.down = true;
     await expect(q.add(log("a"))).resolves.toBeUndefined();
     expect(await q.flush()).toBe(0);
+  });
+});
+
+describe("QueuedMealLogRepository remove (undo)", () => {
+  it("a queued meal is dropped, and a delete waits in case it had already reached the server", async () => {
+    const f = flaky();
+    const q = new QueuedMealLogRepository(f.repo, mem());
+    f.state.down = true;
+    await q.add(log("a"));
+    await q.remove("a");
+    expect(q.pending()).toBe(1); // only the delete is waiting; the meal itself is gone
+    expect(await q.listBetween("2026-11-21", "2026-11-21")).toEqual([]);
+    f.state.down = false;
+    expect(await q.flush()).toBe(0);
+    expect(await f.inner.listBetween("2026-11-21", "2026-11-21")).toEqual([]);
+  });
+  it("a saved meal is deleted; if the database is down the delete waits, and the meal is hidden meanwhile", async () => {
+    const f = flaky();
+    const q = new QueuedMealLogRepository(f.repo, mem());
+    await q.add(log("a"));
+    f.state.down = true;
+    await q.remove("a");
+    expect(q.pending()).toBe(1);
+    f.state.down = false;
+    expect((await q.listBetween("2026-11-21", "2026-11-21")).map((l) => l.id)).toEqual([]); // hidden even though still stored
+    expect(await q.flush()).toBe(0);
+    expect(await f.inner.listBetween("2026-11-21", "2026-11-21")).toEqual([]);
+  });
+  it("removing something that is not there is fine", async () => {
+    const q = new QueuedMealLogRepository(flaky().repo, mem());
+    await expect(q.remove("nope")).resolves.toBeUndefined();
   });
 });
 

@@ -8,6 +8,9 @@ export class InMemoryMealLogRepository implements MealLogRepository {
   async add(log: MealLog) {
     this.rows.push(log);
   }
+  async remove(id: string) {
+    this.rows = this.rows.filter((l) => l.id !== id);
+  }
 }
 
 export class InMemoryProfileRepository implements ProfileRepository {

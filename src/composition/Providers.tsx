@@ -5,6 +5,7 @@ import { InMemoryPantryRepository, InMemoryShoppingListRepository, LocalUtteranc
 import { LocalServingHabitRepository } from "@/data/cooking/habits";
 import { LocalFeedEventRepository } from "@/data/feed/local";
 import { QueuedMealLogRepository } from "@/data/nutrition/queued";
+import { DemoMealDetector } from "@/data/photo/demo";
 import { DemoRecipeRepository } from "@/data/recipes/demo";
 import { DemoDashboardRepository } from "@/data/dashboard/demo";
 import { InMemoryMealLogRepository, InMemoryProfileRepository } from "@/data/nutrition/inMemory";
@@ -23,6 +24,7 @@ import type { MealLogRepository, ProfileRepository } from "@/domain/nutrition";
 import type { RecipeRepository } from "@/domain/recipes";
 import { CookDepsProvider, type CookDeps } from "@/view-models/cook/CookDeps";
 import { FeedDepsProvider } from "@/view-models/feed/FeedDeps";
+import { PhotoDepsProvider } from "@/view-models/photo/PhotoDeps";
 import { RecipeDepsProvider } from "@/view-models/recipes/RecipeDeps";
 import { DashboardDepsProvider } from "@/view-models/dashboard/DashboardDeps";
 import { NutritionDepsProvider, type NutritionDeps } from "@/view-models/nutrition/NutritionDeps";
@@ -76,6 +78,8 @@ const inMemory = (): Deps =>
 
 /** Supabase when env vars are set, otherwise in-memory seeded from the design. */
 export function Providers({ children }: { children: React.ReactNode }) {
+  // Demo detector until a vision model is connected behind the same port.
+  const [detector] = useState(() => new DemoMealDetector());
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } }));
   // Built after mount in both modes: time-based data (today, seed dates) must never be frozen at build time.
   const [deps, setDeps] = useState<Deps | null>(null);
@@ -118,7 +122,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <DashboardDepsProvider value={deps.dashboard}>
             <RecipeDepsProvider value={deps.recipes}>
               <FeedDepsProvider value={deps.feedEvents}>
-                <CookDepsProvider value={deps.cook}>{children}</CookDepsProvider>
+                <CookDepsProvider value={deps.cook}>
+                  <PhotoDepsProvider value={detector}>{children}</PhotoDepsProvider>
+                </CookDepsProvider>
               </FeedDepsProvider>
             </RecipeDepsProvider>
           </DashboardDepsProvider>

@@ -33,11 +33,23 @@ export function StoryViewer({ s, index, setIndex, onClose }: { s: HomeModel["sto
 
   useEffect(() => closeBtn.current?.focus(), []);
 
+  // Escape and the arrows work wherever focus is, since a focused button can disappear (marking a meal eaten re-renders it).
+  const latest = useRef({ next, prev, onClose });
+  useEffect(() => {
+    latest.current = { next, prev, onClose };
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") latest.current.onClose();
+      else if (e.key === "ArrowRight") latest.current.next();
+      else if (e.key === "ArrowLeft") latest.current.prev();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   const key = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") onClose();
-    else if (e.key === "ArrowRight") next();
-    else if (e.key === "ArrowLeft") prev();
-    else if (e.key === "Tab") {
+    if (e.key === "Tab") {
       const f = dialog.current?.querySelectorAll<HTMLElement>("a[href], button:not([disabled])");
       if (!f?.length) return;
       const first = f[0], last = f[f.length - 1];

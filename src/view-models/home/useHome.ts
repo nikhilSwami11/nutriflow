@@ -128,6 +128,7 @@ export function useHome() {
     chart: { ...core.chart, range, setRange },
     today: {
       eatenValue: todayDay.eaten,
+      goalValue: goals.calories,
       goal: num(goals.calories),
       left: `${num(leftKcal(goals.calories, todayDay.eaten))} left`,
       macros: [

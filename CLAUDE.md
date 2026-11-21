@@ -37,6 +37,13 @@ Next.js App Router, strict TS, Tailwind v4 (CSS variables in `src/app/globals.cs
 - `/cook/[id]?servings=n`: full-screen steps (`CookScreen`), verb animations in `CookMotion` (generated from the Cooking motions design; CSS in `app/cook-motions.css`, scoped under `.cook-motion`, still under reduced motion), timer on steps with `minutes`, wake lock, optional voice control. Finish asks how many servings were eaten (starts from the learned habit), then Log it, Pantry updated, Your serving size. Home reads today's logs: a logged meal marks its slot eaten and uses the logged calories and macros.
 - Cook with friends / Cook live are out of v1.
 
+## Capture (camera or voice) and the meal photo flow
+- The camera button opens `CaptureSheet` (design's "Camera or voice" sheet): Camera tab (live preview, shutter, flip, choose from photos; only the Meal mode works, Pantry shelf and Receipt are disabled until a vision model exists) and Voice tab (mic or example phrases; `parseIntent` routes: "I have ..." adds to the pantry with a confirm step, "What can I make" opens recipes, "Start cooking" opens the next meal's cook screen). Photos stay on the device: a local object URL in a zustand store.
+- `/photo`: detect (tiles to include or leave out, add a missed item) then estimate (kcal with a plus-minus 12% range, macros, day impact, amount steppers, "Why this estimate") then logged with Undo. Detection goes through the `MealDetector` port; `DemoMealDetector` returns the design's example and the screen SAYS it is an example (`source: "demo"`). Swap in a vision model behind the same port; do not remove the honesty note until `source` is "vision".
+- Escape closes sheets and viewers from anywhere (document listener): a focused button can disappear and drop focus to the page.
+- React lint: do not pass a property of a hook's result to `ref=` (it flags the whole object as a ref); use a stable local callback.
+- `MealLogRepository.remove` powers Undo; the queue keeps a delete waiting if the database is down.
+
 ## Domain notes
 - `domain/pantry`: pantry items, voice add (hear, then confirm), recipe depletion, running-low shopping list.
 - `domain/nutrition`: meal logs (cook or photo only), target range (default 1800 to 2100 until set), seed rule (15 seeds, in range only), `weekSeries` returns null for unlogged days, `rankUpNext`.

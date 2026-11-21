@@ -4,6 +4,8 @@ export interface MealLogRepository {
   /** Inclusive on both ends. */
   listBetween(from: DateKey, to: DateKey): Promise<MealLog[]>;
   add(log: MealLog): Promise<void>;
+  /** For Undo. Removing an id that is not there is not an error. */
+  remove(id: string): Promise<void>;
 }
 
 export interface ProfileRepository {
