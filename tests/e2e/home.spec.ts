@@ -4,18 +4,38 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
-test("home shows today, trend, up next and pantry alert", async ({ page }) => {
-  await expect(page.getByRole("region", { name: "Today" })).toBeVisible();
-  await expect(page.getByRole("article", { name: "Trend" })).toBeVisible();
-  await expect(page.getByRole("article", { name: "Up next" })).toBeVisible();
-  await expect(page.getByRole("article", { name: "Pantry alert" })).toBeVisible();
+test("home shows every dashboard section", async ({ page }) => {
+  for (const name of ["Today", "Calories and macros", "Today vs plan", "Up next", "Tonight", "Suggested for you", "Pantry alert"]) {
+    await expect(page.getByRole(name === "Today" || name === "Suggested for you" ? "region" : "article", { name })).toBeVisible();
+  }
+  await expect(page.getByRole("region", { name: "Today" })).toContainText("1,420");
 });
 
-test("trend leaves unlogged days as gaps", async ({ page }) => {
-  // seed leaves two days unlogged, so the chart has more than one line segment
-  const trend = page.getByRole("img", { name: /Calories, last 7 days/ });
-  await expect(trend.locator('path[stroke="#7FC8A4"]')).not.toHaveCount(0);
-  await expect(trend.locator('path[fill="#BFE5D2"]')).toHaveCount(await trend.locator('path[stroke="#7FC8A4"]').count());
+test("range tabs switch the chart between 7 and 30 days", async ({ page }) => {
+  await expect(page.getByRole("heading", { name: "Calories and macros, last 7 days" })).toBeVisible();
+  await page.getByRole("button", { name: "30 days" }).click();
+  await expect(page.getByRole("heading", { name: "Calories and macros, last 30 days" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /eaten .* kcal, planned/ })).toHaveCount(30);
+});
+
+test("hovering the chart shows that day", async ({ page, isMobile }) => {
+  test.skip(isMobile, "hover is a desktop interaction");
+  await page.getByRole("button", { name: /eaten 2,100 kcal/ }).hover();
+  await expect(page.getByText("Eaten 2,100 kcal")).toBeVisible();
+  await expect(page.getByText("+100 kcal vs plan")).toBeVisible();
+});
+
+test("logging dinner updates today and can't double count", async ({ page }) => {
+  await expect(page.getByText("480 left")).toBeVisible();
+  await page.getByRole("button", { name: "Log dinner" }).click();
+  await expect(page.getByRole("region", { name: "Today" })).toContainText("1,900");
+  await expect(page.getByText("0 left")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dinner logged" })).toBeDisabled();
+});
+
+test("accepting a suggestion marks it done", async ({ page }) => {
+  await page.getByRole("button", { name: "Add a protein snack at 4 pm, Add to plan" }).click();
+  await expect(page.getByRole("button", { name: /Add a protein snack at 4 pm/ })).toContainText("Done");
 });
 
 test("buy tile adds running-low items to the list", async ({ page }) => {

@@ -2,6 +2,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { InMemoryPantryRepository, InMemoryShoppingListRepository, LocalUtteranceParser } from "@/data/pantry/inMemory";
+import { DemoDashboardRepository } from "@/data/dashboard/demo";
 import { InMemoryMealLogRepository, InMemoryProfileRepository } from "@/data/nutrition/inMemory";
 import { seedLogs } from "@/data/nutrition/seed";
 import { SupabaseMealLogRepository, SupabaseProfileRepository } from "@/data/nutrition/supabase";
@@ -12,12 +13,16 @@ import {
   SupabasePantryRepository,
   SupabaseShoppingListRepository,
 } from "@/data/pantry/supabase";
+import type { DashboardRepository } from "@/domain/dashboard";
+import { DashboardDepsProvider } from "@/view-models/dashboard/DashboardDeps";
 import { NutritionDepsProvider, type NutritionDeps } from "@/view-models/nutrition/NutritionDeps";
 import { PantryDepsProvider, type PantryDeps } from "@/view-models/pantry/PantryDeps";
 
 interface Deps {
   pantry: PantryDeps;
   nutrition: NutritionDeps;
+  /** Demo data for the whole dashboard until real logging feeds it. */
+  dashboard: DashboardRepository;
 }
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -32,6 +37,7 @@ const inMemory = (): Deps => ({
     newId,
   },
   nutrition: { logs: new InMemoryMealLogRepository(seedLogs(new Date())), profile: new InMemoryProfileRepository() },
+  dashboard: new DemoDashboardRepository(),
 });
 
 /** Supabase when env vars are set, otherwise in-memory seeded from the design. */
@@ -54,6 +60,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           newId,
         },
         nutrition: { logs: new SupabaseMealLogRepository(db), profile: new SupabaseProfileRepository(db) },
+        dashboard: new DemoDashboardRepository(),
       }),
     );
   }, []);
@@ -62,7 +69,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <PantryDepsProvider value={deps.pantry}>
-        <NutritionDepsProvider value={deps.nutrition}>{children}</NutritionDepsProvider>
+        <NutritionDepsProvider value={deps.nutrition}>
+          <DashboardDepsProvider value={deps.dashboard}>{children}</DashboardDepsProvider>
+        </NutritionDepsProvider>
       </PantryDepsProvider>
     </QueryClientProvider>
   );

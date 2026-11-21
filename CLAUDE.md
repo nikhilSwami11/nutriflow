@@ -25,7 +25,8 @@ Next.js App Router, strict TS, Tailwind v4 (CSS variables in `src/app/globals.cs
 ## Domain notes
 - `domain/pantry`: pantry items, voice add (hear, then confirm), recipe depletion, running-low shopping list.
 - `domain/nutrition`: meal logs (cook or photo only), target range (default 1800 to 2100 until set), seed rule (15 seeds, in range only), `weekSeries` returns null for unlogged days, `rankUpNext`.
-- Home v1 shows only personal parts of the design. Out of v1: household, chores, chat, spend, macros, streak. Suggested/Tonight (needs recipes) and Planned vs eaten (needs the weekly plan) come later.
+- Home shows the personal parts of the design, driven by FAKE demo data (`data/dashboard/demo.ts` behind the `DashboardRepository` port): 4 Today tiles, calories and macros chart (7/30 days, hover), Today vs plan, Up next, Tonight, Suggested. Replace the repository to use real data. Up next's shopping tile and Pantry alert use the real pantry. Out of v1: household, chores, chat, spend, streak.
+- `domain/dashboard`: chart stats, macro shares, `logPlannedMeal` (no double count). Dashboard no longer depends on the nutrition tables (`0003` migration), which are unused by the UI for now.
 
 ## Layout
 - Mobile is the design. `presentation/shell/AppShell` wraps every screen: bottom nav below `lg`, sidebar from `lg` up (nav items Today, Pantry, Recipes only; Chores, Shopping, Insights and the roommates card are out of v1). Screens add `lg:` classes for the desktop grid.
