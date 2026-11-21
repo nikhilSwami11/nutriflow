@@ -1,18 +1,25 @@
 "use client";
 import { useMemo, useState } from "react";
 import { dayFromRecipes, leftKcal } from "@/domain/dashboard";
+import { buildFeed, summarizeEvents, type FeedItem } from "@/domain/feed";
+import { toDateKey } from "@/domain/nutrition";
 import { isLow } from "@/domain/pantry";
 import { readiness, type MealName, type Recipe } from "@/domain/recipes";
 import { buildChartModel, num, type Range } from "../dashboard/chartModel";
 import { joinList } from "../format";
 import { usePantry } from "../pantry/usePantry";
+import { useFeedStats, useFeedTracker } from "../feed/useFeedTracker";
 import { usePlanData } from "../plan/usePlanData";
 
 export function useHome() {
   const data = usePlanData("balanced");
   const pantry = usePantry();
+  const stats = useFeedStats();
+  const track = useFeedTracker();
   const [eaten, setEaten] = useState<MealName[] | null>(null);
   const [range, setRange] = useState<Range>("7d");
+  // One timestamp per visit: the feed is built once, so it does not reshuffle while you scroll.
+  const [now] = useState(() => Date.now());
 
   // Today is built from the meals actually eaten, so marking one eaten moves the chart's last point too.
   const core = useMemo(() => {
@@ -28,10 +35,10 @@ export function useHome() {
     );
     const days = [...dashboard.days.slice(0, -1), todayDay];
     const chart = buildChartModel(range === "7d" ? days.slice(-7) : days, range);
-    return { eatenNow, todayMeals, todayDay, chart, goals: dashboard.goals };
+    return { eatenNow, todayMeals, todayDay, chart, goals: dashboard.goals, notes: data.balance.notes };
   }, [data, eaten, range]);
 
-  if (!core) return { isLoading: true as const };
+  if (!core || !stats) return { isLoading: true as const };
   const { eatenNow, todayMeals, todayDay, goals } = core;
   const pantryItems = pantry.view.groups.flatMap((g) => g.items);
   const toggleEaten = (meal: MealName) => setEaten(eatenNow.includes(meal) ? eatenNow.filter((x) => x !== meal) : [...eatenNow, meal]);
@@ -54,9 +61,22 @@ export function useHome() {
   };
   const lowItems = pantryItems.filter(isLow);
 
+  // The feed decides which posts, in what order. The data inside each post stays live on the client.
+  const nextOpen = open[0];
+  const problems = core.notes.filter((n) => !n.startsWith("Every day lands"));
+  const feed = buildFeed({
+    date: toDateKey(new Date(now)),
+    now,
+    nextMeal: nextOpen ? { meal: nextOpen.meal, recipeId: nextOpen.recipe.id } : null,
+    lowItems: lowItems.length,
+    planNotes: problems,
+    stats: stats ?? summarizeEvents([], now),
+  });
+
   return {
     isLoading: false as const,
-    dateLabel: new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }),
+    feed: { items: feed.items as FeedItem[], track },
+    dateLabel: new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }),
     next: open[0] ? card(open[0]) : null,
     then: open.slice(1).map((m) => ({ id: m.recipe.id, meal: m.meal, name: m.recipe.name })),
     chart: { ...core.chart, range, setRange },

@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { useHome } from "@/view-models/home/useHome";
 import { AppShell } from "../shell/AppShell";
 import { useMediaQuery } from "../shared/useMediaQuery";
@@ -35,7 +34,6 @@ export function HomeScreen() {
             <MacroChart
               c={h.chart}
               above={<TodayLine t={h.today} />}
-              below={<Link href="/plan" className="hoverable touch -mb-1 flex items-center self-start rounded-full border border-line2 px-4 text-[13px] font-medium">Plan the week →</Link>}
             />
           </div>
           {h.pantry && <div className="rise col-span-5 self-start" style={rise(3)}><PantryNudge p={h.pantry} /></div>}

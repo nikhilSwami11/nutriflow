@@ -2,6 +2,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { InMemoryPantryRepository, InMemoryShoppingListRepository, LocalUtteranceParser } from "@/data/pantry/inMemory";
+import { LocalFeedEventRepository } from "@/data/feed/local";
 import { DemoRecipeRepository } from "@/data/recipes/demo";
 import { DemoDashboardRepository } from "@/data/dashboard/demo";
 import { InMemoryMealLogRepository, InMemoryProfileRepository } from "@/data/nutrition/inMemory";
@@ -15,7 +16,9 @@ import {
   SupabaseShoppingListRepository,
 } from "@/data/pantry/supabase";
 import type { DashboardRepository } from "@/domain/dashboard";
+import type { FeedEventRepository } from "@/domain/feed";
 import type { RecipeRepository } from "@/domain/recipes";
+import { FeedDepsProvider } from "@/view-models/feed/FeedDeps";
 import { RecipeDepsProvider } from "@/view-models/recipes/RecipeDeps";
 import { DashboardDepsProvider } from "@/view-models/dashboard/DashboardDeps";
 import { NutritionDepsProvider, type NutritionDeps } from "@/view-models/nutrition/NutritionDeps";
@@ -27,11 +30,21 @@ interface Deps {
   /** Demo data for the whole dashboard until real logging feeds it. */
   dashboard: DashboardRepository;
   recipes: RecipeRepository;
+  /** Browser storage for now; Supabase copy comes with the real-data phase (migration 0004). */
+  feedEvents: FeedEventRepository;
 }
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const newId = () => crypto.randomUUID();
+// Reading window.localStorage can itself throw when site data is blocked.
+const storage = () => {
+  try {
+    return window.localStorage;
+  } catch {
+    return { getItem: () => null, setItem: () => undefined };
+  }
+};
 
 const inMemory = (): Deps => ({
   pantry: {
@@ -43,6 +56,7 @@ const inMemory = (): Deps => ({
   nutrition: { logs: new InMemoryMealLogRepository(seedLogs(new Date())), profile: new InMemoryProfileRepository() },
   dashboard: new DemoDashboardRepository(),
   recipes: new DemoRecipeRepository(),
+  feedEvents: new LocalFeedEventRepository(storage()),
 });
 
 /** Supabase when env vars are set, otherwise in-memory seeded from the design. */
@@ -67,6 +81,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         nutrition: { logs: new SupabaseMealLogRepository(db), profile: new SupabaseProfileRepository(db) },
         dashboard: new DemoDashboardRepository(),
         recipes: new DemoRecipeRepository(),
+        feedEvents: new LocalFeedEventRepository(storage()),
       }),
     );
   }, []);
@@ -77,7 +92,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <PantryDepsProvider value={deps.pantry}>
         <NutritionDepsProvider value={deps.nutrition}>
           <DashboardDepsProvider value={deps.dashboard}>
-            <RecipeDepsProvider value={deps.recipes}>{children}</RecipeDepsProvider>
+            <RecipeDepsProvider value={deps.recipes}>
+              <FeedDepsProvider value={deps.feedEvents}>{children}</FeedDepsProvider>
+            </RecipeDepsProvider>
           </DashboardDepsProvider>
         </NutritionDepsProvider>
       </PantryDepsProvider>

@@ -18,7 +18,7 @@ function Toggle({ label, path, on, onClick }: { label: string; path: string; on:
  * One post of the mobile feed, as in the design: a header (coloured icon, title, subtitle), a media area,
  * Like and Save, and a caption. Comment and Share are social, so they are not here. Like and Save stay local for now.
  */
-export function Post({ label, color, icon, title, sub, media, caption }: { label: string; color: string; icon: React.ReactNode; title: string; sub: string; media: React.ReactNode; caption?: React.ReactNode }) {
+export function Post({ label, color, icon, title, sub, media, caption, onToggle }: { onToggle?: (a: "like" | "unlike" | "save" | "unsave") => void; label: string; color: string; icon: React.ReactNode; title: string; sub: string; media: React.ReactNode; caption?: React.ReactNode }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   return (
@@ -34,8 +34,8 @@ export function Post({ label, color, icon, title, sub, media, caption }: { label
       </div>
       {media}
       <div className="flex items-center justify-between px-2 pt-1">
-        <Toggle label="Like" path={heart} on={liked} onClick={() => setLiked(!liked)} />
-        <Toggle label="Save" path={bookmark} on={saved} onClick={() => setSaved(!saved)} />
+        <Toggle label="Like" path={heart} on={liked} onClick={() => { setLiked(!liked); onToggle?.(liked ? "unlike" : "like"); }} />
+        <Toggle label="Save" path={bookmark} on={saved} onClick={() => { setSaved(!saved); onToggle?.(saved ? "unsave" : "save"); }} />
       </div>
       {caption && <div className="flex flex-col gap-2.5 px-4">{caption}</div>}
     </article>

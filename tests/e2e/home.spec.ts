@@ -81,8 +81,8 @@ test("tapping the chart on touch jumps to that day", async ({ page, isMobile }) 
   await expect(page.getByRole("status")).toContainText("Today");
 });
 
-test("plan link opens the plan", async ({ page }) => {
-  await page.getByRole("link", { name: "Plan the week" }).click();
+test("plan is one tap away", async ({ page, isMobile }) => {
+  await page.getByRole("link", { name: isMobile ? /Open plan/ : "Plan", exact: false }).first().click();
   await expect(page.getByRole("heading", { name: "Plan", level: 1 })).toBeVisible();
 });
 
@@ -107,4 +107,44 @@ test("feed posts can be liked and saved", async ({ page, isMobile }) => {
   await expect(post.getByRole("button", { name: "Save" })).toHaveAttribute("aria-pressed", "true");
   await post.getByRole("button", { name: "Like" }).click();
   await expect(post.getByRole("button", { name: "Like" })).toHaveAttribute("aria-pressed", "false");
+});
+
+const events = (page: import("@playwright/test").Page) =>
+  page.evaluate(() => JSON.parse(localStorage.getItem("nutriflow.feedEvents") ?? "[]") as { kind: string; action: string; position: number; dwellMs?: number }[]);
+
+test("taps and likes are recorded as feed events", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "the feed is the mobile layout");
+  const post = page.getByRole("article", { name: "Up next" });
+  await post.getByRole("button", { name: "Like" }).click();
+  await post.getByRole("button", { name: "Mark eaten" }).click();
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide"))); // flushes the batch
+  await expect.poll(async () => (await events(page)).map((e) => `${e.kind}:${e.action}`)).toEqual(expect.arrayContaining(["next-meal:like", "next-meal:mark-eaten"]));
+});
+
+test("a post that stays on screen records an impression with dwell time", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "the feed is the mobile layout");
+  await page.waitForTimeout(1500); // the first post is on screen for over a second
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  await page.evaluate(() => document.querySelector(".rail")?.scrollTo(0, 9999)); // scroll it away: impression is sent when it leaves
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  await expect.poll(async () => (await events(page)).filter((e) => e.action === "impression" && (e.dwellMs ?? 0) >= 1000).length).toBeGreaterThan(0);
+});
+
+test("past engagement reorders the feed on the next visit", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "the feed is the mobile layout");
+  const labels = () => page.locator("article[aria-label]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
+  await expect(page.getByRole("article", { name: "Pantry alert" })).toBeVisible();
+  const before = await labels();
+  expect(before.indexOf("Your day")).toBeLessThan(before.indexOf("Pantry alert"));
+  const now = Date.now();
+  await page.evaluate((t) => {
+    const e = Array.from({ length: 12 }, (_, i) => ({ itemId: "pantry-alert:x", kind: "pantry-alert", action: i % 2 ? "add-to-list" : "open", position: 2, ts: t - i * 1000 }));
+    localStorage.setItem("nutriflow.feedEvents", JSON.stringify(e));
+  }, now);
+  await page.reload();
+  await expect(page.getByRole("article", { name: "Pantry alert" })).toBeVisible();
+  const after = await labels();
+  expect(after.indexOf("Pantry alert")).toBeLessThan(after.indexOf("Your day"));
+  expect(after[0]).toBe("Up next"); // the next meal stays on top
 });
