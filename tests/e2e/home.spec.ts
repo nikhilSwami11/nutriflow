@@ -18,14 +18,19 @@ test("range tabs switch the chart between 7 and 30 days", async ({ page }) => {
   await expect(page.getByRole("slider", { name: "Day" })).toHaveAttribute("aria-valuemax", "29");
 });
 
-test("hovering the chart glides to that day", async ({ page, isMobile }) => {
+test("hovering anywhere along the chart snaps to the nearest day", async ({ page, isMobile }) => {
   test.skip(isMobile, "hover is a desktop interaction");
   const box = (await page.getByRole("slider", { name: "Day" }).boundingBox())!;
-  await page.mouse.move(box.x + box.width * (2 / 6), box.y + box.height / 2); // 7-day week: index 2 is 2,100 kcal
-  await expect(page.getByText("Eaten 2,100 kcal")).toBeVisible();
-  await expect(page.getByText("+100 kcal vs plan")).toBeVisible();
-  await page.mouse.move(box.x + box.width + 40, box.y + box.height / 2);
-  await expect(page.getByText("kcal left today")).toBeVisible(); // leaving returns to today
+  const status = page.getByRole("status");
+  await expect(status).toHaveText("");
+  // well above the line: no need to touch it
+  await page.mouse.move(box.x + box.width * 0.55, box.y + 20);
+  await expect(status).toHaveText(/eaten [\d,]+ kcal, planned [\d,]+ kcal/);
+  const first = await status.textContent();
+  await page.mouse.move(box.x + box.width * 0.9, box.y + 20);
+  await expect(status).not.toHaveText(first!);
+  await page.mouse.move(box.x - 60, box.y + 20);
+  await expect(status).toHaveText(""); // leaving hides the tooltip
 });
 
 test("chart is keyboard operable", async ({ page }) => {
@@ -69,6 +74,7 @@ test("tapping the chart on touch jumps to that day", async ({ page, isMobile }) 
   const slider = page.getByRole("slider", { name: "Day" });
   await slider.scrollIntoViewIfNeeded();
   const box = (await slider.boundingBox())!;
-  await page.touchscreen.tap(box.x + 2, box.y + box.height / 2);
-  await expect(slider).toHaveAttribute("aria-valuenow", "0");
+  await page.touchscreen.tap(box.x + box.width - 12, box.y + box.height / 2);
+  await expect(slider).toHaveAttribute("aria-valuenow", "6");
+  await expect(page.getByRole("status")).toContainText("Today");
 });

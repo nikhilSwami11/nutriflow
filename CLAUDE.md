@@ -35,7 +35,7 @@ Next.js App Router, strict TS, Tailwind v4 (CSS variables in `src/app/globals.cs
 ## Motion
 - Keyframes and helpers live in `globals.css`: `.rise` (staggered entrance, `--i` sets delay), `.grow-x` (bars), `.reveal` (chart paths), `.fade-in`. All buttons get press feedback; add `data-nopress` to opt out, `hoverable` for a hover border.
 - Numbers tween with `presentation/shared/AnimatedNumber`. Everything honors `prefers-reduced-motion` (global CSS rule, plus a check in the tween).
-- The chart is a `role="slider"`: pointer (mouse and touch) and arrow keys move it. Static paths are memoized so hover never redraws them. `useHome` memoizes chart geometry.
+- The calories and macros chart uses Chart.js (same interaction settings as the cashflow_with_ml project: index mode, non-intersecting hover, animated tooltip, 350ms morph between ranges). `useHome` supplies pre-formatted day points; `MacroChart` only draws. Chart.js can't read CSS variables, so `presentation/shared/chartTokens.ts` resolves them once. The wrapper is a `role="slider"` (arrow keys, Home/End) with an sr-only live readout, since the canvas tooltip isn't in the DOM.
 
 ## Style
 - Light theme first, tokens in `:root`. Palette: mint, rose, sky, lavender, butter, peach. IBM Plex Sans, thin strokes, black only on small accents.

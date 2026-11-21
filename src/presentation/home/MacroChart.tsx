@@ -1,40 +1,186 @@
 "use client";
-import { memo, useRef } from "react";
-import type { ChartGeometry } from "@/view-models/dashboard/chart";
-import type { HomeModel } from "@/view-models/home/useHome";
+import {
+  CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Tooltip,
+  type Chart,
+  type ChartData,
+  type ChartOptions,
+  type Plugin,
+  type TooltipItem,
+} from "chart.js";
+import { useMemo, useRef, useState } from "react";
+import { Line } from "react-chartjs-2";
+import { CHART_MAX, type HomeModel } from "@/view-models/home/useHome";
+import { alpha, readChartTokens, type ChartTokens } from "../shared/chartTokens";
+
+ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip);
 
 const SWATCH = [["Protein", "#F2A3A9"], ["Carbs", "#9EC8F3"], ["Fats", "#B9A7EE"]] as const;
-const GLIDE = "180ms cubic-bezier(0.2, 0.7, 0.2, 1)";
+const EATEN = 3; // dataset index of the eaten line: drives the tooltip and the highlighted point
 
-/** Static layers. Memoized so hovering never redraws the paths; `key` replays the reveal when the range changes. */
-const Paths = memo(function Paths({ geo }: { geo: ChartGeometry }) {
-  return (
-    <svg viewBox="0 0 700 220" preserveAspectRatio="none" aria-hidden="true" className="reveal absolute left-0 top-0 h-full w-full overflow-visible">
-      <path d={geo.areaP} fill="#F2A3A9" fillOpacity="0.85" />
-      <path d={geo.areaC} fill="#9EC8F3" fillOpacity="0.85" />
-      <path d={geo.areaF} fill="#B9A7EE" fillOpacity="0.85" />
-      <path d={geo.planned} fill="none" stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="5 4" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      <path d={geo.line} fill="none" stroke="var(--ink)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
+type Points = HomeModel["chart"]["points"];
+const reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+/** Thin dashed line at the hovered day. */
+const crosshair = (t: ChartTokens): Plugin<"line"> => ({
+  id: "crosshair",
+  afterDatasetsDraw(chart) {
+    const active = chart.tooltip?.getActiveElements()[0];
+    if (!active) return;
+    const { top, bottom } = chart.chartArea;
+    const { ctx } = chart;
+    ctx.save();
+    ctx.strokeStyle = t.line2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(active.element.x, top);
+    ctx.lineTo(active.element.x, bottom);
+    ctx.stroke();
+    ctx.restore();
+  },
 });
 
-export function MacroChart({ c }: { c: HomeModel["chart"] }) {
-  const a = c.active;
-  const plot = useRef<HTMLDivElement>(null);
-  const last = c.count - 1;
+function buildData(points: Points, t: ChartTokens): ChartData<"line"> {
+  const band = (label: string, k: 0 | 1 | 2, color: string, fill: boolean | string) => ({
+    label,
+    data: points.map((p) => p.bands[k]),
+    stack: "macros",
+    fill,
+    backgroundColor: alpha(color, 0.85),
+    borderWidth: 0,
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    tension: 0.35,
+    order: 4,
+  });
+  return {
+    labels: points.map((p) => p.axis),
+    datasets: [
+      band("Protein", 0, t.rose, "origin"),
+      band("Carbs", 1, t.sky, "-1"),
+      band("Fats", 2, t.lavender, "-1"),
+      {
+        label: "Eaten",
+        data: points.map((p) => Math.min(p.eaten, CHART_MAX)),
+        stack: "eaten",
+        borderColor: t.ink,
+        borderWidth: 1.5,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: t.ink,
+        pointHoverBorderColor: t.bg,
+        pointHoverBorderWidth: 2,
+        tension: 0.35,
+        fill: false,
+        order: 1,
+      },
+      {
+        label: "Planned",
+        data: points.map((p) => Math.min(p.planned, CHART_MAX)),
+        stack: "plan",
+        borderColor: t.muted,
+        borderWidth: 1.5,
+        borderDash: [5, 4],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        tension: 0.35,
+        fill: false,
+        order: 2,
+      },
+    ],
+  };
+}
 
-  const pick = (clientX: number) => {
-    const r = plot.current?.getBoundingClientRect();
-    if (!r || r.width === 0) return;
-    c.setHover(Math.round(Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * last));
+function buildOptions(points: Points, t: ChartTokens, onHover: (i: number | null) => void, long: boolean): ChartOptions<"line"> {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: reduced() ? false : { duration: 350 },
+    // Hover anywhere along the x axis snaps to the nearest day, no need to touch the line.
+    interaction: { mode: "index", intersect: false },
+    layout: { padding: { top: 6, right: 6 } },
+    onHover: (_e, els) => onHover(els.find((e) => e.datasetIndex === EATEN)?.index ?? null),
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        filter: (i: TooltipItem<"line">) => i.datasetIndex === EATEN,
+        backgroundColor: t.bg,
+        titleColor: t.ink,
+        bodyColor: t.ink2,
+        footerColor: t.muted,
+        borderColor: t.line2,
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 12,
+        caretPadding: 12,
+        displayColors: false,
+        titleFont: { family: t.font, weight: 500, size: 12 },
+        bodyFont: { family: t.font, size: 12 },
+        footerFont: { family: t.font, size: 11, weight: 400 },
+        callbacks: {
+          title: (items) => points[items[0].dataIndex].title,
+          label: (item) => points[item.dataIndex].lines,
+          footer: (items) => points[items[0].dataIndex].footer,
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        border: { color: t.line },
+        ticks: { color: t.muted, font: { family: t.font, size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: long ? 7 : 7 },
+      },
+      y: {
+        min: 0,
+        max: CHART_MAX,
+        stacked: true,
+        grid: { color: t.line },
+        border: { display: false },
+        ticks: { color: t.muted, font: { family: t.font, size: 11 }, stepSize: CHART_MAX / 4, callback: (v) => Number(v).toLocaleString("en-US") },
+      },
+    },
+  };
+}
+
+export function MacroChart({ c }: { c: HomeModel["chart"] }) {
+  const chartRef = useRef<Chart<"line">>(null);
+  const [idx, setIdx] = useState<number | null>(null);
+  const last = c.points.length - 1;
+
+  // Tokens are read once on the client; the chart is only rendered after mount.
+  const tokens = useMemo(() => readChartTokens(), []);
+  const data = useMemo(() => buildData(c.points, tokens), [c.points, tokens]);
+  const options = useMemo(() => buildOptions(c.points, tokens, setIdx, c.points.length > 7), [c.points, tokens]);
+  const plugins = useMemo(() => [crosshair(tokens)], [tokens]);
+
+  const show = (i: number | null) => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    if (i === null) {
+      chart.setActiveElements([]);
+      chart.tooltip?.setActiveElements([], { x: 0, y: 0 });
+    } else {
+      const els = [{ datasetIndex: EATEN, index: i }];
+      const x = chart.scales.x.getPixelForValue(i);
+      const y = chart.scales.y.getPixelForValue(Math.min(c.points[i].eaten, CHART_MAX));
+      chart.setActiveElements(els);
+      chart.tooltip?.setActiveElements(els, { x, y });
+    }
+    chart.update();
+    setIdx(i);
   };
 
   const key = (e: React.KeyboardEvent) => {
     const step = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1 }[e.key];
     if (step === undefined && e.key !== "Home" && e.key !== "End") return;
     e.preventDefault();
-    c.setHover(e.key === "Home" ? 0 : e.key === "End" ? last : Math.min(last, Math.max(0, a.i + (step ?? 0))));
+    const cur = idx ?? last;
+    show(e.key === "Home" ? 0 : e.key === "End" ? last : Math.min(last, Math.max(0, cur + (step ?? 0))));
   };
 
   return (
@@ -69,66 +215,21 @@ export function MacroChart({ c }: { c: HomeModel["chart"] }) {
         </div>
       </div>
 
-      <div className="relative h-[250px]">
-        <div className="absolute bottom-[30px] left-0 top-2 w-11" aria-hidden="true">
-          {c.yTicks.map((t) => (
-            <span key={t.label} className="absolute right-1 -translate-y-1/2 text-[11px] tabular-nums text-muted" style={{ top: `${t.top}%` }}>{t.label}</span>
-          ))}
-        </div>
-        <div
-          ref={plot}
-          role="slider"
-          tabIndex={0}
-          aria-label="Day"
-          aria-valuemin={0}
-          aria-valuemax={last}
-          aria-valuenow={a.i}
-          aria-valuetext={a.summary}
-          onPointerMove={(e) => pick(e.clientX)}
-          onPointerDown={(e) => pick(e.clientX)}
-          onPointerLeave={(e) => e.pointerType === "mouse" && c.setHover(null)}
-          onBlur={() => c.setHover(null)}
-          onKeyDown={key}
-          className="absolute bottom-[30px] left-[52px] right-2 top-2 cursor-crosshair touch-pan-y outline-none"
-        >
-          {c.yTicks.map((t) => (
-            <div key={t.label} className="absolute left-0 right-0 border-t border-line" style={{ top: `${t.top}%` }} aria-hidden="true" />
-          ))}
-          <Paths key={c.range} geo={c.geo} />
-          <div className="absolute top-0 h-full border-l border-dashed border-line2" style={{ left: `${a.x}%`, transition: `left ${GLIDE}` }} aria-hidden="true" />
-          <span
-            className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-bg bg-ink shadow-[0_0_0_4px_rgba(20,20,20,0.06)]"
-            style={{ left: `${a.x}%`, top: `${a.y}%`, transition: `left ${GLIDE}, top ${GLIDE}` }}
-            aria-hidden="true"
-          />
-          <div
-            className="pointer-events-none absolute top-0 z-10 w-40 rounded-xl border border-line bg-bg p-3 shadow-[0_4px_16px_rgba(0,0,0,0.08)]"
-            style={{
-              left: `${a.x}%`,
-              transform: `translateX(${a.flip ? "calc(-100% - 10px)" : "10px"})`,
-              transition: `left ${GLIDE}, transform ${GLIDE}`,
-            }}
-            aria-hidden="true"
-          >
-            <div className="text-[11px] text-muted">{a.date}</div>
-            <div className="mt-1 text-sm font-medium tabular-nums">Eaten {a.eaten}</div>
-            <div className="mt-0.5 text-xs tabular-nums text-ink2">Planned {a.planned}</div>
-            <div className="mt-2 flex flex-col gap-[3px] border-t border-line pt-2 text-xs tabular-nums">
-              {[["Protein", a.protein, "#F2A3A9"], ["Carbs", a.carbs, "#9EC8F3"], ["Fats", a.fat, "#B9A7EE"]].map(([n, v, col]) => (
-                <span key={n} className="flex items-center gap-1.5">
-                  <span className="block h-2 w-2 rounded-sm" style={{ background: col }} />
-                  {n} {v}
-                </span>
-              ))}
-            </div>
-            <div className="mt-0.5 text-[11px] text-muted">{a.goal}</div>
-          </div>
-        </div>
-        <div className="absolute bottom-0 left-[52px] right-2 h-5" aria-hidden="true">
-          {c.xLabels.map((x) => (
-            <span key={`${c.range}-${x.i}`} className="fade-in absolute top-0 -translate-x-1/2 whitespace-nowrap text-[11px] text-muted" style={{ left: `${x.left}%` }}>{x.text}</span>
-          ))}
-        </div>
+      <div
+        role="slider"
+        tabIndex={0}
+        aria-label="Day"
+        aria-valuemin={0}
+        aria-valuemax={last}
+        aria-valuenow={idx ?? last}
+        aria-valuetext={c.points[idx ?? last].summary}
+        onKeyDown={key}
+        onBlur={() => show(null)}
+        onPointerLeave={(e) => e.pointerType === "mouse" && setIdx(null)} // Chart.js only reports hover inside the plot
+        className="relative h-[250px] touch-pan-y"
+      >
+        <Line ref={chartRef} data={data} options={options} plugins={plugins} aria-label={c.aria} role="img" />
+        <p role="status" className="sr-only">{idx === null ? "" : c.points[idx].summary}</p>
       </div>
 
       <div className="flex flex-wrap gap-x-8 gap-y-3 border-t border-line px-1 pt-3">

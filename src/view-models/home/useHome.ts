@@ -1,10 +1,9 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { chartStats, leftKcal, logPlannedMeal, type DashboardData } from "@/domain/dashboard";
+import { chartStats, leftKcal, logPlannedMeal, macroShares, type DashboardData } from "@/domain/dashboard";
 import { rankUpNext } from "@/domain/nutrition";
 import { isLow } from "@/domain/pantry";
-import { buildChart, Y_MAX } from "../dashboard/chart";
 import { useDashboardRepo } from "../dashboard/DashboardDeps";
 import { joinList } from "../format";
 import { usePantry } from "../pantry/usePantry";
@@ -17,6 +16,9 @@ const parse = (d: string) => {
 const fmtDate = (d: string) => parse(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 const fmtDow = (d: string) => parse(d).toLocaleDateString("en-US", { weekday: "short" });
 
+/** Top of the chart's y axis, kcal. */
+export const CHART_MAX = 2400;
+
 export type Range = "7d" | "30d";
 const BAR_MAX = 700;
 
@@ -25,7 +27,6 @@ export function useHome() {
   const pantry = usePantry();
   const base = useQuery({ queryKey: ["dashboard"], queryFn: () => repo.get() });
   const [range, setRange] = useState<Range>("7d");
-  const [hover, setHover] = useState<number | null>(null);
   const [dinnerLogged, setDinnerLogged] = useState(false);
   const [accepted, setAccepted] = useState<string[]>([]);
 
@@ -34,15 +35,11 @@ export function useHome() {
     [base.data, dinnerLogged],
   );
   const days = useMemo(() => (data ? (range === "7d" ? data.days.slice(-7) : data.days) : null), [data, range]);
-  // Stable between hovers so the chart paths don't rebuild on every pointer move.
-  const geo = useMemo(() => (days ? buildChart(days) : null), [days]);
 
-  if (!data || !days || !geo) return { isLoading: true as const };
+  if (!data || !days) return { isLoading: true as const };
   const { goals } = data;
   const today = data.days[data.days.length - 1];
   const n = days.length;
-  const ai = hover === null ? n - 1 : Math.min(hover, n - 1);
-  const act = days[ai];
   const stats = chartStats(days);
   const eatenTotal = today.eaten;
 
@@ -78,36 +75,33 @@ export function useHome() {
       tile("Fat", today.macros.fat, goals.fat, "g", "#B9A7EE"),
     ],
     chart: {
-      geo,
       title: `Calories and macros, ${range === "7d" ? "last 7 days" : "last 30 days"}`,
       range,
-      setRange: (r: Range) => {
-        setRange(r);
-        setHover(null);
-      },
-      setHover,
-      yTicks: [0, 0.25, 0.5, 0.75, 1].map((f) => ({ label: num(Math.round(Y_MAX * f)), top: (1 - f) * 100 })),
-      xLabels: days
-        .map((d, i) => ({ i, left: geo.xPct(i), text: range === "7d" ? fmtDow(d.date) : fmtDate(d.date) }))
-        .filter((x) => range === "7d" || x.i % 5 === n % 5 || x.i === n - 1),
-      count: n,
-      active: {
-        i: ai,
-        x: geo.xPct(ai),
-        y: geo.yPct(act.eaten),
-        flip: ai > n / 2,
-        date: ai === n - 1 ? "Today" : fmtDate(act.date),
-        eaten: `${num(act.eaten)} kcal`,
-        planned: `${num(act.planned)} kcal`,
-        protein: `${act.macros.protein} g`,
-        carbs: `${act.macros.carbs} g`,
-        fat: `${act.macros.fat} g`,
-        summary: `${ai === n - 1 ? "Today" : fmtDate(act.date)}, eaten ${num(act.eaten)} kcal, planned ${num(act.planned)} kcal`,
-        goal:
-          ai === n - 1
-            ? `${num(leftKcal(act.planned, act.eaten))} kcal left today`
-            : `${act.eaten - act.planned >= 0 ? "+" : "-"}${num(Math.abs(act.eaten - act.planned))} kcal vs plan`,
-      },
+      setRange: (r: Range) => setRange(r),
+      /** One entry per day, already formatted: the chart only draws. */
+      points: days.map((d, i) => {
+        const isToday = i === n - 1;
+        const [p, c, f] = macroShares(d.macros);
+        const top = Math.min(d.eaten, CHART_MAX);
+        return {
+          axis: range === "7d" ? fmtDow(d.date) : fmtDate(d.date),
+          title: isToday ? "Today" : fmtDate(d.date),
+          eaten: d.eaten,
+          planned: d.planned,
+          bands: [top * p, top * c, top * f] as [number, number, number],
+          lines: [
+            `Eaten ${num(d.eaten)} kcal`,
+            `Planned ${num(d.planned)} kcal`,
+            `Protein ${d.macros.protein} g`,
+            `Carbs ${d.macros.carbs} g`,
+            `Fats ${d.macros.fat} g`,
+          ],
+          footer: isToday
+            ? `${num(leftKcal(d.planned, d.eaten))} kcal left today`
+            : `${d.eaten - d.planned >= 0 ? "+" : "-"}${num(Math.abs(d.eaten - d.planned))} kcal vs plan`,
+          summary: `${isToday ? "Today" : fmtDate(d.date)}, eaten ${num(d.eaten)} kcal, planned ${num(d.planned)} kcal`,
+        };
+      }),
       stats: [
         { label: "Average eaten", value: `${num(stats.avgEaten)} kcal` },
         { label: "Average planned", value: `${num(stats.avgPlanned)} kcal` },
