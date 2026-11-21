@@ -5,15 +5,24 @@ import {
   elapsedMs, finishCooking, formatRemaining, habitNote, isDone, isRunning, newTimer, nextStep, nutritionEaten, pauseTimer,
   prevStep, remainingMs, startTimer, stepAt, suggestedServings, type FinishResult, type TimerState, type VoiceCommand,
 } from "@/domain/cooking";
+import { answerQuestion, prepList, stepGuide, suggestedQuestions, swapsFor } from "@/domain/guide";
 import { toDateKey } from "@/domain/nutrition";
+import { ingredientStatus } from "@/domain/recipes";
 import { useNutritionDeps } from "../nutrition/NutritionDeps";
 import { usePantryDeps } from "../pantry/PantryDeps";
+import { usePantry } from "../pantry/usePantry";
 import { useRecipeRepo } from "../recipes/RecipeDeps";
 import { useCookDeps } from "./CookDeps";
 import { speak, useVoiceCommands } from "./useVoiceCommands";
 import { useWakeLock } from "./useWakeLock";
 
-type Phase = "cooking" | "finish" | "done";
+type Phase = "prep" | "cooking" | "finish" | "done";
+
+export interface Message {
+  id: number;
+  who: "you" | "guide";
+  text: string;
+}
 
 // A plain function so event handlers and effects read the clock, not the render.
 const clock = () => Date.now();
@@ -25,13 +34,17 @@ export function useCook(id: string, servingsMade?: number) {
   const { logs } = useNutritionDeps();
   const { habits, pendingLogs } = useCookDeps();
   const qc = useQueryClient();
+  const pantryView = usePantry();
 
   const recipes = useQuery({ queryKey: ["recipes"], queryFn: () => repo.list() });
   const habit = useQuery({ queryKey: ["habit", id], queryFn: () => habits.get(id), staleTime: Infinity });
   const recipe = recipes.data?.find((r) => r.id === id);
 
   const [index, setIndex] = useState(0);
-  const [phase, setPhase] = useState<Phase>("cooking");
+  const [phase, setPhase] = useState<Phase>("prep");
+  const [checked, setChecked] = useState<string[]>([]);
+  const [askOpen, setAskOpen] = useState(false);
+  const [thread, setThread] = useState<Message[]>([]);
   const [timers, setTimers] = useState<Record<number, TimerState>>({});
   const [now, setNow] = useState(clock);
   const [eatenRaw, setEatenRaw] = useState<number | null>(null);
@@ -76,6 +89,7 @@ export function useCook(id: string, servingsMade?: number) {
   };
   const prev = () => {
     if (phase === "finish") setPhase("cooking");
+    else if (nav.isFirst) setPhase("prep");
     else setIndex(prevStep(nav).index);
   };
 
@@ -94,6 +108,19 @@ export function useCook(id: string, servingsMade?: number) {
 
   const made = servingsMade && servingsMade > 0 ? servingsMade : recipe.servings;
   const eaten = Math.min(made, eatenRaw ?? suggestedServings(habit.data ?? null));
+
+  const pantryItems = pantryView.view.groups.flatMap((g) => g.items);
+  const ask = (question: string) => {
+    const q = question.trim();
+    if (!q) return;
+    const a = answerQuestion(q, { recipe, stepIndex: nav.index, servings: made, pantry: pantryItems });
+    setThread((t) => [...t, { id: t.length * 2, who: "you", text: q }, { id: t.length * 2 + 1, who: "guide", text: a.text }]);
+  };
+  const guide = stepGuide(step);
+  const missing = ingredientStatus(recipe, pantryItems)
+    .filter((x) => !x.inPantry)
+    .map((x) => ({ name: x.ingredient.name, swap: swapsFor(recipe, x.ingredient.name)[0]?.use ?? null }));
+  const prepItems = prepList(recipe, made);
 
   const submit = async () => {
     setSubmitting(true);
@@ -115,7 +142,17 @@ export function useCook(id: string, servingsMade?: number) {
     notFound: false as const,
     recipe,
     phase,
-    step: { number: nav.index + 1, count: nav.count, text: step.text, verb: step.verb, isFirst: nav.isFirst, isLast: nav.isLast },
+    step: { number: nav.index + 1, count: nav.count, text: step.text, verb: step.verb, isFirst: nav.isFirst, isLast: nav.isLast, look: guide.look, tip: guide.tip },
+    prep: {
+      items: prepItems.map((i) => ({ ...i, checked: checked.includes(i.id), toggle: () => setChecked((c) => (c.includes(i.id) ? c.filter((x) => x !== i.id) : [...c, i.id])) })),
+      done: prepItems.filter((i) => checked.includes(i.id)).length,
+      total: prepItems.length,
+      minutes: recipe.minutes,
+      servings: made,
+      missing,
+      start: () => setPhase("cooking"),
+    },
+    ask: { open: askOpen, setOpen: setAskOpen, thread, send: ask, suggestions: suggestedQuestions(recipe, nav.index) },
     next,
     prev,
     timer: timer

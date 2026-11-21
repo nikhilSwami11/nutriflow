@@ -5,9 +5,10 @@ import { expect, test, type Page } from "@playwright/test";
  * The design system, enforced. One reading size floor, one touch size floor, readable contrast, one page gutter.
  * See "Design system" in CLAUDE.md for the rules and why.
  */
-const ROUTES = ["/", "/pantry", "/recipes", "/recipes/dal-tadka", "/plan", "/cook/dal-tadka", "/photo"];
+const ROUTES = ["/", "/pantry", "/recipes", "/recipes/dal-tadka", "/plan", "/cook/dal-tadka", "/cook/dal-tadka#steps", "/photo"];
 const settle = async (page: Page, route: string) => {
-  await page.goto(route);
+  await page.goto(route.replace("#steps", ""));
+  if (route.endsWith("#steps")) await page.getByRole("button", { name: "Start cooking" }).click();
   await page.waitForTimeout(route === "/photo" ? 1800 : 1200);
 };
 
@@ -103,4 +104,14 @@ test("cards share one corner radius, buttons are pills", async ({ page }) => {
     found.forEach((r) => radii.add(r));
   }
   expect([...radii]).toEqual(["20px"]);
+});
+
+test("the Ask sheet is readable too", async ({ page }) => {
+  await page.goto("/cook/dal-tadka");
+  await page.getByRole("button", { name: "Start cooking" }).click();
+  await page.getByRole("button", { name: "Ask about this step" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "How do I know it is done?" }).click();
+  // the sheet itself: the page behind its dimmed backdrop is not meant to be read at that moment
+  const r = await new AxeBuilder({ page }).include("[role=dialog]").withRules(["color-contrast"]).analyze();
+  expect(r.violations.flatMap((v) => v.nodes.map((n) => n.target.join(" ")))).toEqual([]);
 });

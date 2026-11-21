@@ -31,7 +31,9 @@ export function StoryViewer({ s, index, setIndex, onClose }: { s: HomeModel["sto
     // eslint-disable-next-line react-hooks/exhaustive-deps -- s.open changes identity every render; the slide id is what matters
   }, [st?.id, index]);
 
-  useEffect(() => closeBtn.current?.focus(), []);
+  useEffect(() => {
+    closeBtn.current?.focus();
+  }, []);
 
   // Escape and the arrows work wherever focus is, since a focused button can disappear (marking a meal eaten re-renders it).
   const latest = useRef({ next, prev, onClose });

@@ -1,4 +1,4 @@
-import type { Ingredient, MealName, Recipe, RecipeRepository, Step } from "@/domain/recipes";
+import type { Fix, Ingredient, MealName, Recipe, RecipeRepository, Step, Swap } from "@/domain/recipes";
 
 /** FAKE DATA. Demo recipes so the planner, recipe pages and dashboard have something real-looking to work with. */
 const ing = (name: string, qty: number, unit = ""): Ingredient => ({ name, qty, unit });
@@ -68,11 +68,88 @@ const RECIPES: Recipe[] = [
     steps: [st("Cube the tofu and slice the capsicum", "Chop"), st("Sear the tofu", "Sauté"), st("Add garlic and capsicum", "Sauté"), st("Splash in the soy sauce", "Stir"), st("Serve over rice", "Serve")] }),
 ];
 
-export const RECIPE_IDS = RECIPES.map((x) => x.id);
+/**
+ * Hand-written cooking guidance for the recipes people cook most. Step notes are by step number (from 0).
+ * A recipe without an entry still gets the per-verb guidance and a checklist built from its ingredients.
+ */
+interface Guide {
+  prep: string[];
+  steps?: Record<number, { look?: string; tip?: string; minutes?: number }>;
+  fixes?: Fix[];
+  swaps?: Swap[];
+}
+
+const GUIDES: Record<string, Guide> = {
+  "dal-tadka": {
+    prep: ["Rinse 1 cup toor dal until the water runs clear", "Chop 2 onions and 2 tomatoes", "Peel and slice 4 garlic cloves", "Measure 2 tbsp ghee and 1 tsp cumin seeds", "Wash a bunch of fresh coriander"],
+    steps: {
+      0: { look: "Onions in small, even pieces, and the tomatoes a little larger.", tip: "Chop the onions first and the tomatoes last, so your board stays dry longer." },
+      1: { minutes: 15, look: "The dal falls apart when you press it between two fingers.", tip: "Skim off any foam in the first few minutes and add a pinch of turmeric." },
+      2: { look: "Smooth and thick, like soft porridge.", tip: "Mash against the side of the pot with the back of a ladle." },
+      3: { look: "The cumin seeds crackle and the garlic turns light golden.", tip: "Take it off the heat the moment the garlic colours. Dark garlic tastes bitter." },
+      4: { look: "The ghee swirls through the dal with a sizzle.", tip: "Pour it in while it is still hot, then cover for 30 seconds to trap the smell." },
+      5: { minutes: 5, look: "The flavours have blended and the dal coats the back of a spoon.", tip: "Finish with chopped coriander and a squeeze of lemon." },
+    },
+    fixes: [{ problem: "bitter", fix: "Garlic that went too dark turns bitter. Make the tadka again with fresh garlic and pour it over." }, { problem: "grainy", fix: "Whisk the dal hard, or blend it for a few seconds, until it is smooth." }],
+    swaps: [{ ingredient: "Toor dal", use: "masoor dal", note: "It cooks faster, in about 15 minutes." }],
+  },
+  "dal-rice": {
+    prep: ["Rinse 1 cup toor dal and 2 cups basmati rice, separately", "Peel 3 garlic cloves", "Measure 2 tbsp ghee and 1 tsp cumin seeds"],
+    steps: {
+      0: { minutes: 15, look: "The dal is soft enough to mash with a spoon.", tip: "A pinch of turmeric and a little oil in the water stops it foaming over." },
+      1: { minutes: 12, look: "Each grain is separate and fluffy, with small steam holes on top.", tip: "Do not lift the lid while it steams. The steam is what cooks it." },
+    },
+    fixes: [{ problem: "mushy", fix: "Next time use a little less water. For now spread the rice on a plate for a few minutes to let it dry." }],
+  },
+  khichdi: {
+    prep: ["Rinse the masoor dal and rice together until the water is clear", "Chop 1 onion", "Peel 3 garlic cloves", "Measure 1 tbsp ghee"],
+    steps: {
+      3: { look: "The rice and dal are soft enough to mash with a spoon, like thick porridge.", tip: "Start with four cups of water for every cup of rice and dal, and top up with hot water if it gets thick." },
+      4: { minutes: 15 },
+    },
+  },
+  omelette: {
+    prep: ["Chop 1 onion, 1 tomato and 2 green chillies", "Crack 6 eggs into a bowl", "Measure 1 tbsp butter"],
+    steps: {
+      1: { look: "The yolks and whites are fully blended and a little frothy.", tip: "Add a pinch of salt now. It breaks the eggs down so the omelette is tender." },
+      3: { look: "The edges are set and the middle is still glossy.", tip: "Take it off the heat just before it looks done. It finishes cooking on the plate." },
+    },
+    fixes: [{ problem: "rubbery", fix: "The heat was too high. Use medium-low next time and take it off while the middle is still glossy." }],
+  },
+  "palak-paneer": {
+    prep: ["Wash 4 bunches of spinach well", "Cube the paneer", "Chop 1 onion and peel 3 garlic cloves", "Measure 2 cups basmati rice and 1 tbsp butter"],
+    steps: {
+      0: { minutes: 3, look: "The spinach is bright green and only just wilted.", tip: "Move it straight into ice water to keep the colour." },
+    },
+    fixes: [{ problem: "brown", fix: "Spinach turns olive when it cooks too long. Blanch it for less time and cool it fast." }, { problem: "gritty", fix: "The spinach needs a second wash. Strain the gravy through a sieve if it is already blended." }],
+  },
+  "oats-banana": {
+    prep: ["Measure 2 cups oats and 3 cups milk", "Peel and slice the bananas"],
+    steps: { 1: { look: "Creamy and thick, with the oats soft but not mushy.", tip: "Stir often so the bottom does not catch." } },
+  },
+};
+
+const guided = (r: Recipe): Recipe => {
+  const g = GUIDES[r.id];
+  if (!g) return r;
+  return {
+    ...r,
+    prep: g.prep,
+    fixes: g.fixes,
+    swaps: g.swaps,
+    steps: r.steps.map((st, i) => {
+      const n = g.steps?.[i];
+      return n ? { ...st, ...(n.look ? { look: n.look } : {}), ...(n.tip ? { tip: n.tip } : {}), ...(n.minutes ? { minutes: n.minutes } : {}) } : st;
+    }),
+  };
+};
+const ALL: Recipe[] = RECIPES.map(guided);
+
+export const RECIPE_IDS = ALL.map((x) => x.id);
 export const MEAL_ORDER: MealName[] = ["Breakfast", "Lunch", "Snack", "Dinner"];
 
 export class DemoRecipeRepository implements RecipeRepository {
   async list() {
-    return RECIPES;
+    return ALL;
   }
 }

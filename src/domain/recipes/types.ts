@@ -13,6 +13,22 @@ export interface Step {
   verb: string;
   /** Timed steps (simmering, boiling). The cook screen shows a countdown. */
   minutes?: number;
+  /** What to look for to know the step is right. Falls back to a line for the verb. */
+  look?: string;
+  /** One useful tip. Falls back to a line for the verb. */
+  tip?: string;
+}
+
+export interface Swap {
+  ingredient: string;
+  use: string;
+  note?: string;
+}
+
+export interface Fix {
+  /** A word or two the cook might say: "salty", "too thick". */
+  problem: string;
+  fix: string;
 }
 
 /** Nutrition is per serving. */
@@ -30,4 +46,8 @@ export interface Recipe {
   tint: string;
   ingredients: Ingredient[];
   steps: Step[];
+  /** Things to set out before starting. Derived from the ingredients when missing. */
+  prep?: string[];
+  swaps?: Swap[];
+  fixes?: Fix[];
 }

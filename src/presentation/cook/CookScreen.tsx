@@ -1,7 +1,10 @@
 "use client";
 import Link from "next/link";
 import { useCook, type CookModel } from "@/view-models/cook/useCook";
+import { AskSheet } from "./AskSheet";
 import { CookMotion } from "./CookMotion";
+import { GuideCards } from "./GuideCards";
+import { Prep } from "./Prep";
 import { Bowl } from "../recipes/Bowl";
 
 const VERB: Record<string, string> = { Chop: "#F7C9BB", Simmer: "#9EC8F3", Stir: "#B9A7EE", "Sauté": "#F4E3A1", Serve: "#8FD3C0", Mix: "#CFC8F0" };
@@ -41,6 +44,11 @@ function Steps({ c }: { c: CookModel }) {
           <p aria-live="polite" className="m-0 text-[26px] font-medium leading-tight tracking-[-0.02em]">{s.text}</p>
           <p className="m-0 text-xs text-muted tabular-nums">Step {s.number} of {s.count}</p>
         </div>
+        <GuideCards look={s.look} tip={s.tip} />
+        <button type="button" onClick={() => c.ask.setOpen(true)} className="hoverable touch flex items-center justify-center gap-2 rounded-full border border-line2 px-5 text-[15px] font-medium">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" /></svg>
+          Ask about this step
+        </button>
         {c.timer && (
           <div aria-label="Timer" role="group" className="flex items-center justify-between gap-3 rounded-[20px] border border-line px-5 py-3.5">
             <div>
@@ -57,7 +65,7 @@ function Steps({ c }: { c: CookModel }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2.5 border-t border-line px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
-        <button type="button" onClick={c.prev} disabled={s.isFirst} aria-label="Previous step" className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-line2 disabled:opacity-35">
+        <button type="button" onClick={c.prev} aria-label={s.isFirst ? "Back to the checklist" : "Previous step"} className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-line2">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
         </button>
         {c.voice.supported && (
@@ -69,6 +77,7 @@ function Steps({ c }: { c: CookModel }) {
           {c.timer?.done ? "Time’s up. Mark done" : s.isLast ? "Finish" : "Next step"}
         </button>
       </div>
+      {c.ask.open && <AskSheet ask={c.ask} />}
     </Shell>
   );
 }
@@ -138,5 +147,6 @@ export function CookScreen({ id, servings }: { id: string; servings?: number }) 
   if (c.notFound) {
     return <Shell title="Cook"><p className="px-5 text-sm text-muted">That recipe does not exist.</p></Shell>;
   }
+  if (c.phase === "prep") return <Shell title={c.recipe.name}><Prep c={c} /></Shell>;
   return c.phase === "cooking" ? <Steps c={c} /> : c.phase === "finish" ? <Finish c={c} /> : <Done c={c} />;
 }
