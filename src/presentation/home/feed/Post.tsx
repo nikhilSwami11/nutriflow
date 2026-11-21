@@ -23,7 +23,7 @@ export function Post({ label, color, icon, title, sub, media, caption, onToggle 
   const [saved, setSaved] = useState(false);
   return (
     <article aria-label={label} className="flex shrink-0 flex-col border-b border-line pb-4">
-      <div className="flex items-center gap-2.5 px-4 py-3.5">
+      <div className="flex items-center gap-2.5 px-5 py-3.5">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-onp" style={{ background: color }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{icon}</svg>
         </span>
@@ -37,7 +37,7 @@ export function Post({ label, color, icon, title, sub, media, caption, onToggle 
         <Toggle label="Like" path={heart} on={liked} onClick={() => { setLiked(!liked); onToggle?.(liked ? "unlike" : "like"); }} />
         <Toggle label="Save" path={bookmark} on={saved} onClick={() => { setSaved(!saved); onToggle?.(saved ? "unsave" : "save"); }} />
       </div>
-      {caption && <div className="flex flex-col gap-2.5 px-4">{caption}</div>}
+      {caption && <div className="flex flex-col gap-3 px-5">{caption}</div>}
     </article>
   );
 }

@@ -16,7 +16,7 @@ export function HomeScreen() {
         <div className="text-[22px] font-semibold tracking-[-0.01em] lg:hidden">NutriFlow</div>
         {!h.isLoading && desktop && (
           <div className="rise">
-            <div className="mb-2.5 text-[13px] text-muted">{h.dateLabel}</div>
+            <div className="mb-2.5 text-sm text-muted">{h.dateLabel}</div>
             <h1 className="m-0 text-[28px] font-medium leading-tight tracking-[-0.02em]">What are we cooking tonight?</h1>
           </div>
         )}

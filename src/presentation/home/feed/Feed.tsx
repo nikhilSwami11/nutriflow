@@ -37,13 +37,16 @@ export function Feed({ h }: { h: HomeModel }) {
             }
             caption={
               <>
-                <p className="m-0 text-sm leading-[1.55]"><strong className="font-medium">Cook {n.name.toLowerCase()}.</strong> {n.kcal} kcal, {n.protein} g protein. <span className={n.ready ? "text-ink2" : "text-ink"}>{n.readyText}.</span></p>
-                <button type="button" onClick={() => { track(item, "mark-eaten", position); n.toggle(); }} className="hoverable touch self-start rounded-full border border-line2 px-4 text-[13px] font-medium">Mark eaten</button>
+                <div>
+                  <h3 className="m-0 text-base font-medium">Cook {n.name.toLowerCase()}</h3>
+                  <p className="m-0 mt-1 text-sm text-ink2 tabular-nums">{n.kcal} kcal · {n.protein} g protein · <span className={n.ready ? "" : "text-ink"}>{n.readyText}</span></p>
+                </div>
+                <button type="button" onClick={() => { track(item, "mark-eaten", position); n.toggle(); }} className="hoverable touch self-start rounded-full border border-line2 px-4 text-sm font-medium">Mark eaten</button>
                 {h.then.length > 0 && (
-                  <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
+                  <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
                     Then
                     {h.then.map((t) => (
-                      <Link key={t.id} href={`/recipes/${t.id}`} onClick={open} className="rounded-full bg-panel px-2.5 py-1 text-ink2">{t.meal} · {t.name}</Link>
+                      <Link key={t.id} href={`/recipes/${t.id}`} onClick={open} className="inline-flex min-h-11 items-center rounded-full bg-panel px-3.5 text-ink2">{t.meal} · {t.name}</Link>
                     ))}
                   </p>
                 )}
@@ -66,11 +69,11 @@ export function Feed({ h }: { h: HomeModel }) {
         return (
           <Post label="Pantry alert" color="#F7C9BB" icon={PANTRY} title="Pantry alert" sub={`${p.count} running low`} onToggle={toggle}
             media={
-              <div className="mx-4 flex flex-col gap-4 rounded-[20px] bg-panel p-[18px]">
+              <div className="mx-5 flex flex-col gap-4 rounded-[20px] bg-panel p-[18px]">
                 <div className="text-[15px] font-medium">Running low</div>
                 {p.rows.map((r) => (
                   <div key={r.id} className="flex flex-col gap-[7px]">
-                    <div className="flex justify-between text-[13px]"><span>{r.name}</span><span className="tabular-nums text-ink2">{r.qty}</span></div>
+                    <div className="flex justify-between text-sm"><span>{r.name}</span><span className="tabular-nums text-ink2">{r.qty}</span></div>
                     <div className="h-2 rounded bg-track"><div className="grow-x h-full rounded bg-peach" style={{ width: `${r.pct}%` }} /></div>
                   </div>
                 ))}
@@ -88,11 +91,11 @@ export function Feed({ h }: { h: HomeModel }) {
         return (
           <Post label="Plan" color="#CFC8F0" icon={CALENDAR} title="Plan" sub={item.reason ?? "This week"} onToggle={toggle}
             media={
-              <ul className="mx-4 m-0 flex list-none flex-col gap-2 rounded-[20px] bg-panel p-[18px] text-sm">
+              <ul className="mx-5 m-0 flex list-none flex-col gap-2 rounded-[20px] bg-panel p-[18px] text-sm">
                 {item.notes.map((n) => <li key={n}>{n}</li>)}
               </ul>
             }
-            caption={<Link href="/plan" onClick={open} className="hoverable touch flex items-center self-start rounded-full border border-line2 px-4 text-[13px] font-medium">Open plan →</Link>}
+            caption={<Link href="/plan" onClick={open} className="hoverable touch flex items-center self-start rounded-full border border-line2 px-4 text-sm font-medium">Open plan →</Link>}
           />
         );
       default:

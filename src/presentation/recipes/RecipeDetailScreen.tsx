@@ -55,7 +55,7 @@ export function RecipeDetailScreen({ id }: { id: string }) {
                     <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${i.inPantry ? "bg-mint" : "bg-peach"}`} />
                     <span className="flex-1 text-[15px]">{i.name}</span>
                     <span className="text-sm tabular-nums text-ink2">{i.amount}</span>
-                    <span className={`rounded-full px-2.5 py-[3px] text-[11px] font-medium text-onp ${i.inPantry ? "bg-mint" : r.listed ? "bg-sky" : "bg-peach"}`}>{i.tag}</span>
+                    <span className={`rounded-full px-2.5 py-[3px] text-xs font-medium text-onp ${i.inPantry ? "bg-mint" : r.listed ? "bg-sky" : "bg-peach"}`}>{i.tag}</span>
                   </div>
                 ))}
                 {r.missing > 0 && (
@@ -71,7 +71,7 @@ export function RecipeDetailScreen({ id }: { id: string }) {
                   <div key={i} className="flex items-center gap-3 border-t border-line py-[11px]">
                     <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-panel text-xs tabular-nums">{i + 1}</span>
                     <span className="flex-1 text-sm leading-[1.35]">{s.text}</span>
-                    <span className="rounded-full px-2.5 py-[3px] text-[11px] font-medium text-onp" style={{ background: VERB[s.verb] ?? "#CFC8F0" }}>{s.verb}</span>
+                    <span className="rounded-full px-2.5 py-[3px] text-xs font-medium text-onp" style={{ background: VERB[s.verb] ?? "#CFC8F0" }}>{s.verb}</span>
                   </div>
                 ))}
               </section>

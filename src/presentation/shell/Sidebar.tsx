@@ -7,7 +7,7 @@ const icon = (d: React.ReactNode) => (
   </svg>
 );
 
-const item = "flex items-center gap-3 rounded-xl px-3.5 py-[11px] text-sm min-h-11";
+const item = "flex items-center gap-3 rounded-2xl px-3.5 py-[11px] text-sm min-h-11";
 const on = "bg-track font-medium text-ink";
 const off = "font-normal text-ink2";
 

@@ -10,7 +10,7 @@ const MODES: { id: CamMode; label: string; ready: boolean }[] = [
   { id: "receipt", label: "Receipt", ready: false },
 ];
 const EXAMPLES = ["I have 3 onions, 2 tomatoes and butter", "What can I make tonight?", "Start cooking"];
-const tab = (on: boolean) => `min-h-9 rounded-full px-4 text-[13px] ${on ? "bg-bg font-medium text-ink shadow-[0_1px_5px_rgba(0,0,0,0.10)]" : "text-ink2"}`;
+const tab = (on: boolean) => `min-h-11 rounded-full px-4 text-sm ${on ? "bg-bg font-medium text-ink shadow-[0_1px_5px_rgba(0,0,0,0.10)]" : "text-ink2"}`;
 const corner = "absolute h-7 w-7 border-ink";
 
 function Body() {
@@ -58,12 +58,12 @@ function Body() {
             </div>
             <div role="group" aria-label="What to scan" className="flex flex-wrap justify-center gap-2">
               {MODES.map((m) => (
-                <button key={m.id} type="button" aria-pressed={s.mode === m.id} disabled={!m.ready} onClick={() => s.setMode(m.id)} title={m.ready ? undefined : "Needs photo recognition, which is not connected yet"} className={`touch rounded-full border px-4 text-[13px] ${s.mode === m.id ? "border-transparent bg-ink text-bg" : "border-line2 text-ink"} disabled:opacity-40`}>{m.label}</button>
+                <button key={m.id} type="button" aria-pressed={s.mode === m.id} disabled={!m.ready} onClick={() => s.setMode(m.id)} title={m.ready ? undefined : "Needs photo recognition, which is not connected yet"} className={`touch rounded-full border px-4 text-sm ${s.mode === m.id ? "border-transparent bg-ink text-bg" : "border-line2 text-ink"} disabled:opacity-40`}>{m.label}</button>
               ))}
             </div>
             <div className="flex items-center justify-between px-3">
               <input ref={file} type="file" accept="image/*" className="sr-only" aria-label="Photo file" tabIndex={-1} onChange={(e) => s.fromFile(e.target.files?.[0])} />
-              <button type="button" aria-label="Choose from photos" onClick={() => file.current?.click()} className="flex h-12 w-12 items-center justify-center rounded-[14px] border border-line2 bg-bg">
+              <button type="button" aria-label="Choose from photos" onClick={() => file.current?.click()} className="flex h-12 w-12 items-center justify-center rounded-2xl border border-line2 bg-bg">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="3" /><path d="M4 16l5-5 4 4 3-3 4 4" /></svg>
               </button>
               <button type="button" onClick={() => void s.shoot()} aria-label="Take photo" className="h-[72px] w-[72px] rounded-full border-2 border-ink bg-bg p-[5px]"><span className="block h-full w-full rounded-full bg-ink" /></button>
@@ -83,9 +83,9 @@ function Body() {
             </div>
             {s.voice.heard && (
               <div className="flex flex-col gap-3 rounded-[20px] border border-line p-4">
-                <p className="m-0 text-[13px] text-ink2">&ldquo;{s.voice.heard.text}&rdquo;</p>
+                <p className="m-0 text-sm text-ink2">&ldquo;{s.voice.heard.text}&rdquo;</p>
                 <div className="flex flex-wrap gap-2">
-                  {s.voice.heard.chips.map((c) => <span key={c.name} className="rounded-full border border-line2 px-3.5 py-[7px] text-[13px]"><span className="font-medium">{c.name}</span> <span className="text-muted">{c.qty}</span></span>)}
+                  {s.voice.heard.chips.map((c) => <span key={c.name} className="rounded-full border border-line2 px-3.5 py-[7px] text-sm"><span className="font-medium">{c.name}</span> <span className="text-muted">{c.qty}</span></span>)}
                 </div>
                 <div className="flex gap-2.5">
                   <button type="button" onClick={() => void s.voice.heard?.add()} className="min-h-12 flex-1 rounded-full bg-ink text-sm font-medium text-bg">Add to pantry</button>
@@ -96,7 +96,7 @@ function Body() {
             <div className="flex flex-col gap-2">
               <span className="text-xs text-muted">Try saying</span>
               {EXAMPLES.map((t) => (
-                <button key={t} type="button" onClick={() => s.voice.say(t)} className="hoverable touch rounded-[14px] border border-line2 bg-bg px-4 py-3 text-left text-sm">{t}</button>
+                <button key={t} type="button" onClick={() => s.voice.say(t)} className="hoverable touch rounded-2xl border border-line2 bg-bg px-4 py-3 text-left text-sm">{t}</button>
               ))}
             </div>
           </>

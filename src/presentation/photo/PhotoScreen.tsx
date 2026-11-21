@@ -31,8 +31,9 @@ function Viewfinder({ p, scanning }: { p: PhotoModel; scanning: boolean }) {
       )}
       <div className="absolute inset-0">
         {p.boxes.map((b) => (
-          <div key={b.id} className="bx absolute rounded-[14px] border-2" style={{ borderColor: b.color, left: `${b.box.x * 100}%`, top: `${b.box.y * 100}%`, width: `${b.box.w * 100}%`, height: `${b.box.h * 100}%`, animationPlayState: p.phase === "detect" ? "running" : "paused" }}>
-            <span className="absolute -left-0.5 -top-[26px] whitespace-nowrap rounded-full px-2.5 py-[3px] text-[11px] font-medium text-onp" style={{ background: b.color }}>{p.phase === "detect" ? b.label : b.labelWithAmount}</span>
+          <div key={b.id} className="absolute" style={{ left: `${b.box.x * 100}%`, top: `${b.box.y * 100}%`, width: `${b.box.w * 100}%`, height: `${b.box.h * 100}%` }}>
+            <div className="bx absolute inset-0 rounded-2xl border-2" style={{ borderColor: b.color, animationPlayState: p.phase === "detect" ? "running" : "paused" }} />
+            <span className="absolute -left-0.5 -top-[26px] whitespace-nowrap rounded-full px-2.5 py-[3px] text-xs font-medium text-onp" style={{ background: b.color }}>{p.phase === "detect" ? b.label : b.labelWithAmount}</span>
           </div>
         ))}
       </div>
@@ -41,7 +42,7 @@ function Viewfinder({ p, scanning }: { p: PhotoModel; scanning: boolean }) {
       ) : (
         <button type="button" onClick={p.toDetect} aria-label="Back" className={`${circle} left-3 top-3.5`}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
       )}
-      <button type="button" onClick={() => { clearImage(); router.push("/"); openSheet(); }} className="absolute right-3 top-3.5 min-h-11 rounded-full bg-white/85 px-4 text-[13px] text-ink">Retake</button>
+      <button type="button" onClick={() => { clearImage(); router.push("/"); openSheet(); }} className="absolute right-3 top-3.5 min-h-11 rounded-full bg-white/85 px-4 text-sm text-ink">Retake</button>
       <span className="absolute bottom-3.5 left-4 rounded-full bg-white/85 px-3.5 py-1.5 text-xs text-ink">{p.dish}, {p.confidence}% sure</span>
     </div>
   );
@@ -54,21 +55,21 @@ function Detect({ p }: { p: PhotoModel }) {
         <div><h1 className="m-0 text-lg font-medium">What I can see</h1><p className="m-0 mt-0.5 text-xs text-muted">Tap to include or leave out.</p></div>
         <span className="rounded-full bg-track px-3 py-1 text-xs font-medium tabular-nums">{p.count}</span>
       </div>
-      {p.source !== "vision" && <p role="note" className="m-0 rounded-xl bg-butter px-3 py-2 text-xs text-onp">Photo recognition is not connected yet, so this is an example, not read from your photo.</p>}
+      {p.source !== "vision" && <p role="note" className="m-0 rounded-2xl bg-butter px-3 py-2 text-xs text-onp">Photo recognition is not connected yet, so this is an example, not read from your photo.</p>}
       <div className="grid grid-cols-2 gap-2.5">
         {p.tiles.map((t) => (
-          <button key={t.id} type="button" onClick={t.toggle} aria-pressed={t.on} className={`flex min-h-[72px] flex-col items-start justify-between gap-1.5 rounded-[18px] border p-3 text-left ${t.on ? "border-transparent bg-ink text-bg" : "border-line2 bg-panel text-ink"}`}>
+          <button key={t.id} type="button" onClick={t.toggle} aria-pressed={t.on} className={`flex min-h-[72px] flex-col items-start justify-between gap-1.5 rounded-2xl border p-3 text-left ${t.on ? "border-transparent bg-ink text-bg" : "border-line2 bg-panel text-ink"}`}>
             <span className="flex w-full items-center justify-between gap-2"><span className="text-sm font-medium">{t.name}</span><span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: t.color }} /></span>
             <span className="text-xs tabular-nums opacity-75">{t.sub}</span>
           </button>
         ))}
         <div className="relative">
-          <button type="button" onClick={p.menu.toggle} aria-expanded={p.menu.open} aria-label="Add an item I missed" className="flex min-h-[72px] w-full flex-col items-start justify-between gap-1.5 rounded-[18px] border-[1.5px] border-dashed border-line2 bg-transparent p-3 text-sm text-ink2">
+          <button type="button" onClick={p.menu.toggle} aria-expanded={p.menu.open} aria-label="Add an item I missed" className="flex min-h-[72px] w-full flex-col items-start justify-between gap-1.5 rounded-2xl border-[1.5px] border-dashed border-line2 bg-transparent p-3 text-sm text-ink2">
             <span className="text-xl leading-none">+</span><span className="text-xs">Add item I missed</span>
           </button>
           {p.menu.open && (
             <ul role="menu" aria-label="Add an item" className="absolute bottom-full left-0 z-10 m-0 mb-2 w-44 list-none rounded-2xl border border-line bg-bg p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
-              {p.menu.foods.map((f) => <li key={f.name} role="none"><button role="menuitem" type="button" onClick={f.add} className="touch w-full rounded-xl px-3 text-left text-sm hover:bg-panel">{f.name}</button></li>)}
+              {p.menu.foods.map((f) => <li key={f.name} role="none"><button role="menuitem" type="button" onClick={f.add} className="touch w-full rounded-2xl px-3 text-left text-sm hover:bg-panel">{f.name}</button></li>)}
             </ul>
           )}
         </div>
@@ -101,16 +102,16 @@ function Estimate({ p }: { p: PhotoModel }) {
               <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: i.color }} />
               <span className="flex-1 text-sm">{i.name}</span>
               <button type="button" onClick={i.minus} aria-label={`Less ${i.name}`} className="h-11 w-11 bg-transparent p-0 text-xl">&minus;</button>
-              <span className="min-w-[60px] text-center text-[13px] tabular-nums">{i.amount}</span>
+              <span className="min-w-[60px] text-center text-sm tabular-nums">{i.amount}</span>
               <button type="button" onClick={i.plus} aria-label={`More ${i.name}`} className="h-11 w-11 bg-transparent p-0 text-xl">+</button>
             </div>
           ))}
         </div>
         <div>
-          <button type="button" onClick={e.toggleWhy} aria-expanded={e.why} className="min-h-11 bg-transparent p-0 text-[13px] text-ink2 underline underline-offset-[3px]">Why this estimate</button>
+          <button type="button" onClick={e.toggleWhy} aria-expanded={e.why} className="min-h-11 bg-transparent p-0 text-sm text-ink2 underline underline-offset-[3px]">Why this estimate</button>
           {e.why && (
             <div className="flex flex-col gap-2 pb-2">
-              {e.reasons.map((r) => <div key={r.text} className="flex items-start gap-2.5 text-[13px] leading-[1.45] text-ink2"><span aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: r.color }} /><span>{r.text}</span></div>)}
+              {e.reasons.map((r) => <div key={r.text} className="flex items-start gap-2.5 text-sm leading-[1.45] text-ink2"><span aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: r.color }} /><span>{r.text}</span></div>)}
             </div>
           )}
         </div>
@@ -133,7 +134,7 @@ function Logged({ p }: { p: PhotoModel }) {
           <div className="text-4xl font-light tracking-[-0.02em] tabular-nums">{p.logged?.kcal} kcal</div>
           <div className="text-sm">Logged for {p.logged?.slot}.</div>
         </div>
-        <div className="rounded-[20px] border border-line px-4 py-3.5 text-[13px] leading-normal text-ink2">{p.rememberNote}</div>
+        <div className="rounded-[20px] border border-line px-4 py-3.5 text-sm leading-normal text-ink2">{p.rememberNote}</div>
         {p.error && <p role="alert" className="m-0 text-sm">{p.error}</p>}
       </div>
       <div className="flex shrink-0 gap-2.5 border-t border-line px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-2.5">

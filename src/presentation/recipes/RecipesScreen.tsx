@@ -10,7 +10,7 @@ export function RecipesScreen() {
     <AppShell current="recipes">
       <header className="shrink-0 px-5 pb-2 pt-4 lg:px-2">
         <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">Recipes</h1>
-        {!r.isLoading && <p className="mt-1 text-[13px] text-muted">{r.ready}</p>}
+        {!r.isLoading && <p className="mt-1 text-sm text-muted">{r.ready}</p>}
       </header>
       {!r.isLoading && (
         <>
@@ -21,9 +21,9 @@ export function RecipesScreen() {
               </span>
               <input type="text" value={r.query} onChange={(e) => r.setQuery(e.target.value)} aria-label="Search recipes" placeholder="Search recipes" autoComplete="off" className="min-h-[46px] w-full rounded-full border border-line2 bg-bg pl-[42px] pr-4 text-sm" />
             </label>
-            <div role="group" aria-label="Filters" className="flex flex-wrap gap-2">
+            <div role="group" aria-label="Filters" className="rail -mx-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:flex-wrap lg:px-0">
               {r.filters.map((f) => (
-                <button key={f.id} type="button" onClick={f.pick} aria-pressed={f.on} className={`touch rounded-full border px-3.5 text-[13px] ${f.on ? "border-transparent bg-ink text-bg" : "border-line2 bg-transparent text-ink"}`}>{f.label}</button>
+                <button key={f.id} type="button" onClick={f.pick} aria-pressed={f.on} className={`touch shrink-0 rounded-full border px-4 text-sm ${f.on ? "border-transparent bg-ink text-bg" : "border-line2 bg-transparent text-ink"}`}>{f.label}</button>
               ))}
             </div>
           </div>
@@ -31,12 +31,12 @@ export function RecipesScreen() {
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {r.cards.map((c, i) => (
                 <Link key={c.id} href={`/recipes/${c.id}`} aria-label={c.name} className="rise hoverable flex flex-col gap-2 rounded-[20px] border border-line bg-bg p-2.5 transition-colors hover:border-ink" style={{ "--i": Math.min(i, 8) } as React.CSSProperties}>
-                  <span className="flex h-[92px] items-center justify-center rounded-[14px]" style={{ background: c.tint }}><Bowl /></span>
+                  <span className="flex h-[92px] items-center justify-center rounded-2xl" style={{ background: c.tint }}><Bowl /></span>
                   <span className="block w-full text-left">
                     <span className="block text-[15px] font-medium leading-tight">{c.name}</span>
                     <span className="mt-[3px] block text-xs text-muted tabular-nums">{c.meta}</span>
                   </span>
-                  <span className={`self-start rounded-full px-2.5 py-[3px] text-[11px] font-medium text-onp ${c.ready ? "bg-mint" : "bg-peach"}`}>{c.chip}</span>
+                  <span className={`self-start rounded-full px-2.5 py-[3px] text-xs font-medium text-onp ${c.ready ? "bg-mint" : "bg-peach"}`}>{c.chip}</span>
                 </Link>
               ))}
             </div>

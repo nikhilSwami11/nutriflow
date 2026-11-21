@@ -208,7 +208,7 @@ export function MacroChart({ c, above, below, bare }: { c: ChartModel & { range:
             style={{ transform: c.range === "30d" ? "translateX(100%)" : "none" }}
           />
           {(["7d", "30d"] as const).map((r) => (
-            <button key={r} type="button" aria-pressed={c.range === r} onClick={() => c.setRange(r)} className={`relative z-10 min-h-9 min-w-[84px] rounded-full px-3.5 py-2 text-[13px] transition-colors ${c.range === r ? "font-medium text-ink" : "font-normal text-ink2"}`}>
+            <button key={r} type="button" aria-pressed={c.range === r} onClick={() => c.setRange(r)} className={`relative z-10 min-h-11 min-w-[84px] rounded-full px-3.5 py-2 text-sm transition-colors ${c.range === r ? "font-medium text-ink" : "font-normal text-ink2"}`}>
               {r === "7d" ? "7 days" : "30 days"}
             </button>
           ))}

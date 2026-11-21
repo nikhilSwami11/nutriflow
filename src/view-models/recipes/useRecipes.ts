@@ -33,7 +33,7 @@ export function useRecipes() {
   });
   return {
     isLoading: false as const,
-    ready: `${rows.filter((x) => x.rd.missing === 0).length} you can cook right now`,
+    ready: `${rows.filter((x) => x.rd.missing === 0).length} ready to cook`,
     filters: FILTERS.map((f) => ({ ...f, on: f.id === filter, pick: () => setFilter(f.id) })),
     query,
     setQuery,

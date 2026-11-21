@@ -111,7 +111,7 @@ function Done({ c }: { c: CookModel }) {
         <h2 className="m-0 text-[26px] font-medium tracking-[-0.02em]">Logged {d.kcal} kcal</h2>
         <section aria-label="Pantry updated" className="w-full rounded-[20px] bg-panel p-4 text-left">
           <h3 className="m-0 text-sm font-medium">Pantry updated</h3>
-          <p className="m-0 mt-1 text-[13px] text-ink2">
+          <p className="m-0 mt-1 text-sm text-ink2">
             {d.pantryUpdated > 0 ? `${d.pantryUpdated} ${d.pantryUpdated === 1 ? "item" : "items"} used up.` : "Nothing in your pantry changed."}
             {d.shortfalls > 0 && ` ${d.shortfalls} ${d.shortfalls === 1 ? "ingredient was" : "ingredients were"} not fully in stock.`}
           </p>
@@ -119,7 +119,7 @@ function Done({ c }: { c: CookModel }) {
         {d.habitNote && (
           <section aria-label="Your serving size" className="w-full rounded-[20px] bg-panel p-4 text-left">
             <h3 className="m-0 text-sm font-medium">Your serving size</h3>
-            <p className="m-0 mt-1 text-[13px] text-ink2">{d.habitNote}</p>
+            <p className="m-0 mt-1 text-sm text-ink2">{d.habitNote}</p>
           </section>
         )}
         {d.savedHere && <p className="m-0 text-xs text-muted">Saved on this device. It will sync when you are online.</p>}

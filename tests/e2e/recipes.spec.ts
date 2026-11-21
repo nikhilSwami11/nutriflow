@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("recipes list filters and searches", async ({ page }) => {
   await page.goto("/recipes");
   await expect(page.getByRole("heading", { name: "Recipes", level: 1 })).toBeVisible();
-  await expect(page.getByText("you can cook right now")).toBeVisible();
+  await expect(page.getByText(/\d+ ready to cook/)).toBeVisible();
   const all = await page.locator('a[href^="/recipes/"]').count();
   await page.getByRole("button", { name: "Under 30 min" }).click();
   const quick = await page.locator('a[href^="/recipes/"]').count();

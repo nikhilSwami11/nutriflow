@@ -23,9 +23,9 @@ export function PantryScreen() {
       <header className="flex shrink-0 items-end justify-between px-5 pb-2 pt-4 lg:max-w-3xl">
         <div>
           <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">Pantry</h1>
-          <p className="mt-1 text-[13px] text-muted tabular-nums">{s.countText}</p>
+          <p className="mt-1 text-sm text-muted tabular-nums">{s.countText}</p>
         </div>
-        <button type="button" className="touch rounded-full border border-line2 bg-transparent px-4 text-[13px] font-medium">
+        <button type="button" className="touch rounded-full border border-line2 bg-transparent px-4 text-sm font-medium">
           Add manually
         </button>
       </header>
@@ -48,14 +48,14 @@ export function PantryScreen() {
             </button>
             <div className="min-w-0 flex-1">
               <div className="text-[15px] font-medium">{title}</div>
-              <div className="mt-0.5 text-[13px] leading-[1.4] text-ink2">{sub}</div>
+              <div className="mt-0.5 text-sm leading-[1.4] text-ink2">{sub}</div>
             </div>
           </div>
           {v.mode === "heard" && (
             <>
               <div className="flex flex-wrap gap-2">
                 {v.heardChips.map((c) => (
-                  <span key={c.name} className="rounded-full border border-line2 bg-bg px-3.5 py-[7px] text-[13px]">
+                  <span key={c.name} className="rounded-full border border-line2 bg-bg px-3.5 py-[7px] text-sm">
                     <span className="font-medium">{c.name}</span> <span className="text-muted">{c.qty}</span>
                   </span>
                 ))}
@@ -71,7 +71,7 @@ export function PantryScreen() {
             </>
           )}
           {v.added && v.mode === "idle" && (
-            <div role="status" className="rounded-xl bg-mint px-3.5 py-2.5 text-[13px] font-medium text-onp">{v.added}</div>
+            <div role="status" className="rounded-2xl bg-mint px-3.5 py-2.5 text-sm font-medium text-onp">{v.added}</div>
           )}
         </div>
 
@@ -108,14 +108,14 @@ export function PantryScreen() {
 
         {s.groups.map((g) => (
           <section key={g.name} aria-label={g.name} className="flex flex-col">
-            <h2 className="mb-1 mt-0 text-[13px] font-medium text-muted">{g.name}</h2>
+            <h2 className="mb-1 mt-0 text-sm font-medium text-muted">{g.name}</h2>
             {g.rows.map((r) => (
               <div key={r.id} className="flex min-h-16 items-center gap-3 border-b border-line py-2">
-                <div role="img" aria-label={r.name} className={`h-12 w-12 shrink-0 rounded-[14px] ${tint(r.name)}`} />
+                <div role="img" aria-label={r.name} className={`h-12 w-12 shrink-0 rounded-2xl ${tint(r.name)}`} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-[15px]">{r.name}</span>
-                    {r.low && <span className="rounded-full bg-peach px-[9px] py-0.5 text-[11px] font-medium text-onp">Low</span>}
+                    {r.low && <span className="rounded-full bg-peach px-[9px] py-0.5 text-xs font-medium text-onp">Low</span>}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center">

@@ -73,7 +73,7 @@ const BY_VERB: Record<string, () => React.JSX.Element> = { Chop, Stir, Mix: Stir
 export function CookMotion({ verb }: { verb: string }) {
   const Loop = BY_VERB[verb];
   return (
-    <div className="cook-motion rounded-[18px] bg-panel px-7 pb-2 pt-[18px]">
+    <div className="cook-motion rounded-2xl bg-panel px-7 pb-2 pt-[18px]">
       {Loop ? <Loop /> : <div className="flex h-[200px] items-center justify-center"><Bowl size={110} /></div>}
     </div>
   );

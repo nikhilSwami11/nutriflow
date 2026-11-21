@@ -24,7 +24,7 @@ export function FeedGrid({ h }: { h: HomeModel }) {
         return <NextMealHero next={h.next} then={h.then} onOpen={open} onEaten={() => track(item, "mark-eaten", position)} />;
       case "all-done":
         return (
-          <article aria-label="Up next" className="rounded-[24px] bg-mint p-5 text-onp">
+          <article aria-label="Up next" className="rounded-[20px] bg-mint p-5 text-onp">
             <h2 className="m-0 text-xl font-medium">All meals eaten for today</h2>
             <p className="mt-1 text-sm">Nice work. Tomorrow&apos;s plan is on the Plan page.</p>
           </article>
@@ -37,8 +37,8 @@ export function FeedGrid({ h }: { h: HomeModel }) {
         return (
           <section aria-label="Plan" className="flex flex-col gap-2 rounded-[20px] border border-line bg-bg p-4">
             <h2 className="m-0 text-sm font-medium">Plan</h2>
-            <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[13px] text-ink2">{item.notes.map((n) => <li key={n}>{n}</li>)}</ul>
-            <Link href="/plan" onClick={open} className="hoverable touch mt-1 flex items-center self-start rounded-full border border-line2 px-4 text-[13px] font-medium">Open plan →</Link>
+            <ul className="m-0 flex list-none flex-col gap-1 p-0 text-sm text-ink2">{item.notes.map((n) => <li key={n}>{n}</li>)}</ul>
+            <Link href="/plan" onClick={open} className="hoverable touch mt-1 flex items-center self-start rounded-full border border-line2 px-4 text-sm font-medium">Open plan →</Link>
           </section>
         );
       default:

@@ -63,6 +63,15 @@ Next.js App Router, strict TS, Tailwind v4 (CSS variables in `src/app/globals.cs
 - Numbers tween with `presentation/shared/AnimatedNumber`. Everything honors `prefers-reduced-motion` (global CSS rule, plus a check in the tween).
 - The calories and macros chart uses Chart.js (same interaction settings as the cashflow_with_ml project: index mode, non-intersecting hover, animated tooltip, 350ms morph between ranges). `useHome` supplies pre-formatted day points; `MacroChart` only draws. Chart.js can't read CSS variables, so `presentation/shared/chartTokens.ts` resolves them once. The wrapper is a `role="slider"` (arrow keys, Home/End) with an sr-only live readout, since the canvas tooltip isn't in the DOM.
 
+## Design system (enforced by `tests/e2e/design-system.spec.ts`, which runs on every route)
+- Type: page title 26 medium; feature title 20; card and section title 16 medium; labels and body 15; secondary text 14 (`text-sm`); metadata 12 (`text-xs`) is the floor. Nothing under 12px. No 11px or 13px.
+- Corners: cards 20px (`rounded-[20px]`), inner tiles 16px (`rounded-2xl`), sheets and full-bleed panels larger, buttons and chips full pills. Do not add 14, 18 or 24px radii.
+- Touch: every button and link is at least 44x44 (inline links inside a sentence excepted). Pills that look small still get `min-h-11`.
+- Gutter: 20px (`px-5`) at the page edge on phones, including feed posts, stories and headers.
+- Contrast: 4.5:1 minimum (axe checks it). Never animate the opacity of text (pulsing boxes pulse the outline, not the label).
+- Reading: sentences are 14px or more; put a title line first and the facts on the next line instead of one run-on sentence; counts read "3 ready to cook", not "3 you can cook".
+- macOS `sed` has no `\b`; use `perl -pi -e` for word-boundary replacements.
+
 ## Style
 - Light theme first, tokens in `:root`. Palette: mint, rose, sky, lavender, butter, peach. IBM Plex Sans, thin strokes, black only on small accents.
 - 44px min touch targets (`touch` utility). Respect `prefers-reduced-motion` (global rule).

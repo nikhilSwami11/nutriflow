@@ -19,7 +19,7 @@ export function Stories({ s }: { s: HomeModel["stories"] }) {
 
   return (
     <>
-      <div role="list" aria-label="Stories" className="rail flex shrink-0 gap-3.5 overflow-x-auto px-4 py-2 lg:px-2">
+      <div role="list" aria-label="Stories" className="rail flex shrink-0 gap-3.5 overflow-x-auto px-5 py-2 lg:px-2">
         {s.items.map((st, i) => {
           const eaten = st.kind === "meal" && st.meal.state === "eaten";
           return (
