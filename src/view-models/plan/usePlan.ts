@@ -7,6 +7,7 @@ import { usePlanData } from "./usePlanData";
 
 export function usePlan() {
   const [focus, setFocus] = useState<Focus>("balanced");
+  const [selected, setSelected] = useState(0); // 0 is today
   const data = usePlanData(focus);
 
   if (!data) return { isLoading: true as const };
@@ -18,6 +19,8 @@ export function usePlan() {
     isLoading: false as const,
     focus,
     setFocus,
+    selected: Math.min(selected, plan.length - 1),
+    select: setSelected,
     goals: `${num(goals.calories)} kcal and ${goals.protein} g protein a day`,
     summary: [
       { label: "Average calories", value: `${num(balance.avgKcal)} kcal`, goal: `goal ${num(goals.calories)}` },
@@ -29,6 +32,8 @@ export function usePlan() {
       return {
         date: day.date,
         name: i === 0 ? "Today" : fmtDowLong(day.date),
+        short: i === 0 ? "Today" : fmtDowLong(day.date).slice(0, 3),
+        dayNumber: day.date.slice(-2).replace(/^0/, ""),
         sub: fmtDate(day.date),
         kcal: `${num(b.kcal)} kcal`,
         protein: `${b.protein} g protein`,
