@@ -1,4 +1,5 @@
-import type { DateKey, MealSlot } from "../nutrition/types";
+import type { DateKey } from "../nutrition/types";
+import type { MealName } from "../recipes/types";
 
 /** Grams. */
 export interface Macros {
@@ -14,15 +15,6 @@ export interface DayNutrition {
   macros: Macros;
 }
 
-export type MealName = "Breakfast" | "Lunch" | "Snack" | "Dinner";
-
-export interface PlannedMeal {
-  name: MealName;
-  slot: MealSlot;
-  planned: number;
-  eaten: number;
-}
-
 export interface Goals {
   calories: number;
   protein: number;
@@ -30,26 +22,12 @@ export interface Goals {
   fat: number;
 }
 
-export interface Tonight {
-  title: string;
-  tags: string[];
-  blurb: string;
-  kcal: number;
-  macros: Macros;
-}
-
-export interface Suggestion {
-  id: string;
-  title: string;
-  body: string;
-  cta: string;
-}
-
 export interface DashboardData {
   goals: Goals;
-  /** Oldest first, the last entry is today. */
+  /** Oldest first. The last entry is today's placeholder: the view-model replaces it with what was actually eaten. */
   days: DayNutrition[];
-  meals: PlannedMeal[];
-  tonight: Tonight;
-  suggestions: Suggestion[];
+  /** Meals already eaten today. */
+  eatenToday: MealName[];
+  /** How many times each recipe was eaten before. Feeds the planner. */
+  history: Record<string, number>;
 }

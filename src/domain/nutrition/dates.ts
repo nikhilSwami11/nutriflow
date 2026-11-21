@@ -10,3 +10,10 @@ export function lastNDays(n: number, today: Date): DateKey[] {
     toDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - (n - 1 - i))),
   );
 }
+
+/** n calendar days starting at `today`, soonest first. */
+export function nextNDays(n: number, today: Date): DateKey[] {
+  return Array.from({ length: n }, (_, i) =>
+    toDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + i)),
+  );
+}

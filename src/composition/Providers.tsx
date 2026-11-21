@@ -2,6 +2,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { InMemoryPantryRepository, InMemoryShoppingListRepository, LocalUtteranceParser } from "@/data/pantry/inMemory";
+import { DemoRecipeRepository } from "@/data/recipes/demo";
 import { DemoDashboardRepository } from "@/data/dashboard/demo";
 import { InMemoryMealLogRepository, InMemoryProfileRepository } from "@/data/nutrition/inMemory";
 import { seedLogs } from "@/data/nutrition/seed";
@@ -14,6 +15,8 @@ import {
   SupabaseShoppingListRepository,
 } from "@/data/pantry/supabase";
 import type { DashboardRepository } from "@/domain/dashboard";
+import type { RecipeRepository } from "@/domain/recipes";
+import { RecipeDepsProvider } from "@/view-models/recipes/RecipeDeps";
 import { DashboardDepsProvider } from "@/view-models/dashboard/DashboardDeps";
 import { NutritionDepsProvider, type NutritionDeps } from "@/view-models/nutrition/NutritionDeps";
 import { PantryDepsProvider, type PantryDeps } from "@/view-models/pantry/PantryDeps";
@@ -23,6 +26,7 @@ interface Deps {
   nutrition: NutritionDeps;
   /** Demo data for the whole dashboard until real logging feeds it. */
   dashboard: DashboardRepository;
+  recipes: RecipeRepository;
 }
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -38,6 +42,7 @@ const inMemory = (): Deps => ({
   },
   nutrition: { logs: new InMemoryMealLogRepository(seedLogs(new Date())), profile: new InMemoryProfileRepository() },
   dashboard: new DemoDashboardRepository(),
+  recipes: new DemoRecipeRepository(),
 });
 
 /** Supabase when env vars are set, otherwise in-memory seeded from the design. */
@@ -61,6 +66,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
         nutrition: { logs: new SupabaseMealLogRepository(db), profile: new SupabaseProfileRepository(db) },
         dashboard: new DemoDashboardRepository(),
+        recipes: new DemoRecipeRepository(),
       }),
     );
   }, []);
@@ -70,7 +76,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={client}>
       <PantryDepsProvider value={deps.pantry}>
         <NutritionDepsProvider value={deps.nutrition}>
-          <DashboardDepsProvider value={deps.dashboard}>{children}</DashboardDepsProvider>
+          <DashboardDepsProvider value={deps.dashboard}>
+            <RecipeDepsProvider value={deps.recipes}>{children}</RecipeDepsProvider>
+          </DashboardDepsProvider>
         </NutritionDepsProvider>
       </PantryDepsProvider>
     </QueryClientProvider>

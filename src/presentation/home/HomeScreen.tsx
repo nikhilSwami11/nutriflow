@@ -1,21 +1,15 @@
 "use client";
+import Link from "next/link";
 import { useHome } from "@/view-models/home/useHome";
 import { AppShell } from "../shell/AppShell";
 import { MacroChart } from "./MacroChart";
-import { PantryAlert } from "./PantryAlert";
-import { SuggestedCard } from "./SuggestedCard";
-import { TodayTiles } from "./TodayTiles";
-import { TodayVsPlan } from "./TodayVsPlan";
-import { TonightCard } from "./TonightCard";
-import { UpNextCard } from "./UpNextCard";
+import { NextMealHero } from "./NextMealHero";
+import { PantryNudge } from "./Nudges";
+import { TodayLine } from "./TodayLine";
 
-const slot = "flex min-w-0 [&>*]:flex-1";
 const rise = (i: number) => ({ "--i": i }) as React.CSSProperties;
 
-/**
- * DOM order is the desktop reading order; `order-*` rearranges it for the mobile column.
- * The two desktop columns use `contents` on mobile so their children join the single column.
- */
+/** Three things: what to cook next, one chart that holds today, 7 days and 30 days, and what is running low. */
 export function HomeScreen() {
   const h = useHome();
   return (
@@ -30,20 +24,18 @@ export function HomeScreen() {
         )}
       </header>
 
-      <div className="rail flex min-h-0 flex-1 flex-col overflow-y-auto pb-4 lg:grid lg:grid-cols-12 lg:content-start lg:gap-4 lg:p-2 lg:pb-10">
+      <div className="rail flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-4 pb-6 pt-2 lg:grid lg:grid-cols-12 lg:content-start lg:gap-4 lg:p-2 lg:pb-10">
         {!h.isLoading && (
           <>
-            <div className={`rise order-1 lg:order-none lg:col-span-12 [&>*]:mt-3.5 lg:[&>*]:m-0`} style={rise(1)}><TodayTiles tiles={h.tiles} /></div>
-            <div className={`rise ${slot} order-3 lg:order-none lg:col-span-8`} style={rise(2)}><MacroChart c={h.chart} /></div>
-            <div className={`rise ${slot} order-4 lg:order-none lg:col-span-4`} style={rise(3)}><TodayVsPlan p={h.plan} /></div>
-            <div className="contents lg:col-span-7 lg:flex lg:flex-col lg:gap-4 lg:self-start">
-              <div className={`rise ${slot} order-5 lg:order-none`} style={rise(4)}><UpNextCard tasks={h.tasks} toggleBuy={h.toggleBuy} /></div>
-              {h.pantryAlert && <div className={`rise ${slot} order-7 lg:order-none`} style={rise(6)}><PantryAlert alert={h.pantryAlert} /></div>}
+            <div className="rise lg:col-span-5" style={rise(1)}><NextMealHero next={h.next} then={h.then} /></div>
+            <div className="rise lg:col-span-7 lg:row-span-2" style={rise(2)}>
+              <MacroChart
+                c={h.chart}
+                above={<TodayLine t={h.today} />}
+                below={<Link href="/plan" className="hoverable touch -mb-1 flex items-center self-start rounded-full border border-line2 px-4 text-[13px] font-medium">Plan the week →</Link>}
+              />
             </div>
-            <div className="contents lg:col-span-5 lg:flex lg:flex-col lg:gap-4 lg:self-start">
-              <div className={`rise ${slot} order-6 lg:order-none`} style={rise(5)}><TonightCard t={h.tonight} /></div>
-              <div className={`rise ${slot} order-2 lg:order-none`} style={rise(5)}><SuggestedCard items={h.suggestions} /></div>
-            </div>
+            {h.pantry && <div className="rise lg:col-span-5 lg:self-start" style={rise(3)}><PantryNudge p={h.pantry} /></div>}
           </>
         )}
       </div>

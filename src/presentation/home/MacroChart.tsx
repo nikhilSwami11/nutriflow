@@ -15,7 +15,7 @@ import {
 } from "chart.js";
 import { useMemo, useRef, useState } from "react";
 import { Line } from "react-chartjs-2";
-import { CHART_MAX, type HomeModel } from "@/view-models/home/useHome";
+import { CHART_MAX, type ChartModel, type Range } from "@/view-models/dashboard/chartModel";
 import { alpha, readChartTokens, type ChartTokens } from "../shared/chartTokens";
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip);
@@ -23,7 +23,7 @@ ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Filler, 
 const SWATCH = [["Protein", "#F2A3A9"], ["Carbs", "#9EC8F3"], ["Fats", "#B9A7EE"]] as const;
 const EATEN = 3; // dataset index of the eaten line: drives the tooltip and the highlighted point
 
-type Points = HomeModel["chart"]["points"];
+type Points = ChartModel["points"];
 const reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /** Thin dashed line at the hovered day. */
@@ -147,7 +147,7 @@ function buildOptions(points: Points, t: ChartTokens, onHover: (i: number | null
   };
 }
 
-export function MacroChart({ c }: { c: HomeModel["chart"] }) {
+export function MacroChart({ c, above, below }: { c: ChartModel & { range: Range; setRange: (r: Range) => void }; above?: React.ReactNode; below?: React.ReactNode }) {
   const chartRef = useRef<Chart<"line">>(null);
   const [idx, setIdx] = useState<number | null>(null);
   const last = c.points.length - 1;
@@ -184,7 +184,7 @@ export function MacroChart({ c }: { c: HomeModel["chart"] }) {
   };
 
   return (
-    <article aria-label="Calories and macros" className="mx-4 mt-4 flex min-w-0 shrink-0 flex-col gap-4 rounded-[20px] border border-line bg-bg px-3 py-4 lg:m-0 lg:px-6 lg:py-[22px]">
+    <article aria-label="Calories and macros" className="flex min-w-0 shrink-0 flex-col gap-4 rounded-[20px] border border-line bg-bg px-3 py-4 lg:px-6 lg:py-[22px]">
       <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <div>
           <h2 className="m-0 text-base font-medium">{c.title}</h2>
@@ -215,6 +215,8 @@ export function MacroChart({ c }: { c: HomeModel["chart"] }) {
         </div>
       </div>
 
+      {above}
+
       <div
         role="slider"
         tabIndex={0}
@@ -232,14 +234,7 @@ export function MacroChart({ c }: { c: HomeModel["chart"] }) {
         <p role="status" className="sr-only">{idx === null ? "" : c.points[idx].summary}</p>
       </div>
 
-      <div className="flex flex-wrap gap-x-8 gap-y-3 border-t border-line px-1 pt-3">
-        {c.stats.map((s) => (
-          <div key={s.label} className="flex flex-col gap-0.5">
-            <span className="text-xs text-muted">{s.label}</span>
-            <span className="text-base font-medium tabular-nums">{s.value}</span>
-          </div>
-        ))}
-      </div>
+      {below}
     </article>
   );
 }

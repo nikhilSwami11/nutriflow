@@ -1,20 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { logPlannedMeal } from "./logPlannedMeal";
+import type { Recipe } from "../recipes/types";
+import { dayFromRecipes } from "./today";
 import { chartStats, leftKcal, macroShares } from "./stats";
-import type { DashboardData } from "./types";
 
 const day = (date: string, planned: number, eaten: number) => ({ date, planned, eaten, macros: { protein: 80, carbs: 150, fat: 40 } });
-
-const data: DashboardData = {
-  goals: { calories: 1900, protein: 105, carbs: 230, fat: 60 },
-  days: [day("a", 1900, 1900), day("b", 1900, 2200), day("c", 1900, 1400)],
-  meals: [
-    { name: "Breakfast", slot: "breakfast", planned: 450, eaten: 430 },
-    { name: "Dinner", slot: "dinner", planned: 600, eaten: 0 },
-  ],
-  tonight: { title: "Dal", tags: [], blurb: "", kcal: 480, macros: { protein: 24, carbs: 60, fat: 16 } },
-  suggestions: [],
-};
+const recipe = (kcal: number, protein: number, carbs: number, fat: number) => ({ kcal, protein, carbs, fat }) as Recipe;
 
 describe("leftKcal", () => {
   it("floors at 0", () => {
@@ -25,7 +15,7 @@ describe("leftKcal", () => {
 
 describe("chartStats", () => {
   it("averages past days only and counts days within 10% of plan", () => {
-    expect(chartStats(data.days)).toEqual({ avgEaten: 2050, avgPlanned: 1900, onPlan: 1, pastDays: 2 });
+    expect(chartStats([day("a", 1900, 1900), day("b", 1900, 2200), day("c", 1900, 1400)])).toEqual({ avgEaten: 2050, avgPlanned: 1900, onPlan: 1, pastDays: 2 });
   });
   it("handles a single day", () => {
     expect(chartStats([day("a", 1, 1)]).pastDays).toBe(0);
@@ -43,20 +33,12 @@ describe("macroShares", () => {
   });
 });
 
-describe("logPlannedMeal", () => {
-  it("marks the meal eaten and adds to today", () => {
-    const r = logPlannedMeal(data, "Dinner");
-    expect(r.meals[1].eaten).toBe(480);
-    expect(r.days[2].eaten).toBe(1880);
-    expect(r.days[2].macros.protein).toBe(104);
-    expect(r.days[0]).toBe(data.days[0]);
+describe("dayFromRecipes", () => {
+  it("adds up what was eaten", () => {
+    const d = dayFromRecipes("2026-11-21", 1900, [recipe(430, 20, 58, 13), recipe(610, 28, 90, 14)]);
+    expect(d).toEqual({ date: "2026-11-21", planned: 1900, eaten: 1040, macros: { protein: 48, carbs: 148, fat: 27 } });
   });
-  it("does not double count", () => {
-    const once = logPlannedMeal(data, "Dinner");
-    expect(logPlannedMeal(once, "Dinner")).toBe(once);
-  });
-  it("ignores unknown or already-eaten meals", () => {
-    expect(logPlannedMeal(data, "Snack")).toBe(data);
-    expect(logPlannedMeal(data, "Breakfast")).toBe(data);
+  it("nothing eaten is zero, not missing", () => {
+    expect(dayFromRecipes("d", 1900, []).eaten).toBe(0);
   });
 });

@@ -1,14 +1,40 @@
 import { expect, test } from "@playwright/test";
 
+const todayLine = (page: import("@playwright/test").Page) => page.getByRole("group", { name: "Today", exact: true });
+
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
-test("home shows every dashboard section", async ({ page }) => {
-  for (const name of ["Today", "Calories and macros", "Today vs plan", "Up next", "Tonight", "Suggested for you", "Pantry alert"]) {
-    await expect(page.getByRole(name === "Today" || name === "Suggested for you" ? "region" : "article", { name })).toBeVisible();
-  }
-  await expect(page.getByRole("region", { name: "Today" })).toContainText("1,420");
+test("home is three things: next meal, one chart with today, pantry", async ({ page }) => {
+  await expect(page.getByRole("article", { name: "Up next" })).toBeVisible();
+  await expect(page.getByRole("article", { name: "Calories and macros" })).toBeVisible();
+  await expect(todayLine(page)).toContainText("of 1,900 kcal");
+  await expect(page.getByRole("region", { name: "Pantry alert" })).toBeVisible();
+  await expect(page.getByRole("article", { name: "Up next" }).getByText("Then")).toBeVisible();
+});
+
+test("tapping the next meal opens its recipe", async ({ page }) => {
+  const hero = page.getByRole("article", { name: "Up next" });
+  await expect(hero).toContainText("Up next · Lunch");
+  await hero.getByRole("link").first().click(); // the recipe card; the rest are the "Then" links
+  await expect(page).toHaveURL(/\/recipes\/[a-z-]+$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+});
+
+test("marking a meal eaten moves on and updates today", async ({ page }) => {
+  const hero = page.getByRole("article", { name: "Up next" });
+  const left = todayLine(page).getByText(/[\d,]+ left/);
+  await expect(left).toBeVisible();
+  const before = await left.textContent();
+  await hero.getByRole("button", { name: "Mark eaten" }).click();
+  await expect(hero).toContainText("Up next · Snack");
+  await expect(left).not.toHaveText(before!); // eating lunch uses up part of the day
+  await hero.getByRole("button", { name: "Mark eaten" }).click();
+  await expect(hero).toContainText("Up next · Dinner");
+  await expect(hero.getByText("Then")).toHaveCount(0); // nothing left after dinner
+  await hero.getByRole("button", { name: "Mark eaten" }).click();
+  await expect(page.getByText("All meals eaten for today")).toBeVisible();
 });
 
 test("range tabs switch the chart between 7 and 30 days", async ({ page }) => {
@@ -20,17 +46,18 @@ test("range tabs switch the chart between 7 and 30 days", async ({ page }) => {
 
 test("hovering anywhere along the chart snaps to the nearest day", async ({ page, isMobile }) => {
   test.skip(isMobile, "hover is a desktop interaction");
-  const box = (await page.getByRole("slider", { name: "Day" }).boundingBox())!;
+  const slider = page.getByRole("slider", { name: "Day" });
+  await slider.scrollIntoViewIfNeeded();
+  const box = (await slider.boundingBox())!;
   const status = page.getByRole("status");
   await expect(status).toHaveText("");
-  // well above the line: no need to touch it
   await page.mouse.move(box.x + box.width * 0.55, box.y + 20);
   await expect(status).toHaveText(/eaten [\d,]+ kcal, planned [\d,]+ kcal/);
   const first = await status.textContent();
   await page.mouse.move(box.x + box.width * 0.9, box.y + 20);
   await expect(status).not.toHaveText(first!);
   await page.mouse.move(box.x - 60, box.y + 20);
-  await expect(status).toHaveText(""); // leaving hides the tooltip
+  await expect(status).toHaveText("");
 });
 
 test("chart is keyboard operable", async ({ page }) => {
@@ -44,31 +71,6 @@ test("chart is keyboard operable", async ({ page }) => {
   await expect(slider).toHaveAttribute("aria-valuenow", "6");
 });
 
-test("logging dinner updates today and can't double count", async ({ page }) => {
-  await expect(page.getByText("480 left")).toBeVisible();
-  await page.getByRole("button", { name: "Log dinner" }).click();
-  await expect(page.getByRole("region", { name: "Today" })).toContainText("1,900");
-  await expect(page.getByText("0 left")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Dinner logged" })).toBeDisabled();
-});
-
-test("accepting a suggestion marks it done", async ({ page }) => {
-  await page.getByRole("button", { name: "Add a protein snack at 4 pm, Add to plan" }).click();
-  await expect(page.getByRole("button", { name: /Add a protein snack at 4 pm/ })).toContainText("Done");
-});
-
-test("buy tile adds running-low items to the list", async ({ page }) => {
-  const tile = page.getByRole("button", { name: /^Buy / });
-  await expect(tile).toContainText("Add to list");
-  await tile.click();
-  await expect(tile).toContainText("On the list");
-});
-
-test("nav reaches pantry", async ({ page }) => {
-  await page.getByRole("link", { name: "Pantry" }).click();
-  await expect(page.getByRole("heading", { name: "Pantry" })).toBeVisible();
-});
-
 test("tapping the chart on touch jumps to that day", async ({ page, isMobile }) => {
   test.skip(!isMobile, "touch only");
   const slider = page.getByRole("slider", { name: "Day" });
@@ -77,4 +79,21 @@ test("tapping the chart on touch jumps to that day", async ({ page, isMobile }) 
   await page.touchscreen.tap(box.x + box.width - 12, box.y + box.height / 2);
   await expect(slider).toHaveAttribute("aria-valuenow", "6");
   await expect(page.getByRole("status")).toContainText("Today");
+});
+
+test("plan link opens the plan", async ({ page }) => {
+  await page.getByRole("link", { name: "Plan the week" }).click();
+  await expect(page.getByRole("heading", { name: "Plan", level: 1 })).toBeVisible();
+});
+
+test("pantry nudge adds running-low items to the list", async ({ page }) => {
+  const btn = page.getByRole("region", { name: "Pantry alert" }).getByRole("button");
+  await expect(btn).toContainText("Add to list");
+  await btn.click();
+  await expect(btn).toContainText("On the list");
+});
+
+test("nav reaches pantry", async ({ page }) => {
+  await page.getByRole("link", { name: "Pantry" }).click();
+  await expect(page.getByRole("heading", { name: "Pantry" })).toBeVisible();
 });

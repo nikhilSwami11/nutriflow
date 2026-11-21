@@ -25,8 +25,11 @@ Next.js App Router, strict TS, Tailwind v4 (CSS variables in `src/app/globals.cs
 ## Domain notes
 - `domain/pantry`: pantry items, voice add (hear, then confirm), recipe depletion, running-low shopping list.
 - `domain/nutrition`: meal logs (cook or photo only), target range (default 1800 to 2100 until set), seed rule (15 seeds, in range only), `weekSeries` returns null for unlogged days, `rankUpNext`.
-- Home shows the personal parts of the design, driven by FAKE demo data (`data/dashboard/demo.ts` behind the `DashboardRepository` port): 4 Today tiles, calories and macros chart (7/30 days, hover), Today vs plan, Up next, Tonight, Suggested. Replace the repository to use real data. Up next's shopping tile and Pantry alert use the real pantry. Out of v1: household, chores, chat, spend, streak.
-- `domain/dashboard`: chart stats, macro shares, `logPlannedMeal` (no double count). Dashboard no longer depends on the nutrition tables (`0003` migration), which are unused by the UI for now.
+- Home is three things on purpose: the next meal to cook (`NextMealHero`, taps through to the recipe, "Then" links for the rest of today), one Chart.js card holding today, 7 days and 30 days (`MacroChart` with the `TodayLine` strip), and the pantry nudge. Do not add cards back without asking: the user wants it compact. Out of v1: household, chores, chat, spend, streak, social feed (likes, comments, share).
+- Demo data: `data/dashboard/demo.ts` (30 days of history, what was eaten today, how often each recipe was eaten) and `data/recipes/demo.ts` (recipes). Today is built from the meals marked eaten.
+- `domain/planning`: `planWeek` picks meals per day toward calorie and protein goals (history bonus, repeat penalty, adapts as the day fills); `weekBalance` gives per-day status and plain-words notes.
+- Routes: `/` Home, `/recipes`, `/recipes/[id]` (static params from the demo recipe ids), `/plan`, `/pantry`.
+- `domain/dashboard`: chart stats, macro shares, `dayFromRecipes`.
 
 ## Layout
 - Mobile is the design. `presentation/shell/AppShell` wraps every screen: bottom nav below `lg`, sidebar from `lg` up (nav items Today, Pantry, Recipes only; Chores, Shopping, Insights and the roommates card are out of v1). Screens add `lg:` classes for the desktop grid.

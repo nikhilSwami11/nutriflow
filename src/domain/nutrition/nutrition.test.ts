@@ -111,7 +111,8 @@ describe("target range", () => {
 
 describe("dates", () => {
   it("lastNDays ends today, oldest first, across a month edge", async () => {
-    const { lastNDays, toDateKey } = await import("./dates");
+    const { lastNDays, nextNDays, toDateKey } = await import("./dates");
+    expect(nextNDays(3, new Date(2026, 10, 29))).toEqual(["2026-11-29", "2026-11-30", "2026-12-01"]);
     expect(lastNDays(3, new Date(2026, 11, 1))).toEqual(["2026-11-29", "2026-11-30", "2026-12-01"]);
     expect(toDateKey(new Date(2026, 0, 5))).toBe("2026-01-05");
   });

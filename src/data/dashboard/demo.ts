@@ -26,30 +26,11 @@ export class DemoDashboardRepository implements DashboardRepository {
         macros: { protein: Math.round((kcal * p) / 4), carbs: Math.round((kcal * c) / 4), fat: Math.round((kcal * f) / 9) },
       };
     });
-    // Today: macros match the demo meals below (1,420 kcal).
-    days[days.length - 1].macros = { protein: 84, carbs: 160, fat: 49 };
-
     return {
       goals: { calories: 1900, protein: 105, carbs: 230, fat: 60 },
       days,
-      meals: [
-        { name: "Breakfast", slot: "breakfast", planned: 450, eaten: 430 },
-        { name: "Lunch", slot: "lunch", planned: 650, eaten: 610 },
-        { name: "Snack", slot: "snack", planned: 200, eaten: 380 },
-        { name: "Dinner", slot: "dinner", planned: 600, eaten: 0 },
-      ],
-      tonight: {
-        title: "Dal tadka",
-        tags: ["From your pantry", "About 480 kcal"],
-        blurb: "Fits the 480 kcal you have left. Log it when you eat.",
-        kcal: 480,
-        macros: { protein: 24, carbs: 60, fat: 16 },
-      },
-      suggestions: [
-        { id: "cook", title: "Cook dal tadka tonight", body: "Uses the tomatoes and onions closest to running out. About 480 kcal, and it covers most of the 32 g of protein you are short on today.", cta: "Start cooking" },
-        { id: "snack", title: "Add a protein snack at 4 pm", body: "Your last three afternoons dipped under your protein goal. Greek yogurt with banana closes the gap for about 160 kcal.", cta: "Add to plan" },
-        { id: "move", title: "Move dinner earlier", body: "You log meals fastest before 7 pm and skip logging after 8. Cooking at 6:30 keeps tracking complete.", cta: "Shift plan" },
-      ],
+      eatenToday: ["Breakfast"],
+      history: { "oats-banana": 6, "dal-rice": 5, "yogurt-banana": 4, "dal-tadka": 4, omelette: 3, khichdi: 3, "palak-paneer": 2, rajma: 1 },
     };
   }
 }
