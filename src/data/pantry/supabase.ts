@@ -28,15 +28,26 @@ export const toRow = (i: PantryItem): PantryRow => ({
   low_at: i.lowAt,
 });
 
-/** Anonymous sign-in until the design has an auth screen. */
-export async function createSupabase(url: string, anonKey: string): Promise<SupabaseClient> {
-  const client = createClient(url, anonKey);
-  const { data } = await client.auth.getSession();
-  if (!data.session) {
-    const { error } = await client.auth.signInAnonymously();
-    if (error) throw error;
+const clients = new Map<string, Promise<SupabaseClient>>();
+
+/** One client per project, shared: two clients on the same storage key fight over the auth session. Anonymous sign-in until the design has an auth screen. */
+export function createSupabase(url: string, anonKey: string): Promise<SupabaseClient> {
+  const key = `${url}|${anonKey}`;
+  let c = clients.get(key);
+  if (!c) {
+    c = (async () => {
+      const client = createClient(url, anonKey);
+      const { data } = await client.auth.getSession();
+      if (!data.session) {
+        const { error } = await client.auth.signInAnonymously();
+        if (error) throw error;
+      }
+      return client;
+    })();
+    c.catch(() => clients.delete(key)); // let a failed sign-in be retried
+    clients.set(key, c);
   }
-  return client;
+  return c;
 }
 
 export class SupabasePantryRepository implements PantryRepository {
