@@ -109,3 +109,79 @@ input:focus-visible {
 .rail::-webkit-scrollbar {
   display: none;
 }
+
+/* ---- Motion. Reduced motion is handled by the global rule above. ---- */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.grow-x {
+  transform-origin: left;
+  animation: grow-x 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: 0.15s;
+}
+@keyframes reveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 -2% 0 0);
+  }
+}
+.reveal {
+  animation: reveal 0.8s cubic-bezier(0.3, 0.6, 0.2, 1) both;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fade-in {
+  animation: fade-in 0.18s ease-out both;
+}
+
+/* Press feedback on every button; opt out with data-nopress. */
+button:not(:disabled):not([data-nopress]) {
+  transition:
+    transform 0.15s ease,
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease;
+}
+button:not(:disabled):not([data-nopress]):active {
+  transform: scale(0.97);
+}
+@media (hover: hover) {
+  button.hoverable:not(:disabled):hover {
+    border-color: var(--ink);
+  }
+}
+[role="slider"]:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: 8px;
+}

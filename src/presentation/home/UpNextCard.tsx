@@ -16,7 +16,7 @@ export function UpNextCard({ tasks, toggleBuy }: Pick<HomeModel, "tasks" | "togg
           );
           const base = "flex aspect-square w-full flex-col justify-between rounded-[20px] border border-line bg-panel p-3.5";
           return t.kind === "pantry" ? (
-            <button key={t.id} type="button" onClick={toggleBuy} className={`${base} cursor-pointer text-ink transition-transform active:scale-[.97]`}>{body}</button>
+            <button key={t.id} type="button" onClick={toggleBuy} className={`${base} hoverable cursor-pointer text-ink`}>{body}</button>
           ) : (
             <article key={t.id} className={base}>{body}</article>
           );

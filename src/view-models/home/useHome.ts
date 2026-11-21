@@ -1,6 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { chartStats, leftKcal, logPlannedMeal, type DashboardData } from "@/domain/dashboard";
 import { rankUpNext } from "@/domain/nutrition";
 import { isLow } from "@/domain/pantry";
@@ -29,12 +29,17 @@ export function useHome() {
   const [dinnerLogged, setDinnerLogged] = useState(false);
   const [accepted, setAccepted] = useState<string[]>([]);
 
-  if (!base.data) return { isLoading: true as const };
-  const data: DashboardData = dinnerLogged ? logPlannedMeal(base.data, "Dinner") : base.data;
+  const data: DashboardData | null = useMemo(
+    () => (base.data ? (dinnerLogged ? logPlannedMeal(base.data, "Dinner") : base.data) : null),
+    [base.data, dinnerLogged],
+  );
+  const days = useMemo(() => (data ? (range === "7d" ? data.days.slice(-7) : data.days) : null), [data, range]);
+  // Stable between hovers so the chart paths don't rebuild on every pointer move.
+  const geo = useMemo(() => (days ? buildChart(days) : null), [days]);
+
+  if (!data || !days || !geo) return { isLoading: true as const };
   const { goals } = data;
-  const days = range === "7d" ? data.days.slice(-7) : data.days;
   const today = data.days[data.days.length - 1];
-  const geo = buildChart(days);
   const n = days.length;
   const ai = hover === null ? n - 1 : Math.min(hover, n - 1);
   const act = days[ai];
@@ -43,7 +48,8 @@ export function useHome() {
 
   const tile = (label: string, eaten: number, goal: number, unit: string, color: string) => ({
     label,
-    big: unit ? `${num(eaten)} ${unit}` : num(eaten),
+    value: eaten,
+    unit,
     sub: `of ${num(goal)}${unit ? ` ${unit}` : " kcal"}`,
     pct: Math.min(100, (eaten / goal) * 100),
     color,
@@ -84,7 +90,7 @@ export function useHome() {
       xLabels: days
         .map((d, i) => ({ i, left: geo.xPct(i), text: range === "7d" ? fmtDow(d.date) : fmtDate(d.date) }))
         .filter((x) => range === "7d" || x.i % 5 === n % 5 || x.i === n - 1),
-      hits: days.map((d, i) => ({ i, left: geo.xPct(i), label: `${fmtDate(d.date)}, eaten ${num(d.eaten)} kcal, planned ${num(d.planned)} kcal` })),
+      count: n,
       active: {
         i: ai,
         x: geo.xPct(ai),
@@ -96,6 +102,7 @@ export function useHome() {
         protein: `${act.macros.protein} g`,
         carbs: `${act.macros.carbs} g`,
         fat: `${act.macros.fat} g`,
+        summary: `${ai === n - 1 ? "Today" : fmtDate(act.date)}, eaten ${num(act.eaten)} kcal, planned ${num(act.planned)} kcal`,
         goal:
           ai === n - 1
             ? `${num(leftKcal(act.planned, act.eaten))} kcal left today`
@@ -109,7 +116,7 @@ export function useHome() {
       aria: `Calories and macros for the ${range === "7d" ? "last 7" : "last 30"} days. Average eaten ${num(stats.avgEaten)} kcal against ${num(stats.avgPlanned)} planned.`,
     },
     plan: {
-      eaten: num(eatenTotal),
+      eatenValue: eatenTotal,
       goal: num(goals.calories),
       left: `${num(leftKcal(goals.calories, eatenTotal))} left`,
       fill: Math.min(100, (eatenTotal / goals.calories) * 100),

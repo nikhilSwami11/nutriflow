@@ -13,7 +13,7 @@ export function PantryAlert({ alert }: { alert: NonNullable<HomeModel["pantryAle
               <span className="text-ink2 tabular-nums">{r.qty}</span>
             </div>
             <div className="h-2 rounded bg-track">
-              <div className="h-full rounded bg-peach" style={{ width: `${r.pct}%` }} />
+              <div className="grow-x h-full rounded bg-peach" style={{ width: `${r.pct}%` }} />
             </div>
           </div>
         ))}

@@ -11,7 +11,7 @@ export function TonightCard({ t }: { t: HomeModel["tonight"] }) {
       <h2 className="m-0 text-xl font-medium tracking-[-0.01em]">{t.title}</h2>
       <p className="m-0 text-[13px] leading-[1.55] text-ink2">{t.blurb}</p>
       <div className="pt-0.5">
-        <button type="button" className="touch rounded-full bg-ink px-[18px] text-[13px] font-medium text-bg">Start cooking</button>
+        <button type="button" className="touch rounded-full bg-ink px-[18px] text-[13px] font-medium text-bg hover:opacity-85">Start cooking</button>
       </div>
     </article>
   );
