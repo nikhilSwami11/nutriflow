@@ -10,7 +10,7 @@ test("home is three things: next meal, one chart with today, pantry", async ({ p
   await expect(page.getByRole("article", { name: "Up next" })).toBeVisible();
   await expect(page.getByRole("article", { name: "Calories and macros" })).toBeVisible();
   await expect(todayLine(page)).toContainText("of 1,900 kcal");
-  await expect(page.getByRole("region", { name: "Pantry alert" })).toBeVisible();
+  await expect(page.getByLabel("Pantry alert")).toBeVisible();
   await expect(page.getByRole("article", { name: "Up next" }).getByText("Then")).toBeVisible();
 });
 
@@ -87,7 +87,7 @@ test("plan link opens the plan", async ({ page }) => {
 });
 
 test("pantry nudge adds running-low items to the list", async ({ page }) => {
-  const btn = page.getByRole("region", { name: "Pantry alert" }).getByRole("button");
+  const btn = page.getByLabel("Pantry alert").getByRole("button", { name: /list/i });
   await expect(btn).toContainText("Add to list");
   await btn.click();
   await expect(btn).toContainText("On the list");
@@ -96,4 +96,15 @@ test("pantry nudge adds running-low items to the list", async ({ page }) => {
 test("nav reaches pantry", async ({ page }) => {
   await page.getByRole("link", { name: "Pantry" }).click();
   await expect(page.getByRole("heading", { name: "Pantry" })).toBeVisible();
+});
+
+test("feed posts can be liked and saved", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "the feed is the mobile layout");
+  const post = page.getByRole("article", { name: "Up next" });
+  await post.getByRole("button", { name: "Like" }).click();
+  await expect(post.getByRole("button", { name: "Like" })).toHaveAttribute("aria-pressed", "true");
+  await post.getByRole("button", { name: "Save" }).click();
+  await expect(post.getByRole("button", { name: "Save" })).toHaveAttribute("aria-pressed", "true");
+  await post.getByRole("button", { name: "Like" }).click();
+  await expect(post.getByRole("button", { name: "Like" })).toHaveAttribute("aria-pressed", "false");
 });

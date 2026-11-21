@@ -147,7 +147,7 @@ function buildOptions(points: Points, t: ChartTokens, onHover: (i: number | null
   };
 }
 
-export function MacroChart({ c, above, below }: { c: ChartModel & { range: Range; setRange: (r: Range) => void }; above?: React.ReactNode; below?: React.ReactNode }) {
+export function MacroChart({ c, above, below, bare }: { c: ChartModel & { range: Range; setRange: (r: Range) => void }; above?: React.ReactNode; below?: React.ReactNode; bare?: boolean }) {
   const chartRef = useRef<Chart<"line">>(null);
   const [idx, setIdx] = useState<number | null>(null);
   const last = c.points.length - 1;
@@ -184,7 +184,7 @@ export function MacroChart({ c, above, below }: { c: ChartModel & { range: Range
   };
 
   return (
-    <article aria-label="Calories and macros" className="flex min-w-0 shrink-0 flex-col gap-4 rounded-[20px] border border-line bg-bg px-3 py-4 lg:px-6 lg:py-[22px]">
+    <article aria-label="Calories and macros" className={bare ? "flex min-w-0 shrink-0 flex-col gap-4 px-2 py-1" : "flex min-w-0 shrink-0 flex-col gap-4 rounded-[20px] border border-line bg-bg px-3 py-4 lg:px-6 lg:py-[22px]"}>
       <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <div>
           <h2 className="m-0 text-base font-medium">{c.title}</h2>

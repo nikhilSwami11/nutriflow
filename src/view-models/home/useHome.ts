@@ -71,7 +71,14 @@ export function useHome() {
       ].map((m) => ({ ...m, pct: Math.min(100, (m.value / m.goal) * 100) })),
     },
     pantry: lowItems.length
-      ? { text: joinList(lowItems.slice(0, 3).map((i) => i.name.toLowerCase())), more: Math.max(0, lowItems.length - 3), listed: pantry.listed, toggle: pantry.toggleList }
+      ? {
+          text: joinList(lowItems.slice(0, 3).map((i) => i.name.toLowerCase())),
+          more: Math.max(0, lowItems.length - 3),
+          count: lowItems.length,
+          rows: lowItems.slice(0, 3).map((i) => ({ id: i.id, name: i.name, qty: `${i.qty} ${i.unit}`, pct: i.lowAt > 0 ? Math.min(100, (i.qty / (i.lowAt * 2)) * 100) : 0 })),
+          listed: pantry.listed,
+          toggle: pantry.toggleList,
+        }
       : null,
   };
 }
