@@ -20,7 +20,6 @@ const fmtDow = (d: string) => parse(d).toLocaleDateString("en-US", { weekday: "s
 export const CHART_MAX = 2400;
 
 export type Range = "7d" | "30d";
-const BAR_MAX = 700;
 
 export function useHome() {
   const repo = useDashboardRepo();
@@ -118,11 +117,8 @@ export function useHome() {
       meals: data.meals.map((m) => ({
         name: m.name,
         text: m.eaten === 0 ? `Planned ${m.planned} kcal` : `${m.eaten} of ${m.planned} kcal`,
-        eatenW: (Math.min(m.eaten, m.planned) / BAR_MAX) * 100,
-        overL: (m.planned / BAR_MAX) * 100,
-        overW: m.eaten > m.planned ? ((m.eaten - m.planned) / BAR_MAX) * 100 : 0,
-        pendingW: m.eaten === 0 ? (m.planned / BAR_MAX) * 100 : 0,
-        tickL: (m.planned / BAR_MAX) * 100,
+        pending: m.eaten === 0,
+        over: m.eaten > m.planned,
       })),
       dinnerLogged,
       logDinner: () => setDinnerLogged(true),

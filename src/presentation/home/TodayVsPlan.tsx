@@ -16,27 +16,17 @@ export function TodayVsPlan({ p }: { p: HomeModel["plan"] }) {
           <div className="grow-x h-full rounded-[3px] transition-[width,background-color] duration-700 ease-out" style={{ width: `${p.fill}%`, background: p.over ? "#F7C9BB" : "#BFE5D2" }} />
         </div>
       </div>
-      <div className="flex flex-col gap-2.5 border-t border-line pt-2.5">
+      <ul className="m-0 flex list-none flex-col border-t border-line p-0">
         {p.meals.map((m) => (
-          <div key={m.name} className="flex flex-col gap-[5px]">
-            <div className="flex justify-between text-xs">
-              <span>{m.name}</span>
-              <span className="text-ink2 tabular-nums">{m.text}</span>
-            </div>
-            <div className="relative h-2 rounded bg-track">
-              {m.eatenW > 0 && <div className="grow-x absolute left-0 top-0 h-2 rounded-l bg-[#BFE5D2]" style={{ width: `${m.eatenW}%` }} />}
-              {m.overW > 0 && <div className="grow-x absolute top-0 h-2 rounded-r bg-peach" style={{ left: `${m.overL}%`, width: `${m.overW}%` }} />}
-              {m.pendingW > 0 && <div className="fade-in absolute left-0 top-0 h-2 rounded border border-dashed border-muted" style={{ width: `${m.pendingW}%` }} />}
-              <div className="absolute -top-[3px] h-3.5 w-0.5 bg-ink" style={{ left: `${m.tickL}%` }} />
-            </div>
-          </div>
+          <li key={m.name} className={`flex items-center justify-between gap-2 border-b border-line py-2 text-[13px] last:border-b-0 ${m.pending ? "text-muted" : ""}`}>
+            <span className={m.pending ? "" : "text-ink"}>{m.name}</span>
+            <span className="flex items-center gap-2 tabular-nums text-ink2">
+              {m.over && <span className="rounded-full bg-peach px-2 py-0.5 text-[11px] font-medium text-onp">Over</span>}
+              {m.text}
+            </span>
+          </li>
         ))}
-      </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted">
-        <span className="flex items-center gap-[5px]"><span className="block h-2 w-2 rounded-sm bg-[#BFE5D2]" />Eaten</span>
-        <span className="flex items-center gap-[5px]"><span className="block h-2 w-2 rounded-sm bg-peach" />Over</span>
-        <span className="flex items-center gap-[5px]"><span className="block h-2.5 w-0.5 bg-ink" />Plan</span>
-      </div>
+      </ul>
       <button type="button" onClick={p.logDinner} aria-pressed={p.dinnerLogged} disabled={p.dinnerLogged} className="hoverable touch rounded-full border border-line2 bg-bg px-3.5 text-xs font-medium text-ink disabled:text-muted">
         {p.dinnerLogged ? "Dinner logged" : "Log dinner"}
       </button>
