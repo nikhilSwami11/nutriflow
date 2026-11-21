@@ -30,18 +30,14 @@ export const toRow = (i: PantryItem): PantryRow => ({
 
 const clients = new Map<string, Promise<SupabaseClient>>();
 
-/** One client per project, shared: two clients on the same storage key fight over the auth session. Anonymous sign-in until the design has an auth screen. */
+/** One client per project, shared: two clients on the same storage key fight over the auth session. Sign-in lives in the auth screen (guest or Google), never here. */
 export function createSupabase(url: string, anonKey: string): Promise<SupabaseClient> {
   const key = `${url}|${anonKey}`;
   let c = clients.get(key);
   if (!c) {
     c = (async () => {
       const client = createClient(url, anonKey);
-      const { data } = await client.auth.getSession();
-      if (!data.session) {
-        const { error } = await client.auth.signInAnonymously();
-        if (error) throw error;
-      }
+      await client.auth.getSession(); // finishes a Google redirect before anything reads the session
       return client;
     })();
     c.catch(() => clients.delete(key)); // let a failed sign-in be retried

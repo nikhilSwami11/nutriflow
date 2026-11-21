@@ -2,6 +2,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { InMemoryPantryRepository, InMemoryShoppingListRepository, LocalUtteranceParser } from "@/data/pantry/inMemory";
+import { InMemoryAuthRepository } from "@/data/auth/inMemory";
+import { SupabaseAuthRepository } from "@/data/auth/supabase";
 import { LocalServingHabitRepository } from "@/data/cooking/habits";
 import { LocalFeedEventRepository } from "@/data/feed/local";
 import { QueuedMealLogRepository } from "@/data/nutrition/queued";
@@ -22,6 +24,8 @@ import type { DashboardRepository } from "@/domain/dashboard";
 import type { FeedEventRepository } from "@/domain/feed";
 import type { MealLogRepository, ProfileRepository } from "@/domain/nutrition";
 import type { RecipeRepository } from "@/domain/recipes";
+import type { AuthRepository } from "@/domain/auth";
+import { AuthDepsProvider } from "@/view-models/auth/AuthDeps";
 import { CookDepsProvider, type CookDeps } from "@/view-models/cook/CookDeps";
 import { FeedDepsProvider } from "@/view-models/feed/FeedDeps";
 import { PhotoDepsProvider } from "@/view-models/photo/PhotoDeps";
@@ -31,6 +35,7 @@ import { NutritionDepsProvider, type NutritionDeps } from "@/view-models/nutriti
 import { PantryDepsProvider, type PantryDeps } from "@/view-models/pantry/PantryDeps";
 
 interface Deps {
+  auth: AuthRepository;
   pantry: PantryDeps;
   nutrition: NutritionDeps;
   /** Demo data for the whole dashboard until real logging feeds it. */
@@ -56,9 +61,10 @@ const storage = () => {
 };
 
 /** Everything that does not depend on which backend is in use. Meal logs always go through the retry queue. */
-const assemble = (pantry: PantryDeps, primaryLogs: MealLogRepository, profile: ProfileRepository): Deps => {
+const assemble = (auth: AuthRepository, pantry: PantryDeps, primaryLogs: MealLogRepository, profile: ProfileRepository): Deps => {
   const queue = new QueuedMealLogRepository(primaryLogs, storage());
   return {
+    auth,
     pantry,
     nutrition: { logs: queue, profile },
     dashboard: new DemoDashboardRepository(),
@@ -71,6 +77,7 @@ const assemble = (pantry: PantryDeps, primaryLogs: MealLogRepository, profile: P
 
 const inMemory = (): Deps =>
   assemble(
+    new InMemoryAuthRepository(),
     { pantry: new InMemoryPantryRepository(SEED), list: new InMemoryShoppingListRepository(), parser: new LocalUtteranceParser(), newId },
     new InMemoryMealLogRepository(seedLogs(new Date())),
     new InMemoryProfileRepository(),
@@ -92,6 +99,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     createSupabase(URL, KEY).then((db) =>
       setDeps(
         assemble(
+          new SupabaseAuthRepository(db, window.location.origin),
           { pantry: new SupabasePantryRepository(db), list: new SupabaseShoppingListRepository(db), parser: new EdgeUtteranceParser(db), newId },
           new SupabaseMealLogRepository(db),
           new SupabaseProfileRepository(db),
@@ -117,6 +125,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   if (!deps) return null;
   return (
     <QueryClientProvider client={client}>
+      <AuthDepsProvider value={deps.auth}>
       <PantryDepsProvider value={deps.pantry}>
         <NutritionDepsProvider value={deps.nutrition}>
           <DashboardDepsProvider value={deps.dashboard}>
@@ -130,6 +139,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           </DashboardDepsProvider>
         </NutritionDepsProvider>
       </PantryDepsProvider>
+      </AuthDepsProvider>
     </QueryClientProvider>
   );
 }

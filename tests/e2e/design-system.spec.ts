@@ -5,7 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
  * The design system, enforced. One reading size floor, one touch size floor, readable contrast, one page gutter.
  * See "Design system" in CLAUDE.md for the rules and why.
  */
-const ROUTES = ["/", "/pantry", "/recipes", "/recipes/dal-tadka", "/plan", "/cook/dal-tadka", "/cook/dal-tadka#steps", "/photo"];
+const ROUTES = ["/", "/pantry", "/recipes", "/recipes/dal-tadka", "/plan", "/cook/dal-tadka", "/cook/dal-tadka#steps", "/photo", "/signin"];
 const settle = async (page: Page, route: string) => {
   await page.goto(route.replace("#steps", ""));
   if (route.endsWith("#steps")) await page.getByRole("button", { name: "Start cooking" }).click();
