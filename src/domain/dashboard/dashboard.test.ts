@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Recipe } from "../recipes/types";
-import { dayFromRecipes } from "./today";
+import { dayFromMeals, dayFromRecipes } from "./today";
 import { chartStats, leftKcal, macroShares } from "./stats";
 
 const day = (date: string, planned: number, eaten: number) => ({ date, planned, eaten, macros: { protein: 80, carbs: 150, fat: 40 } });
@@ -40,5 +40,12 @@ describe("dayFromRecipes", () => {
   });
   it("nothing eaten is zero, not missing", () => {
     expect(dayFromRecipes("d", 1900, []).eaten).toBe(0);
+  });
+});
+
+describe("dayFromMeals", () => {
+  it("sums kcal and macros, rounding away float noise", () => {
+    const d = dayFromMeals("d", 1900, [{ kcal: 720, protein: 33.3, carbs: 93, fat: 22.5 }, { kcal: 310, protein: 22.1, carbs: 6, fat: 22 }]);
+    expect(d).toEqual({ date: "d", planned: 1900, eaten: 1030, macros: { protein: 55.4, carbs: 99, fat: 44.5 } });
   });
 });

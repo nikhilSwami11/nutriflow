@@ -12,7 +12,13 @@ create table public.meal_logs (
   slot text not null check (slot in ('breakfast', 'lunch', 'dinner', 'snack')),
   source text not null check (source in ('cook', 'photo')),
   name text not null,
-  kcal numeric not null check (kcal >= 0)
+  kcal numeric not null check (kcal >= 0),
+  -- set when the meal came from a recipe
+  recipe_id text,
+  servings numeric check (servings > 0),
+  protein numeric check (protein >= 0),
+  carbs numeric check (carbs >= 0),
+  fat numeric check (fat >= 0)
 );
 create index meal_logs_user_date_idx on public.meal_logs (user_id, log_date);
 

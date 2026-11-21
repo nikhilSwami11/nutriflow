@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./cook-motions.css";
 
 /* Light theme first. Values come from /design (Pantry.dc.html). */
 :root {

@@ -77,7 +77,7 @@ export function RecipeDetailScreen({ id }: { id: string }) {
               </section>
             </div>
             <div className="absolute inset-x-0 bottom-0 border-t border-line bg-bg px-5 pb-5 pt-3">
-              <button type="button" className="min-h-[52px] w-full rounded-full bg-ink text-[15px] font-medium text-bg">Start cooking</button>
+              <Link href={`/cook/${r.recipe.id}?servings=${r.servings}`} className="flex min-h-[52px] w-full items-center justify-center rounded-full bg-ink text-[15px] font-medium text-bg">Start cooking</Link>
             </div>
           </>
         )}

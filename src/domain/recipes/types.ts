@@ -11,6 +11,8 @@ export interface Ingredient {
 export interface Step {
   text: string;
   verb: string;
+  /** Timed steps (simmering, boiling). The cook screen shows a countdown. */
+  minutes?: number;
 }
 
 /** Nutrition is per serving. */

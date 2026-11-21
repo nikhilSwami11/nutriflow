@@ -2,7 +2,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { InMemoryPantryRepository, InMemoryShoppingListRepository, LocalUtteranceParser } from "@/data/pantry/inMemory";
+import { LocalServingHabitRepository } from "@/data/cooking/habits";
 import { LocalFeedEventRepository } from "@/data/feed/local";
+import { QueuedMealLogRepository } from "@/data/nutrition/queued";
 import { DemoRecipeRepository } from "@/data/recipes/demo";
 import { DemoDashboardRepository } from "@/data/dashboard/demo";
 import { InMemoryMealLogRepository, InMemoryProfileRepository } from "@/data/nutrition/inMemory";
@@ -17,7 +19,9 @@ import {
 } from "@/data/pantry/supabase";
 import type { DashboardRepository } from "@/domain/dashboard";
 import type { FeedEventRepository } from "@/domain/feed";
+import type { MealLogRepository, ProfileRepository } from "@/domain/nutrition";
 import type { RecipeRepository } from "@/domain/recipes";
+import { CookDepsProvider, type CookDeps } from "@/view-models/cook/CookDeps";
 import { FeedDepsProvider } from "@/view-models/feed/FeedDeps";
 import { RecipeDepsProvider } from "@/view-models/recipes/RecipeDeps";
 import { DashboardDepsProvider } from "@/view-models/dashboard/DashboardDeps";
@@ -32,6 +36,9 @@ interface Deps {
   recipes: RecipeRepository;
   /** Browser storage for now; Supabase copy comes with the real-data phase (migration 0004). */
   feedEvents: FeedEventRepository;
+  cook: CookDeps;
+  /** Retries meals that could not reach the database. */
+  flushLogs: () => Promise<number>;
 }
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -46,18 +53,26 @@ const storage = () => {
   }
 };
 
-const inMemory = (): Deps => ({
-  pantry: {
-    pantry: new InMemoryPantryRepository(SEED),
-    list: new InMemoryShoppingListRepository(),
-    parser: new LocalUtteranceParser(),
-    newId,
-  },
-  nutrition: { logs: new InMemoryMealLogRepository(seedLogs(new Date())), profile: new InMemoryProfileRepository() },
-  dashboard: new DemoDashboardRepository(),
-  recipes: new DemoRecipeRepository(),
-  feedEvents: new LocalFeedEventRepository(storage()),
-});
+/** Everything that does not depend on which backend is in use. Meal logs always go through the retry queue. */
+const assemble = (pantry: PantryDeps, primaryLogs: MealLogRepository, profile: ProfileRepository): Deps => {
+  const queue = new QueuedMealLogRepository(primaryLogs, storage());
+  return {
+    pantry,
+    nutrition: { logs: queue, profile },
+    dashboard: new DemoDashboardRepository(),
+    recipes: new DemoRecipeRepository(),
+    feedEvents: new LocalFeedEventRepository(storage()),
+    cook: { habits: new LocalServingHabitRepository(storage()), pendingLogs: () => queue.pending() },
+    flushLogs: () => queue.flush(),
+  };
+};
+
+const inMemory = (): Deps =>
+  assemble(
+    { pantry: new InMemoryPantryRepository(SEED), list: new InMemoryShoppingListRepository(), parser: new LocalUtteranceParser(), newId },
+    new InMemoryMealLogRepository(seedLogs(new Date())),
+    new InMemoryProfileRepository(),
+  );
 
 /** Supabase when env vars are set, otherwise in-memory seeded from the design. */
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -71,20 +86,29 @@ export function Providers({ children }: { children: React.ReactNode }) {
       return;
     }
     createSupabase(URL, KEY).then((db) =>
-      setDeps({
-        pantry: {
-          pantry: new SupabasePantryRepository(db),
-          list: new SupabaseShoppingListRepository(db),
-          parser: new EdgeUtteranceParser(db),
-          newId,
-        },
-        nutrition: { logs: new SupabaseMealLogRepository(db), profile: new SupabaseProfileRepository(db) },
-        dashboard: new DemoDashboardRepository(),
-        recipes: new DemoRecipeRepository(),
-        feedEvents: new LocalFeedEventRepository(storage()),
-      }),
+      setDeps(
+        assemble(
+          { pantry: new SupabasePantryRepository(db), list: new SupabaseShoppingListRepository(db), parser: new EdgeUtteranceParser(db), newId },
+          new SupabaseMealLogRepository(db),
+          new SupabaseProfileRepository(db),
+        ),
+      ),
     );
   }, []);
+
+  // Meals that could not reach the database wait in a queue: retry now, when back online, and every half minute.
+  const flush = deps?.flushLogs;
+  useEffect(() => {
+    if (!flush) return;
+    const run = () => void flush();
+    run();
+    window.addEventListener("online", run);
+    const id = setInterval(run, 30_000);
+    return () => {
+      window.removeEventListener("online", run);
+      clearInterval(id);
+    };
+  }, [flush]);
 
   if (!deps) return null;
   return (
@@ -93,7 +117,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <NutritionDepsProvider value={deps.nutrition}>
           <DashboardDepsProvider value={deps.dashboard}>
             <RecipeDepsProvider value={deps.recipes}>
-              <FeedDepsProvider value={deps.feedEvents}>{children}</FeedDepsProvider>
+              <FeedDepsProvider value={deps.feedEvents}>
+                <CookDepsProvider value={deps.cook}>{children}</CookDepsProvider>
+              </FeedDepsProvider>
             </RecipeDepsProvider>
           </DashboardDepsProvider>
         </NutritionDepsProvider>

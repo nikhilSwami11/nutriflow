@@ -1,6 +1,7 @@
 "use client";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { dayFromRecipes, leftKcal } from "@/domain/dashboard";
+import { dayFromMeals, leftKcal } from "@/domain/dashboard";
 import { buildFeed, summarizeEvents, type FeedItem } from "@/domain/feed";
 import { toDateKey } from "@/domain/nutrition";
 import { isLow } from "@/domain/pantry";
@@ -9,14 +10,18 @@ import { buildChartModel, num, type Range } from "../dashboard/chartModel";
 import { joinList } from "../format";
 import { usePantry } from "../pantry/usePantry";
 import type { StoryModel } from "../feed/storyModel";
+import { useNutritionDeps } from "../nutrition/NutritionDeps";
 import { useStoriesSeen } from "../feed/useStoriesSeen";
 import { useFeedStats, useFeedTracker } from "../feed/useFeedTracker";
 import { usePlanData } from "../plan/usePlanData";
+
+const MEAL_OF_SLOT = { breakfast: "Breakfast", lunch: "Lunch", snack: "Snack", dinner: "Dinner" } as const;
 
 export function useHome() {
   const data = usePlanData("balanced");
   const pantry = usePantry();
   const stats = useFeedStats();
+  const { logs } = useNutritionDeps();
   const track = useFeedTracker();
   const { seen, markSeen } = useStoriesSeen();
   const [eaten, setEaten] = useState<MealName[] | null>(null);
@@ -24,26 +29,37 @@ export function useHome() {
   // One timestamp per visit: the feed is built once, so it does not reshuffle while you scroll.
   const [now] = useState(() => Date.now());
 
+  // Meals really logged today (cooked, later photographed). They win over the demo and the local toggles.
+  const [today] = useState(() => toDateKey(new Date()));
+  const todayLogs = useQuery({ queryKey: ["meal-logs", today], queryFn: () => logs.listBetween(today, today) });
+
   // Today is built from the meals actually eaten, so marking one eaten moves the chart's last point too.
   const core = useMemo(() => {
     if (!data) return null;
     const { recipes, dashboard, plan } = data;
     const byId = new Map(recipes.map((r) => [r.id, r]));
-    const eatenNow = eaten ?? dashboard.eatenToday;
+    const logged = new Map((todayLogs.data ?? []).map((l) => [MEAL_OF_SLOT[l.slot], l]));
+    const eatenNow = [...new Set([...(eaten ?? dashboard.eatenToday), ...logged.keys()])];
     const todayMeals = plan[0].meals.map((m) => ({ meal: m.meal, recipe: byId.get(m.recipeId) as Recipe }));
-    const todayDay = dayFromRecipes(
+    const todayDay = dayFromMeals(
       dashboard.days[dashboard.days.length - 1].date,
       dashboard.goals.calories,
-      todayMeals.filter((m) => eatenNow.includes(m.meal)).map((m) => m.recipe),
+      todayMeals.filter((m) => eatenNow.includes(m.meal)).map((m) => {
+        const l = logged.get(m.meal);
+        if (!l) return m.recipe;
+        const k = m.recipe.kcal ? l.kcal / m.recipe.kcal : 1; // a log without macros borrows the recipe's, scaled
+        return { kcal: l.kcal, protein: l.protein ?? m.recipe.protein * k, carbs: l.carbs ?? m.recipe.carbs * k, fat: l.fat ?? m.recipe.fat * k };
+      }),
     );
     const days = [...dashboard.days.slice(0, -1), todayDay];
     const chart = buildChartModel(range === "7d" ? days.slice(-7) : days, range);
     return { eatenNow, todayMeals, todayDay, chart, goals: dashboard.goals, notes: data.balance.notes };
-  }, [data, eaten, range]);
+  }, [data, eaten, range, todayLogs.data]);
 
   if (!core || !stats) return { isLoading: true as const };
   const { eatenNow, todayMeals, todayDay, goals } = core;
   const pantryItems = pantry.view.groups.flatMap((g) => g.items);
+  // A meal that is really logged stays eaten; the toggle only moves the demo ones.
   const toggleEaten = (meal: MealName) => setEaten(eatenNow.includes(meal) ? eatenNow.filter((x) => x !== meal) : [...eatenNow, meal]);
 
   const open = todayMeals.filter((m) => !eatenNow.includes(m.meal));

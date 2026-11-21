@@ -2,7 +2,8 @@ import type { Ingredient, MealName, Recipe, RecipeRepository, Step } from "@/dom
 
 /** FAKE DATA. Demo recipes so the planner, recipe pages and dashboard have something real-looking to work with. */
 const ing = (name: string, qty: number, unit = ""): Ingredient => ({ name, qty, unit });
-const st = (text: string, verb: string): Step => ({ text, verb });
+// Simmering steps are timed; the cook screen shows a countdown for them.
+const st = (text: string, verb: string, minutes = verb === "Simmer" ? 10 : undefined): Step => ({ text, verb, ...(minutes ? { minutes } : {}) });
 
 type Seed = Omit<Recipe, "servings" | "blurb"> & { blurb?: string };
 const r = (s: Seed): Recipe => ({ servings: 4, blurb: "", ...s });

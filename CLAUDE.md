@@ -31,6 +31,12 @@ Next.js App Router, strict TS, Tailwind v4 (CSS variables in `src/app/globals.cs
 - Migration `0004_feed_events.sql` and `SupabaseFeedEventRepository` exist but are not applied or wired: that comes with the real-data phase.
 - Presentation cannot import the domain: feed types reach it through `view-models/feed/types.ts`.
 
+## Cooking
+- `domain/cooking`: `finishCooking` logs the meal FIRST (never lost), then depletes the pantry and updates the serving-size habit; later failures become warnings, not lost meals. `kcalEaten` = recipe kcal x servings made / servings made x servings eaten (per-serving numbers; an ingredient-level nutrition table is a later step). `ingredientsToDeplete` only subtracts units that mean the same thing (pieces, cloves, cups); tbsp from a jar is left alone. Timer reads the clock, not ticks. `parseVoiceCommand` for hands-free.
+- Meal logs go to the database first; if that fails they wait in a browser queue (`data/nutrition/queued.ts`), still appear in lists, and are retried (on load, when online, every 30s). Supabase insert is an upsert on id, so a retry cannot double count. Migration 0003 (edited in place, not yet applied) has the recipe, servings and macro columns.
+- `/cook/[id]?servings=n`: full-screen steps (`CookScreen`), verb animations in `CookMotion` (generated from the Cooking motions design; CSS in `app/cook-motions.css`, scoped under `.cook-motion`, still under reduced motion), timer on steps with `minutes`, wake lock, optional voice control. Finish asks how many servings were eaten (starts from the learned habit), then Log it, Pantry updated, Your serving size. Home reads today's logs: a logged meal marks its slot eaten and uses the logged calories and macros.
+- Cook with friends / Cook live are out of v1.
+
 ## Domain notes
 - `domain/pantry`: pantry items, voice add (hear, then confirm), recipe depletion, running-low shopping list.
 - `domain/nutrition`: meal logs (cook or photo only), target range (default 1800 to 2100 until set), seed rule (15 seeds, in range only), `weekSeries` returns null for unlogged days, `rankUpNext`.

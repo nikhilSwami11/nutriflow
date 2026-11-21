@@ -19,6 +19,12 @@ export interface MealLog {
   source: "cook" | "photo";
   name: string;
   kcal: number;
+  /** Set when the meal came from a recipe, so the day's macros and the serving-size learner have what they need. */
+  recipeId?: string;
+  servings?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
 }
 
 export type IntakeStatus = "below" | "in" | "above";

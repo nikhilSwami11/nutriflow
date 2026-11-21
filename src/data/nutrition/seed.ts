@@ -11,6 +11,5 @@ export function seedLogs(today: Date): MealLog[] {
     m(1, "lunch", "Khichdi", 650), m(1, "dinner", "Sabzi roti", 1150),
     m(4, "breakfast", "Poha", 380), m(4, "lunch", "Rajma rice", 720), m(4, "dinner", "Dal tadka", 780),
     m(5, "breakfast", "Oats and banana", 340), m(5, "lunch", "Dal rice", 610), m(5, "dinner", "Palak paneer", 600),
-    m(6, "breakfast", "Oats and banana", 340), m(6, "lunch", "Dal rice", 610),
   ];
 }
