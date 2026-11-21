@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/* Light theme first. Values come from /design (Pantry.dc.html). */
+:root {
+  --bg: #ffffff;
+  --ink: #141414;
+  --ink2: #555555;
+  --muted: #6b6b6b;
+  --line: #f0f0f0;
+  --line2: #e2e2e2;
+  --panel: #f8f8f8;
+  --track: #f3f3f3;
+  --onp: #141414;
+
+  --mint: #8fd3c0;
+  --rose: #f2a3a9;
+  --sky: #9ec8f3;
+  --lavender: #b9a7ee;
+  --butter: #f4e3a1;
+  --peach: #f7c9bb;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-panel: var(--panel);
+  --color-track: var(--track);
+  --color-onp: var(--onp);
+  --color-mint: var(--mint);
+  --color-rose: var(--rose);
+  --color-sky: var(--sky);
+  --color-lavender: var(--lavender);
+  --color-butter: var(--butter);
+  --color-peach: var(--peach);
+  --font-sans: var(--font-plex), system-ui, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* 44px minimum touch target */
+@utility touch {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Voice orb: dots orbit the mic button. */
+.orb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  display: block;
+}
+.orb i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--s, 4px);
+  height: var(--s, 4px);
+  margin: calc(var(--s, 4px) / -2) 0 0 calc(var(--s, 4px) / -2);
+  border-radius: 50%;
+  transform: rotate(var(--a)) translateY(calc(var(--r) * -1));
+  animation: orbk var(--t, 3.6s) ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+@keyframes orbk {
+  0%,
+  100% {
+    transform: rotate(var(--a)) translateY(calc(var(--r) * -1)) scale(0.75);
+    opacity: 0.5;
+  }
+  50% {
+    transform: rotate(var(--a)) translateY(calc((var(--r) + var(--amp, 6px)) * -1)) scale(1.3);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orb i {
+    animation: none;
+  }
+}
+.rail::-webkit-scrollbar {
+  display: none;
+}

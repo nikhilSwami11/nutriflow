@@ -1,0 +1,37 @@
+# NutriFlow
+
+Voice-first cooking and nutrition companion. v1 is personal only (no household, town, garden, marketplace, estimated "usual day").
+Design source: the Design canvas (https://claude.ai/artifact/LRpDujJG56m3BrezNnrzCs). Match it. No UI or copy beyond it; if missing, ask.
+
+## Stack
+Next.js App Router, strict TS, Tailwind v4 (CSS variables in `src/app/globals.css`), TanStack Query, Zustand, Supabase, Vitest, Playwright.
+
+## Layers (enforced by `eslint-plugin-boundaries`, see `eslint.config.mjs`)
+- `src/presentation` -> `src/view-models` -> `src/domain` <- `src/data`
+- `domain`: pure TypeScript. No react/next/supabase/tanstack/zustand imports. Defines entities, use cases, ports (repository interfaces).
+- `data`: implements domain ports (Supabase, AI clients). Only imports `domain`.
+- `view-models`: hooks. Import `domain` only; get repositories through injected context.
+- `presentation`: components. Import `view-models` only, never `data`/`domain`.
+- `src/composition` + `src/app`: wire `data` into providers. Only place `data` is imported.
+- AI keys live in Supabase edge functions only.
+- Every use case has a unit test (`*.test.ts` beside it).
+
+## Data and wiring
+- `src/composition/Providers.tsx` builds repositories after mount (client only) so "today" is never frozen at build time. Supabase when `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set (the key is the publishable key), otherwise in-memory seeded repos.
+- Migrations in `supabase/migrations`. Every table needs RLS policies AND `grant ... to authenticated`, or requests fail with `permission denied`.
+- Anonymous sign-in is on until an auth screen exists.
+- Playwright runs on port 3100 with Supabase vars blanked: e2e never touches the real project. Stop `next dev` on 3000 first (one dev server per directory).
+
+## Domain notes
+- `domain/pantry`: pantry items, voice add (hear, then confirm), recipe depletion, running-low shopping list.
+- `domain/nutrition`: meal logs (cook or photo only), target range (default 1800 to 2100 until set), seed rule (15 seeds, in range only), `weekSeries` returns null for unlogged days, `rankUpNext`.
+- Home v1 shows only personal parts of the design. Out of v1: household, chores, chat, spend, macros, streak. Suggested/Tonight (needs recipes) and Planned vs eaten (needs the weekly plan) come later.
+
+## Style
+- Light theme first, tokens in `:root`. Palette: mint, rose, sky, lavender, butter, peach. IBM Plex Sans, thin strokes, black only on small accents.
+- 44px min touch targets (`touch` utility). Respect `prefers-reduced-motion` (global rule).
+- Seeds: only a day with logged intake inside target range earns. No bonus below target. Unlogged days are gaps in charts, never zero.
+
+## Commands
+`npm run typecheck`, `npm run lint`, `npm test`, `npm run test:e2e`.
+After each slice run typecheck, lint, tests.
