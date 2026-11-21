@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { FeedAction, FeedEvent, FeedEventRepository, FeedKind } from "@/domain/feed";
+import type { EventKind, FeedAction, FeedEvent, FeedEventRepository } from "@/domain/feed";
 
 interface Row {
   item_id: string;
-  kind: FeedKind;
+  kind: EventKind;
   action: FeedAction;
   position: number;
   dwell_ms: number | null;

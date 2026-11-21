@@ -14,11 +14,21 @@ export type FeedItem =
   | { id: string; kind: "pantry-alert"; reason?: string }
   | { id: string; kind: "plan-nudge"; notes: string[]; reason?: string };
 
+/** A story: a short, tappable card in the row above the feed. Live data is bound by the client, like posts. */
+export type Story =
+  | { id: string; kind: "meal"; meal: MealName; recipeId: string }
+  | { id: string; kind: "pantry" }
+  | { id: string; kind: "plan"; notes: string[] };
+
+export type EventKind = FeedKind | "story";
+
 export interface Feed {
   /** Bump when an item shape changes incompatibly. Clients drop kinds and versions they do not know. */
   schemaVersion: 1;
   generatedAt: number;
   items: FeedItem[];
+  /** Added after v1 shipped: optional so older feeds still parse. */
+  stories?: Story[];
 }
 
 export type FeedAction = "impression" | "open" | "like" | "unlike" | "save" | "unsave" | "dismiss" | "mark-eaten" | "add-to-list";
@@ -26,7 +36,7 @@ export type FeedAction = "impression" | "open" | "like" | "unlike" | "save" | "u
 /** What the user did with a post. Sent back so the ranking can learn. */
 export interface FeedEvent {
   itemId: string;
-  kind: FeedKind;
+  kind: EventKind;
   action: FeedAction;
   /** Index in the feed when it happened. */
   position: number;

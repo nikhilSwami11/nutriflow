@@ -8,6 +8,8 @@ import { readiness, type MealName, type Recipe } from "@/domain/recipes";
 import { buildChartModel, num, type Range } from "../dashboard/chartModel";
 import { joinList } from "../format";
 import { usePantry } from "../pantry/usePantry";
+import type { StoryModel } from "../feed/storyModel";
+import { useStoriesSeen } from "../feed/useStoriesSeen";
 import { useFeedStats, useFeedTracker } from "../feed/useFeedTracker";
 import { usePlanData } from "../plan/usePlanData";
 
@@ -16,6 +18,7 @@ export function useHome() {
   const pantry = usePantry();
   const stats = useFeedStats();
   const track = useFeedTracker();
+  const { seen, markSeen } = useStoriesSeen();
   const [eaten, setEaten] = useState<MealName[] | null>(null);
   const [range, setRange] = useState<Range>("7d");
   // One timestamp per visit: the feed is built once, so it does not reshuffle while you scroll.
@@ -68,13 +71,40 @@ export function useHome() {
     date: toDateKey(new Date(now)),
     now,
     nextMeal: nextOpen ? { meal: nextOpen.meal, recipeId: nextOpen.recipe.id } : null,
+    meals: todayMeals.map((m) => ({ meal: m.meal, recipeId: m.recipe.id })),
     lowItems: lowItems.length,
     planNotes: problems,
     stats: stats ?? summarizeEvents([], now),
   });
 
+  const mealCards = new Map(todayMeals.map((m) => [m.meal, card(m)]));
+  const stories = (feed.stories ?? []).flatMap<StoryModel>((st) => {
+    const isSeen = seen.includes(st.id);
+    if (st.kind === "meal") {
+      const c = mealCards.get(st.meal);
+      if (!c) return [];
+      const state = eatenNow.includes(st.meal) ? ("eaten" as const) : nextOpen?.meal === st.meal ? ("next" as const) : ("later" as const);
+      return [{ id: st.id, kind: "meal", label: st.meal, seen: isSeen, tint: c.tint, meal: { ...c, state } }];
+    }
+    if (st.kind === "pantry") {
+      return lowItems.length
+        ? [{ id: st.id, kind: "pantry", label: "Pantry", seen: isSeen, tint: "#F7C9BB", rows: lowItems.slice(0, 4).map((i) => ({ id: i.id, name: i.name, qty: `${i.qty} ${i.unit}` })), listed: pantry.listed, toggleList: pantry.toggleList }]
+        : [];
+    }
+    return [{ id: st.id, kind: "plan", label: "Plan", seen: isSeen, tint: "#CFC8F0", notes: st.notes }];
+  });
+
   return {
     isLoading: false as const,
+    stories: {
+      items: stories,
+      /** Opening marks it seen and tells the feed. */
+      open: (id: string, position: number) => {
+        markSeen(id);
+        track({ id, kind: "story" }, "open", position);
+      },
+      track: (id: string, action: "mark-eaten" | "add-to-list" | "open", position: number) => track({ id, kind: "story" }, action, position),
+    },
     feed: { items: feed.items as FeedItem[], track },
     dateLabel: new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }),
     next: open[0] ? card(open[0]) : null,

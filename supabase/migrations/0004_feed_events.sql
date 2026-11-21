@@ -3,7 +3,7 @@ create table public.feed_events (
   id bigint generated always as identity primary key,
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   item_id text not null,
-  kind text not null check (kind in ('next-meal', 'all-done', 'day-chart', 'pantry-alert', 'plan-nudge')),
+  kind text not null check (kind in ('next-meal', 'all-done', 'day-chart', 'pantry-alert', 'plan-nudge', 'story')),
   action text not null check (action in ('impression', 'open', 'like', 'unlike', 'save', 'unsave', 'dismiss', 'mark-eaten', 'add-to-list')),
   position int not null check (position >= 0),
   dwell_ms int check (dwell_ms >= 0),

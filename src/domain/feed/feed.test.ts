@@ -6,7 +6,8 @@ import { FEED_KINDS, type FeedEvent, type FeedKind } from "./types";
 const NOW = 1_800_000_000_000;
 const ev = (kind: FeedKind, action: FeedEvent["action"], ts = NOW, dwellMs?: number): FeedEvent => ({ itemId: `${kind}:d`, kind, action, position: 0, ts, dwellMs });
 const base: FeedContext = {
-  date: "2026-11-21", now: NOW, nextMeal: { meal: "Lunch", recipeId: "dal-rice" }, lowItems: 3, planNotes: ["Tuesday is 16 g short on protein."],
+  date: "2026-11-21", now: NOW, nextMeal: { meal: "Lunch", recipeId: "dal-rice" },
+  meals: [{ meal: "Breakfast", recipeId: "oats" }, { meal: "Lunch", recipeId: "dal-rice" }, { meal: "Dinner", recipeId: "dal-tadka" }], lowItems: 3, planNotes: ["Tuesday is 16 g short on protein."],
   stats: summarizeEvents([], NOW),
 };
 const order = (c: Partial<FeedContext>) => buildFeed({ ...base, ...c }).items.map((i) => i.kind);
@@ -71,5 +72,24 @@ describe("usableItems", () => {
     const feed = { schemaVersion: 1, items: [{ kind: "day-chart" }, { kind: "hologram" }, { kind: "next-meal" }] };
     expect(usableItems(feed, FEED_KINDS)).toEqual([0, 2]);
     expect(usableItems({ ...feed, schemaVersion: 2 }, FEED_KINDS)).toEqual([]);
+  });
+});
+
+describe("stories", () => {
+  const kinds = (c: Partial<FeedContext>) => (buildFeed({ ...base, ...c }).stories ?? []).map((s) => s.id.split(":")[1] + (s.kind === "meal" ? `:${s.id.split(":")[2]}` : ""));
+  it("one per planned meal in day order, then pantry and plan", () => {
+    expect(kinds({})).toEqual(["meal:Breakfast", "meal:Lunch", "meal:Dinner", "pantry", "plan"]);
+  });
+  it("drops pantry and plan stories when they do not apply", () => {
+    expect(kinds({ lowItems: 0, planNotes: [] })).toEqual(["meal:Breakfast", "meal:Lunch", "meal:Dinner"]);
+  });
+  it("ids are per day, so a seen story stays seen all day and resets tomorrow", () => {
+    const a = buildFeed(base).stories!.map((s) => s.id);
+    const b = buildFeed({ ...base, date: "2026-11-22" }).stories!.map((s) => s.id);
+    expect(a.some((id) => b.includes(id))).toBe(false);
+  });
+  it("is not changed by past engagement (the row never jumps)", () => {
+    const stats = summarizeEvents([ev("plan-nudge", "open"), ev("plan-nudge", "open"), ev("plan-nudge", "open")], NOW);
+    expect(buildFeed({ ...base, stats }).stories).toEqual(buildFeed(base).stories);
   });
 });

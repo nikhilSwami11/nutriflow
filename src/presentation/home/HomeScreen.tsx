@@ -4,6 +4,7 @@ import { AppShell } from "../shell/AppShell";
 import { useMediaQuery } from "../shared/useMediaQuery";
 import { Feed } from "./feed/Feed";
 import { FeedGrid } from "./feed/FeedGrid";
+import { Stories } from "./stories/Stories";
 
 /** One server-driven feed, two renderers: posts on mobile, dashboard cards on desktop. */
 export function HomeScreen() {
@@ -21,9 +22,10 @@ export function HomeScreen() {
         )}
       </header>
 
-      {!h.isLoading && !desktop && <div className="rail flex min-h-0 flex-1 flex-col overflow-y-auto pb-6"><Feed h={h} /></div>}
+      {!h.isLoading && !desktop && <div className="rail flex min-h-0 flex-1 flex-col overflow-y-auto pb-6"><Stories s={h.stories} /><Feed h={h} /></div>}
       {!h.isLoading && desktop && (
         <div className="rail grid min-h-0 flex-1 grid-flow-dense grid-cols-12 content-start gap-4 overflow-y-auto p-2 pb-10">
+          <div className="col-span-12"><Stories s={h.stories} /></div>
           <FeedGrid h={h} />
         </div>
       )}

@@ -19,7 +19,8 @@ export const WINDOW_MS = 14 * 24 * 3600 * 1000;
 export function summarizeEvents(events: FeedEvent[], now: number): Record<FeedKind, KindStats> {
   const out = Object.fromEntries(FEED_KINDS.map((k) => [k, empty()])) as Record<FeedKind, KindStats>;
   for (const e of events) {
-    if (now - e.ts > WINDOW_MS || !out[e.kind]) continue;
+    // Story events are recorded for later learning but do not move posts around.
+    if (e.kind === "story" || now - e.ts > WINDOW_MS || !out[e.kind]) continue;
     const s = out[e.kind];
     if (e.action === "impression") {
       s.impressions++;

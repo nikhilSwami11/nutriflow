@@ -1,12 +1,14 @@
 import type { DateKey } from "../nutrition/types";
 import type { MealName } from "../recipes/types";
 import { kindBoost, type KindStats } from "./events";
-import type { Feed, FeedItem, FeedKind } from "./types";
+import type { Feed, FeedItem, FeedKind, Story } from "./types";
 
 export interface FeedContext {
   date: DateKey;
   now: number;
   nextMeal: { meal: MealName; recipeId: string } | null;
+  /** Every meal planned for today, in day order, eaten or not. Becomes the meal stories. */
+  meals: { meal: MealName; recipeId: string }[];
   /** Running-low pantry items. */
   lowItems: number;
   /** Only the notes that point at a problem. Empty when the week is balanced. */
@@ -39,7 +41,15 @@ export function buildFeed(ctx: FeedContext): Feed {
   const score = (i: FeedItem) => BASE[i.kind] + boost(i);
   // Ties: the kind the user engages with more goes first, then the higher base relevance.
   const items = [...candidates].sort((a, b) => score(b) - score(a) || boost(b) - boost(a) || BASE[b.kind] - BASE[a.kind]);
-  return { schemaVersion: 1, generatedAt: ctx.now, items };
+  return { schemaVersion: 1, generatedAt: ctx.now, items, stories: buildStories(ctx) };
+}
+
+/** One story per planned meal, then pantry and plan when they apply. Order is fixed: the row should not jump around. */
+export function buildStories(ctx: FeedContext): Story[] {
+  const stories: Story[] = ctx.meals.map((m) => ({ id: `story:meal:${m.meal}:${ctx.date}`, kind: "meal", meal: m.meal, recipeId: m.recipeId }));
+  if (ctx.lowItems > 0) stories.push({ id: `story:pantry:${ctx.date}`, kind: "pantry" });
+  if (ctx.planNotes.length) stories.push({ id: `story:plan:${ctx.date}`, kind: "plan", notes: ctx.planNotes.slice(0, 2) });
+  return stories;
 }
 
 /** A client only renders what it understands. Unknown kinds or a newer schema are dropped, never crash. */

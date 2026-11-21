@@ -1,7 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
-import { summarizeEvents, WINDOW_MS, type FeedAction, type FeedEvent, type FeedItem } from "@/domain/feed";
+import { summarizeEvents, WINDOW_MS, type EventKind, type FeedAction, type FeedEvent } from "@/domain/feed";
 import { useFeedEvents } from "./FeedDeps";
 
 const FLUSH_MS = 4000;
@@ -52,7 +52,7 @@ export function useFeedTracker() {
   }, [flush]);
 
   return useCallback(
-    (item: FeedItem, action: FeedAction, position: number, dwellMs?: number) => {
+    (item: { id: string; kind: EventKind }, action: FeedAction, position: number, dwellMs?: number) => {
       queue.current.push({ itemId: item.id, kind: item.kind, action, position, dwellMs, ts: Date.now() });
     },
     [],
