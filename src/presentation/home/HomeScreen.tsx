@@ -60,7 +60,7 @@ export function HomeScreen() {
                 {h.tasks.map((t) => {
                   const body = (
                     <>
-                      <span className="line-clamp-2 block w-full text-left text-[15px] font-medium leading-tight">{t.title}</span>
+                      <span className="line-clamp-2 w-full text-left text-[15px] font-medium leading-tight">{t.title}</span>
                       <span className={`self-start whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium text-onp ${TAG[t.kind]}`}>{t.hint}</span>
                     </>
                   );
