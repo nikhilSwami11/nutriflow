@@ -3,14 +3,9 @@ import { useHome } from "@/view-models/home/useHome";
 import { AppShell } from "../shell/AppShell";
 import { useMediaQuery } from "../shared/useMediaQuery";
 import { Feed } from "./feed/Feed";
-import { MacroChart } from "./MacroChart";
-import { NextMealHero } from "./NextMealHero";
-import { PantryNudge } from "./Nudges";
-import { TodayLine } from "./TodayLine";
+import { FeedGrid } from "./feed/FeedGrid";
 
-const rise = (i: number) => ({ "--i": i }) as React.CSSProperties;
-
-/** Mobile is a feed of posts (next meal, your day, pantry alert). Desktop is the same three things as a dashboard. */
+/** One server-driven feed, two renderers: posts on mobile, dashboard cards on desktop. */
 export function HomeScreen() {
   const h = useHome();
   const desktop = useMediaQuery("(min-width: 1024px)");
@@ -28,15 +23,8 @@ export function HomeScreen() {
 
       {!h.isLoading && !desktop && <div className="rail flex min-h-0 flex-1 flex-col overflow-y-auto pb-6"><Feed h={h} /></div>}
       {!h.isLoading && desktop && (
-        <div className="rail grid min-h-0 flex-1 grid-cols-12 content-start gap-4 overflow-y-auto p-2 pb-10">
-          <div className="rise col-span-5" style={rise(1)}><NextMealHero next={h.next} then={h.then} /></div>
-          <div className="rise col-span-7 row-span-2" style={rise(2)}>
-            <MacroChart
-              c={h.chart}
-              above={<TodayLine t={h.today} />}
-            />
-          </div>
-          {h.pantry && <div className="rise col-span-5 self-start" style={rise(3)}><PantryNudge p={h.pantry} /></div>}
+        <div className="rail grid min-h-0 flex-1 grid-flow-dense grid-cols-12 content-start gap-4 overflow-y-auto p-2 pb-10">
+          <FeedGrid h={h} />
         </div>
       )}
     </AppShell>

@@ -25,6 +25,7 @@ Next.js App Router, strict TS, Tailwind v4 (CSS variables in `src/app/globals.cs
 ## Feed (server-driven Home)
 - `domain/feed`: the contract (`Feed`, `FeedItem` by `kind`, `schemaVersion`), `FeedEvent`, `summarizeEvents`/`kindBoost` (14-day window, boost capped at +-20, dismissals weigh more) and `buildFeed` (rule-based ranking; deterministic). No AI yet on purpose: the user does not want the Claude API for now. A model can later replace the ranking by choosing among the same candidates, without changing the contract.
 - The feed decides which posts, in what order and why. Live data inside a post (chart, pantry, eaten) stays bound on the client. Clients drop unknown kinds and schema versions.
+- Desktop renders the same items in `presentation/home/feed/FeedGrid` as dashboard cards (wide kinds take 7 of 12 columns, the rest 5; the feed's order decides placement) and records the same events. Option chosen: one feed engine, two renderers.
 - Mobile renders it in `presentation/home/feed` (`Feed` kind registry, `Tracked` impressions after 1s at 50% visible, `Post`). Events are batched by `useFeedTracker` (4s, tab hide, pagehide) into `LocalFeedEventRepository` (localStorage, last 500). Stats are read once per visit so the feed never reshuffles while scrolling.
 - Migration `0004_feed_events.sql` and `SupabaseFeedEventRepository` exist but are not applied or wired: that comes with the real-data phase.
 - Presentation cannot import the domain: feed types reach it through `view-models/feed/types.ts`.

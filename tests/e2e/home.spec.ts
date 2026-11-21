@@ -148,3 +148,14 @@ test("past engagement reorders the feed on the next visit", async ({ page, isMob
   expect(after.indexOf("Pantry alert")).toBeLessThan(after.indexOf("Your day"));
   expect(after[0]).toBe("Up next"); // the next meal stays on top
 });
+
+test("desktop dashboard records the same events and follows the same feed", async ({ page, isMobile }) => {
+  test.skip(isMobile, "desktop layout");
+  await page.getByRole("article", { name: "Up next" }).getByRole("button", { name: "Mark eaten" }).click();
+  await page.getByLabel("Pantry alert").getByRole("button", { name: /list/i }).click();
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  await expect.poll(async () => (await events(page)).map((e) => `${e.kind}:${e.action}`)).toEqual(expect.arrayContaining(["next-meal:mark-eaten", "pantry-alert:add-to-list"]));
+  // card order follows the feed: next meal first
+  const labels = await page.locator("article[aria-label], section[aria-label]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
+  expect(labels.indexOf("Up next")).toBeLessThan(labels.indexOf("Calories and macros"));
+});
