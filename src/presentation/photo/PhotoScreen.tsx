@@ -58,7 +58,7 @@ function Detect({ p }: { p: PhotoModel }) {
       {p.source !== "vision" && <p role="note" className="m-0 rounded-2xl bg-butter px-3 py-2 text-xs text-onp">Photo recognition is not connected yet, so this is an example, not read from your photo.</p>}
       <div className="grid grid-cols-2 gap-2.5">
         {p.tiles.map((t) => (
-          <button key={t.id} type="button" onClick={t.toggle} aria-pressed={t.on} className={`flex min-h-[72px] flex-col items-start justify-between gap-1.5 rounded-2xl border p-3 text-left ${t.on ? "border-transparent bg-ink text-bg" : "border-line2 bg-panel text-ink"}`}>
+          <button key={t.id} type="button" onClick={t.toggle} aria-pressed={t.on} className={`flex min-h-[72px] flex-col items-start justify-between gap-1.5 rounded-2xl border p-3 text-left ${t.on ? "border-transparent bg-mint text-onp" : "border-line2 bg-panel text-ink"}`}>
             <span className="flex w-full items-center justify-between gap-2"><span className="text-sm font-medium">{t.name}</span><span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: t.color }} /></span>
             <span className="text-xs tabular-nums opacity-75">{t.sub}</span>
           </button>

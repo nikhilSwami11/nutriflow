@@ -58,7 +58,7 @@ function Body() {
             </div>
             <div role="group" aria-label="What to scan" className="flex flex-wrap justify-center gap-2">
               {MODES.map((m) => (
-                <button key={m.id} type="button" aria-pressed={s.mode === m.id} disabled={!m.ready} onClick={() => s.setMode(m.id)} title={m.ready ? undefined : "Needs photo recognition, which is not connected yet"} className={`touch rounded-full border px-4 text-sm ${s.mode === m.id ? "border-transparent bg-ink text-bg" : "border-line2 text-ink"} disabled:opacity-40`}>{m.label}</button>
+                <button key={m.id} type="button" aria-pressed={s.mode === m.id} disabled={!m.ready} onClick={() => s.setMode(m.id)} title={m.ready ? undefined : "Needs photo recognition, which is not connected yet"} className={`touch rounded-full border px-4 text-sm ${s.mode === m.id ? "border-transparent bg-mint text-onp" : "border-line2 text-ink"} disabled:opacity-40`}>{m.label}</button>
               ))}
             </div>
             <div className="flex items-center justify-between px-3">

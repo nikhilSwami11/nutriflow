@@ -9,6 +9,15 @@ export class InMemoryAuthRepository implements AuthRepository {
   async signInWithGoogle(): Promise<void> {
     throw new Error("Google sign-in needs Supabase");
   }
+  async signUpWithEmail(): Promise<never> {
+    throw new Error("Email sign-in needs Supabase");
+  }
+  async signInWithEmail(): Promise<void> {
+    throw new Error("Email sign-in needs Supabase");
+  }
+  async signOut() {
+    /* nothing to sign out of */
+  }
   async continueAsGuest() {
     return this.guest;
   }

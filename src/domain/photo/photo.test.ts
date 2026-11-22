@@ -75,6 +75,7 @@ describe("parseIntent", () => {
   it.each([
     ["I have 3 onions, 2 tomatoes and butter", "pantry-add"], ["I bought eggs", "pantry-add"], ["Add two lemons", "pantry-add"],
     ["What can I make tonight?", "suggest"], ["what's for dinner", "suggest"], ["Start cooking", "cook"], ["let's cook", "cook"],
+    ["I need to eat something", "eat"], ["I'm hungry", "eat"], ["what should I eat", "eat"],
     ["sing me a song", "unknown"], ["", "unknown"],
   ])("%s -> %s", (said, type) => expect(parseIntent(said).type).toBe(type));
   it("keeps what was said for a pantry add", () => {

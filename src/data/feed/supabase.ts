@@ -28,7 +28,7 @@ export const fromRow = (r: Row): FeedEvent => ({
   ts: new Date(r.created_at).getTime(),
 });
 
-/** Server copy of the events, for the server-side feed builder to learn from. Not wired in yet: needs migration 0004. */
+/** Server copy of the events, for the server-side feed builder to learn from. Used through `MirroredFeedEventRepository`. */
 export class SupabaseFeedEventRepository implements FeedEventRepository {
   constructor(private db: SupabaseClient) {}
   async append(events: FeedEvent[]) {

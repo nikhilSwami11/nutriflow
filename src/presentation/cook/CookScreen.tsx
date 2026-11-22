@@ -38,7 +38,22 @@ function Steps({ c }: { c: CookModel }) {
       </div>
 
       <div key={s.number} className="story-in flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4">
-        <CookMotion verb={s.verb} />
+        <div className="relative">
+          <CookMotion verb={s.verb} />
+          {c.timer && (
+            <div aria-label="Timer" role="group" className="absolute right-2 top-2 flex items-center gap-2 rounded-2xl border border-line bg-bg py-1 pl-3 pr-1">
+              <div>
+                <div className="text-xs leading-none text-muted">Timer</div>
+                <div role="timer" aria-live="off" className="mt-1 text-xl font-medium leading-none tabular-nums">{c.timer.done ? "0:00" : c.timer.label}</div>
+              </div>
+              {c.timer.done ? (
+                <span className="rounded-full bg-mint px-3 py-2 text-sm font-medium text-onp">Time&apos;s up</span>
+              ) : (
+                <button type="button" onClick={c.timer.toggle} aria-pressed={c.timer.running} className="touch rounded-full border border-line2 px-4 text-sm font-medium">{c.timer.running ? "Pause" : c.timer.started ? "Resume" : "Start"}</button>
+              )}
+            </div>
+          )}
+        </div>
         <div className="flex flex-col items-center gap-2 text-center">
           <span className="rounded-full px-3 py-1 text-xs font-medium text-onp" style={{ background: VERB[s.verb] ?? "#CFC8F0" }}>{s.verb}</span>
           <p aria-live="polite" className="m-0 text-[26px] font-medium leading-tight tracking-[-0.02em]">{s.text}</p>
@@ -49,19 +64,6 @@ function Steps({ c }: { c: CookModel }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" /></svg>
           Ask about this step
         </button>
-        {c.timer && (
-          <div aria-label="Timer" role="group" className="flex items-center justify-between gap-3 rounded-[20px] border border-line px-5 py-3.5">
-            <div>
-              <div className="text-xs text-muted">Timer</div>
-              <div role="timer" aria-live="off" className="text-[32px] font-light leading-none tabular-nums tracking-[-0.02em]">{c.timer.done ? "0:00" : c.timer.label}</div>
-            </div>
-            {c.timer.done ? (
-              <span className="rounded-full bg-mint px-4 py-2 text-sm font-medium text-onp">Time&apos;s up</span>
-            ) : (
-              <button type="button" onClick={c.timer.toggle} aria-pressed={c.timer.running} className="touch rounded-full border border-line2 px-5 text-sm font-medium">{c.timer.running ? "Pause" : c.timer.started ? "Resume" : "Start timer"}</button>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-2.5 border-t border-line px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">

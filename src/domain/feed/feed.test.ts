@@ -7,6 +7,7 @@ const NOW = 1_800_000_000_000;
 const ev = (kind: FeedKind, action: FeedEvent["action"], ts = NOW, dwellMs?: number): FeedEvent => ({ itemId: `${kind}:d`, kind, action, position: 0, ts, dwellMs });
 const base: FeedContext = {
   date: "2026-11-21", now: NOW, nextMeal: { meal: "Lunch", recipeId: "dal-rice" },
+  chores: [{ id: "dishes" }],
   meals: [{ meal: "Breakfast", recipeId: "oats" }, { meal: "Lunch", recipeId: "dal-rice" }, { meal: "Dinner", recipeId: "dal-tadka" }], lowItems: 3, planNotes: ["Tuesday is 16 g short on protein."],
   stats: summarizeEvents([], NOW),
 };
@@ -77,11 +78,11 @@ describe("usableItems", () => {
 
 describe("stories", () => {
   const kinds = (c: Partial<FeedContext>) => (buildFeed({ ...base, ...c }).stories ?? []).map((s) => s.id.split(":")[1] + (s.kind === "meal" ? `:${s.id.split(":")[2]}` : ""));
-  it("one per planned meal in day order, then pantry and plan", () => {
-    expect(kinds({})).toEqual(["meal:Breakfast", "meal:Lunch", "meal:Dinner", "pantry", "plan"]);
+  it("one per planned meal in day order, then chores, pantry and plan", () => {
+    expect(kinds({})).toEqual(["meal:Breakfast", "meal:Lunch", "meal:Dinner", "chore", "pantry", "plan"]);
   });
   it("drops pantry and plan stories when they do not apply", () => {
-    expect(kinds({ lowItems: 0, planNotes: [] })).toEqual(["meal:Breakfast", "meal:Lunch", "meal:Dinner"]);
+    expect(kinds({ lowItems: 0, planNotes: [] })).toEqual(["meal:Breakfast", "meal:Lunch", "meal:Dinner", "chore"]);
   });
   it("ids are per day, so a seen story stays seen all day and resets tomorrow", () => {
     const a = buildFeed(base).stories!.map((s) => s.id);

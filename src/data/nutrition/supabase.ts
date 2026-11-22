@@ -47,12 +47,12 @@ export class SupabaseMealLogRepository implements MealLogRepository {
 export class SupabaseProfileRepository implements ProfileRepository {
   constructor(private db: SupabaseClient) {}
   async get(): Promise<Profile | null> {
-    const { data, error } = await this.db.from("profiles").select("kcal_min,kcal_max").maybeSingle();
+    const { data, error } = await this.db.from("profiles").select("kcal_min,kcal_max,diet,dislikes").maybeSingle();
     if (error) throw error;
-    return data ? { range: { min: Number(data.kcal_min), max: Number(data.kcal_max) } } : null;
+    return data ? { range: { min: Number(data.kcal_min), max: Number(data.kcal_max) }, diet: data.diet, dislikes: data.dislikes ?? [] } : null;
   }
   async save(p: Profile) {
-    const { error } = await this.db.from("profiles").upsert({ kcal_min: p.range.min, kcal_max: p.range.max });
+    const { error } = await this.db.from("profiles").upsert({ kcal_min: p.range.min, kcal_max: p.range.max, diet: p.diet ?? "anything", dislikes: p.dislikes ?? [] });
     if (error) throw error;
   }
 }

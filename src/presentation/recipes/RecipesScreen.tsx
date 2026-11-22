@@ -23,7 +23,7 @@ export function RecipesScreen() {
             </label>
             <div role="group" aria-label="Filters" className="rail -mx-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:flex-wrap lg:px-0">
               {r.filters.map((f) => (
-                <button key={f.id} type="button" onClick={f.pick} aria-pressed={f.on} className={`touch shrink-0 rounded-full border px-4 text-sm ${f.on ? "border-transparent bg-ink text-bg" : "border-line2 bg-transparent text-ink"}`}>{f.label}</button>
+                <button key={f.id} type="button" onClick={f.pick} aria-pressed={f.on} className={`touch shrink-0 rounded-full border px-4 text-sm ${f.on ? "border-transparent bg-mint text-onp" : "border-line2 bg-transparent text-ink"}`}>{f.label}</button>
               ))}
             </div>
           </div>

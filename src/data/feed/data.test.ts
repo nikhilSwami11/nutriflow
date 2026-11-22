@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FeedEvent } from "@/domain/feed";
 import { LocalFeedEventRepository } from "./local";
+import { MirroredFeedEventRepository } from "./mirrored";
 import { fromRow, toRow } from "./supabase";
 
 const mem = () => {
@@ -38,5 +39,21 @@ describe("supabase row mapping", () => {
   });
   it("a missing dwell stays undefined", () => {
     expect(fromRow(toRow(ev(1_800_000_000_000))).dwellMs).toBeUndefined();
+  });
+});
+
+describe("MirroredFeedEventRepository", () => {
+  const down = { append: async () => { throw new Error("down"); }, recent: async () => { throw new Error("down"); } };
+  it("keeps events locally and reads them back when the server is down", async () => {
+    const local = new LocalFeedEventRepository(mem());
+    const r = new MirroredFeedEventRepository(local, down);
+    await expect(r.append([ev(100)])).resolves.toBeUndefined();
+    expect((await r.recent(0)).map((e) => e.ts)).toEqual([100]);
+  });
+  it("copies to the server and reads from it when up", async () => {
+    const remote = new LocalFeedEventRepository(mem());
+    const r = new MirroredFeedEventRepository(new LocalFeedEventRepository(mem()), remote);
+    await r.append([ev(5)]);
+    expect((await remote.recent(0)).map((e) => e.ts)).toEqual([5]);
   });
 });

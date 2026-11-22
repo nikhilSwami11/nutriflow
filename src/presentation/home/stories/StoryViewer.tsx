@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import type { StoryChore } from "@/view-models/feed/storyModel";
 import type { HomeModel } from "@/view-models/home/useHome";
 import { Bowl } from "../../recipes/Bowl";
 
@@ -8,6 +9,19 @@ const SLIDE_MS = 6000;
 const reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 const btn = "touch rounded-full px-5 text-sm font-medium";
+
+/** Time since a chore was started. Reads the clock each second, so a sleeping tab still shows the right time. */
+function Elapsed({ since }: { since: number }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const sec = Math.max(0, Math.floor((now - since) / 1000));
+  return <span className="text-[40px] font-medium tabular-nums tracking-[-0.02em]" role="timer" aria-label="Time spent">{Math.floor(sec / 60)}:{String(sec % 60).padStart(2, "0")}</span>;
+}
+
+const choreDone = (c: StoryChore) => c.done;
 
 /**
  * Full-screen on a phone, a centred card on desktop. Progress bars advance on their own and pause while you hold
@@ -61,6 +75,8 @@ export function StoryViewer({ s, index, setIndex, onClose }: { s: HomeModel["sto
   };
 
   if (!st) return null;
+  // A chore in progress holds the slide: it should not slide away while you are doing it.
+  const hold = paused || (st.kind === "chore" && st.chore.startedAt !== null && !choreDone(st.chore));
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
 
   return (
@@ -87,7 +103,7 @@ export function StoryViewer({ s, index, setIndex, onClose }: { s: HomeModel["sto
                 <span
                   key={it.id}
                   className="story-bar block h-full w-full bg-ink"
-                  style={{ "--story-ms": `${SLIDE_MS}ms`, animationPlayState: paused ? "paused" : "running" } as React.CSSProperties}
+                  style={{ "--story-ms": `${SLIDE_MS}ms`, animationPlayState: hold ? "paused" : "running" } as React.CSSProperties}
                   onAnimationEnd={next}
                 />
               )}
@@ -113,6 +129,15 @@ export function StoryViewer({ s, index, setIndex, onClose }: { s: HomeModel["sto
               <p className="m-0 text-sm tabular-nums">{st.meal.minutes} min · {st.meal.kcal} kcal · {st.meal.protein} g protein</p>
               <span className={`rounded-full px-3 py-1 text-xs font-medium ${st.meal.state === "eaten" ? "bg-mint" : st.meal.ready ? "bg-mint" : "bg-peach"}`}>
                 {st.meal.state === "eaten" ? "Eaten" : st.meal.readyText}
+              </span>
+            </>
+          )}
+          {st.kind === "chore" && (
+            <>
+              <h2 className="m-0 text-[28px] font-medium leading-tight tracking-[-0.02em]">{st.chore.title}</h2>
+              {st.chore.startedAt !== null && !st.chore.done && <Elapsed since={st.chore.startedAt} />}
+              <span className={`rounded-full px-3 py-1 text-xs font-medium ${st.chore.done ? "bg-mint" : "bg-white/60"}`}>
+                {st.chore.done ? "Done" : st.chore.startedAt !== null ? "In progress" : st.chore.when}
               </span>
             </>
           )}
@@ -145,6 +170,16 @@ export function StoryViewer({ s, index, setIndex, onClose }: { s: HomeModel["sto
               </button>
             </>
           )}
+          {st.kind === "chore" && (st.chore.done ? (
+            <button type="button" onClick={st.chore.undo} className={`${btn} border border-black/20 bg-white/70`}>Undo</button>
+          ) : (
+            <>
+              {st.chore.startedAt === null && (
+                <button type="button" onClick={() => { s.track(st.id, "open", index); st.chore.start(); }} className={`${btn} bg-ink text-bg`}>Start doing</button>
+              )}
+              <button type="button" onClick={() => { s.track(st.id, "mark-eaten", index); st.chore.complete(); }} className={`${btn} ${st.chore.startedAt === null ? "border border-black/20 bg-white/70" : "bg-ink text-bg"}`}>Mark complete</button>
+            </>
+          ))}
           {st.kind === "pantry" && (
             <button type="button" onClick={() => { s.track(st.id, "add-to-list", index); st.toggleList(); }} aria-pressed={st.listed} className={`${btn} ${st.listed ? "bg-ink text-bg" : "border border-black/20 bg-white/70"}`}>
               {st.listed ? "On the list" : "Add to list"}

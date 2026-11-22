@@ -6,13 +6,15 @@ export async function toggleLowOnShoppingList(
   pantry: PantryRepository,
   list: ShoppingListRepository,
 ): Promise<{ listed: boolean }> {
-  const lowIds = getLowItems(await pantry.list()).map((i) => i.id);
+  const low = getLowItems(await pantry.list());
+  const lowIds = low.map((i) => i.id);
   const onList = new Set(await list.list());
   const allListed = lowIds.length > 0 && lowIds.every((id) => onList.has(id));
   if (allListed) {
     await list.remove(lowIds);
     return { listed: false };
   }
-  await list.add(lowIds.filter((id) => !onList.has(id)));
+  const fresh = low.filter((i) => !onList.has(i.id));
+  await list.add(fresh.map((i) => i.id), Object.fromEntries(fresh.map((i) => [i.id, { qty: 1, unit: i.unit }])));
   return { listed: lowIds.length > 0 };
 }

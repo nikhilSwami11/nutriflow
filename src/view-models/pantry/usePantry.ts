@@ -2,7 +2,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
+  addNamesToShoppingList,
   addParsedItems,
+  type Need,
   adjustQuantity,
   clampQty,
   getLowItems,
@@ -52,6 +54,11 @@ export function usePantry() {
     onSuccess: () => qc.invalidateQueries({ queryKey: LIST }),
   });
 
+  const addNames = useMutation({
+    mutationFn: (needs: Need[]) => addNamesToShoppingList({ pantry, list, newId }, needs),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: LIST }), qc.invalidateQueries({ queryKey: PANTRY })]),
+  });
+
   const all = items.data ?? [];
   const lowIds = getLowItems(all).map((i) => i.id);
   const onList = new Set(listIds.data ?? []);
@@ -68,5 +75,6 @@ export function usePantry() {
     hear: (text: string) => hear.mutateAsync(text),
     addHeard: (parsed: ParsedItem[]) => addHeard.mutateAsync(parsed),
     toggleList: () => toggleList.mutate(),
+    addNames: (needs: Need[]) => addNames.mutateAsync(needs),
   };
 }

@@ -43,7 +43,8 @@ export function useCaptureSheet() {
       const items = await pantry.hear(intent.text);
       if (items.length) setHeard({ text: said, items });
       else setStatus("I could not find any food in that. Try again.");
-    } else if (intent.type === "suggest") go("/recipes");
+    } else if (intent.type === "eat") go("/eat");
+    else if (intent.type === "suggest") go("/recipes");
     else if (intent.type === "cook") go(home.isLoading || !home.next ? "/recipes" : `/cook/${home.next.id}`);
     else setStatus("I did not catch that. Try one of the examples below.");
   };

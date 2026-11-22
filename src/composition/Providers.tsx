@@ -2,10 +2,16 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { InMemoryPantryRepository, InMemoryShoppingListRepository, LocalUtteranceParser } from "@/data/pantry/inMemory";
+import { LocalBoughtRepository } from "@/data/shopping/boughtLocal";
+import { LocalShoppingPrefsRepository } from "@/data/shopping/local";
+import { InMemoryChoreRepository, SEED_CHORES } from "@/data/chores/inMemory";
+import { SupabaseChoreRepository } from "@/data/chores/supabase";
 import { InMemoryAuthRepository } from "@/data/auth/inMemory";
 import { SupabaseAuthRepository } from "@/data/auth/supabase";
 import { LocalServingHabitRepository } from "@/data/cooking/habits";
 import { LocalFeedEventRepository } from "@/data/feed/local";
+import { MirroredFeedEventRepository } from "@/data/feed/mirrored";
+import { SupabaseFeedEventRepository } from "@/data/feed/supabase";
 import { QueuedMealLogRepository } from "@/data/nutrition/queued";
 import { DemoMealDetector } from "@/data/photo/demo";
 import { DemoRecipeRepository } from "@/data/recipes/demo";
@@ -16,6 +22,8 @@ import { SupabaseMealLogRepository, SupabaseProfileRepository } from "@/data/nut
 import { SEED } from "@/data/pantry/seed";
 import {
   createSupabase,
+  EdgeBuyAdvisor,
+  EdgeRecipeSearch,
   EdgeUtteranceParser,
   SupabasePantryRepository,
   SupabaseShoppingListRepository,
@@ -25,7 +33,13 @@ import type { FeedEventRepository } from "@/domain/feed";
 import type { MealLogRepository, ProfileRepository } from "@/domain/nutrition";
 import type { RecipeRepository } from "@/domain/recipes";
 import type { AuthRepository } from "@/domain/auth";
+import type { RecipeSearch } from "@/domain/eat";
+import type { BuyAdvisor } from "@/domain/pantry";
+import { EatDepsProvider } from "@/view-models/eat/EatDeps";
 import { AuthDepsProvider } from "@/view-models/auth/AuthDeps";
+import { ShoppingDepsProvider, type ShoppingDeps } from "@/view-models/shopping/ShoppingDeps";
+import { ChoreDepsProvider } from "@/view-models/chores/ChoreDeps";
+import type { ChoreRepository } from "@/domain/chores";
 import { CookDepsProvider, type CookDeps } from "@/view-models/cook/CookDeps";
 import { FeedDepsProvider } from "@/view-models/feed/FeedDeps";
 import { PhotoDepsProvider } from "@/view-models/photo/PhotoDeps";
@@ -36,12 +50,15 @@ import { PantryDepsProvider, type PantryDeps } from "@/view-models/pantry/Pantry
 
 interface Deps {
   auth: AuthRepository;
+  chores: ChoreRepository;
+  shopping: ShoppingDeps;
+  recipeSearch?: RecipeSearch;
   pantry: PantryDeps;
   nutrition: NutritionDeps;
   /** Demo data for the whole dashboard until real logging feeds it. */
   dashboard: DashboardRepository;
   recipes: RecipeRepository;
-  /** Browser storage for now; Supabase copy comes with the real-data phase (migration 0004). */
+  /** Browser storage, mirrored to Supabase when it is set. */
   feedEvents: FeedEventRepository;
   cook: CookDeps;
   /** Retries meals that could not reach the database. */
@@ -61,15 +78,27 @@ const storage = () => {
 };
 
 /** Everything that does not depend on which backend is in use. Meal logs always go through the retry queue. */
-const assemble = (auth: AuthRepository, pantry: PantryDeps, primaryLogs: MealLogRepository, profile: ProfileRepository): Deps => {
+const assemble = (
+  auth: AuthRepository,
+  chores: ChoreRepository,
+  pantry: PantryDeps,
+  primaryLogs: MealLogRepository,
+  profile: ProfileRepository,
+  remoteFeed?: FeedEventRepository,
+  advisor?: BuyAdvisor,
+  recipeSearch?: RecipeSearch,
+): Deps => {
   const queue = new QueuedMealLogRepository(primaryLogs, storage());
   return {
     auth,
+    chores,
+    recipeSearch,
+    shopping: { prefs: new LocalShoppingPrefsRepository(storage()), bought: new LocalBoughtRepository(storage()), advisor },
     pantry,
     nutrition: { logs: queue, profile },
     dashboard: new DemoDashboardRepository(),
     recipes: new DemoRecipeRepository(),
-    feedEvents: new LocalFeedEventRepository(storage()),
+    feedEvents: remoteFeed ? new MirroredFeedEventRepository(new LocalFeedEventRepository(storage()), remoteFeed) : new LocalFeedEventRepository(storage()),
     cook: { habits: new LocalServingHabitRepository(storage()), pendingLogs: () => queue.pending() },
     flushLogs: () => queue.flush(),
   };
@@ -78,6 +107,7 @@ const assemble = (auth: AuthRepository, pantry: PantryDeps, primaryLogs: MealLog
 const inMemory = (): Deps =>
   assemble(
     new InMemoryAuthRepository(),
+    new InMemoryChoreRepository(SEED_CHORES),
     { pantry: new InMemoryPantryRepository(SEED), list: new InMemoryShoppingListRepository(), parser: new LocalUtteranceParser(), newId },
     new InMemoryMealLogRepository(seedLogs(new Date())),
     new InMemoryProfileRepository(),
@@ -100,9 +130,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       setDeps(
         assemble(
           new SupabaseAuthRepository(db, window.location.origin),
+          new SupabaseChoreRepository(db),
           { pantry: new SupabasePantryRepository(db), list: new SupabaseShoppingListRepository(db), parser: new EdgeUtteranceParser(db), newId },
           new SupabaseMealLogRepository(db),
           new SupabaseProfileRepository(db),
+          new SupabaseFeedEventRepository(db),
+          new EdgeBuyAdvisor(db),
+          new EdgeRecipeSearch(db),
         ),
       ),
     );
@@ -126,6 +160,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <AuthDepsProvider value={deps.auth}>
+      <ChoreDepsProvider value={{ repo: deps.chores, newId }}>
+      <ShoppingDepsProvider value={deps.shopping}>
+      <EatDepsProvider value={deps.recipeSearch}>
       <PantryDepsProvider value={deps.pantry}>
         <NutritionDepsProvider value={deps.nutrition}>
           <DashboardDepsProvider value={deps.dashboard}>
@@ -139,6 +176,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           </DashboardDepsProvider>
         </NutritionDepsProvider>
       </PantryDepsProvider>
+      </EatDepsProvider>
+      </ShoppingDepsProvider>
+      </ChoreDepsProvider>
       </AuthDepsProvider>
     </QueryClientProvider>
   );

@@ -1,4 +1,4 @@
-import type { ParsedItem, PantryItem, PantryRepository, ShoppingListRepository, UtteranceParser } from "@/domain/pantry";
+import type { Amount, ParsedItem, PantryItem, PantryRepository, ShoppingListRepository, UtteranceParser } from "@/domain/pantry";
 
 export class InMemoryPantryRepository implements PantryRepository {
   private items: Map<string, PantryItem>;
@@ -14,15 +14,21 @@ export class InMemoryPantryRepository implements PantryRepository {
 }
 
 export class InMemoryShoppingListRepository implements ShoppingListRepository {
-  private ids = new Set<string>();
+  private ids = new Map<string, Amount>();
   async list() {
-    return [...this.ids];
+    return [...this.ids.keys()];
   }
-  async add(ids: string[]) {
-    ids.forEach((i) => this.ids.add(i));
+  async add(ids: string[], amounts: Record<string, Amount> = {}) {
+    ids.forEach((i) => this.ids.has(i) || this.ids.set(i, amounts[i] ?? { qty: 1, unit: "pcs" }));
   }
   async remove(ids: string[]) {
     ids.forEach((i) => this.ids.delete(i));
+  }
+  async amounts() {
+    return Object.fromEntries(this.ids);
+  }
+  async setAmount(id: string, amount: Amount) {
+    if (this.ids.has(id)) this.ids.set(id, amount);
   }
 }
 

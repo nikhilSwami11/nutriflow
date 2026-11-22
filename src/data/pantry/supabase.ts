@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { ParsedItem, PantryItem, PantryRepository, ShoppingListRepository, UtteranceParser } from "@/domain/pantry";
+import type { RecipeSearch } from "@/domain/eat";
+import type { Amount, BuyAdvisor, Need, ParsedItem, PantryItem, PantryRepository, ShoppingListRepository, UtteranceParser } from "@/domain/pantry";
 
 export interface PantryRow {
   id: string;
@@ -66,9 +67,20 @@ export class SupabaseShoppingListRepository implements ShoppingListRepository {
     if (error) throw error;
     return (data as { item_id: string }[]).map((r) => r.item_id);
   }
-  async add(ids: string[]) {
+  async add(ids: string[], amounts: Record<string, Amount> = {}) {
     if (!ids.length) return;
-    const { error } = await this.db.from("shopping_list_items").upsert(ids.map((item_id) => ({ item_id })));
+    // ignoreDuplicates: an item already on the list keeps the amount the user set.
+    const rows = ids.map((item_id) => ({ item_id, qty: amounts[item_id]?.qty ?? 1, unit: amounts[item_id]?.unit ?? "pcs" }));
+    const { error } = await this.db.from("shopping_list_items").upsert(rows, { onConflict: "user_id,item_id", ignoreDuplicates: true });
+    if (error) throw error;
+  }
+  async amounts() {
+    const { data, error } = await this.db.from("shopping_list_items").select("item_id,qty,unit");
+    if (error) throw error;
+    return Object.fromEntries((data as { item_id: string; qty: number; unit: Amount["unit"] }[]).map((r) => [r.item_id, { qty: Number(r.qty), unit: r.unit }]));
+  }
+  async setAmount(id: string, amount: Amount) {
+    const { error } = await this.db.from("shopping_list_items").update({ qty: amount.qty, unit: amount.unit }).eq("item_id", id);
     if (error) throw error;
   }
   async remove(ids: string[]) {
@@ -84,5 +96,25 @@ export class EdgeUtteranceParser implements UtteranceParser {
     const { data, error } = await this.db.functions.invoke("parse-pantry-utterance", { body: { text } });
     if (error) throw error;
     return (data as { items: ParsedItem[] }).items;
+  }
+}
+
+/** Claude decides what to buy ("3 cups milk" is "1 l"). The key lives in the edge function, never here. */
+export class EdgeBuyAdvisor implements BuyAdvisor {
+  constructor(private db: SupabaseClient) {}
+  async suggest(needs: Need[]): Promise<Need[]> {
+    const { data, error } = await this.db.functions.invoke("suggest-buy-units", { body: { items: needs } });
+    if (error) throw error;
+    return (data as { items: Need[] }).items;
+  }
+}
+
+/** Meaning search over recipes: the question is embedded in an edge function and matched in the vector table. */
+export class EdgeRecipeSearch implements RecipeSearch {
+  constructor(private db: SupabaseClient) {}
+  async search(query: string) {
+    const { data, error } = await this.db.functions.invoke("text-search", { body: { query, kind: "recipe" } });
+    if (error) throw error;
+    return (data as { matches: { id: string; similarity: number }[] }).matches;
   }
 }

@@ -1,10 +1,10 @@
 "use client";
+import Link from "next/link";
 import { usePantryScreen } from "@/view-models/pantry/usePantryScreen";
 import { AppShell } from "../shell/AppShell";
+import { tint } from "../shared/tint";
 import { Orb } from "./Orb";
 
-const TINTS = ["bg-peach", "bg-rose", "bg-butter", "bg-sky", "bg-lavender", "bg-mint"];
-const tint = (name: string) => TINTS[[...name].reduce((a, c) => a + c.charCodeAt(0), 0) % TINTS.length];
 
 export function PantryScreen() {
   const s = usePantryScreen();
@@ -25,9 +25,12 @@ export function PantryScreen() {
           <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">Pantry</h1>
           <p className="mt-1 text-sm text-muted tabular-nums">{s.countText}</p>
         </div>
-        <button type="button" className="touch rounded-full border border-line2 bg-transparent px-4 text-sm font-medium">
-          Add manually
-        </button>
+        <div className="flex gap-2">
+          <Link href="/shopping" className="touch inline-flex items-center rounded-full border border-line2 px-4 text-sm font-medium">Shopping list</Link>
+          <button type="button" className="touch rounded-full border border-line2 bg-transparent px-4 text-sm font-medium">
+            Add manually
+          </button>
+        </div>
       </header>
 
       <div className="rail flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4 pt-1 lg:max-w-3xl">

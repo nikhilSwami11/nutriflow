@@ -5,11 +5,14 @@ import { Bowl } from "../../recipes/Bowl";
 import { StoryViewer } from "./StoryViewer";
 
 const ICON = {
+  chore: <><path d="M5 12.5l4.5 4.5L19 7.5" /></>,
   pantry: <><rect x="6" y="8" width="12" height="13" rx="3" /><path d="M8 4h8v4H8z" /></>,
   plan: <><rect x="4" y="5" width="16" height="15" rx="3" /><path d="M8 3v4M16 3v4M4 10h16" /></>,
 };
 
-const stateWord = (s: HomeModel["stories"]["items"][number]) => (s.kind === "meal" ? (s.meal.state === "eaten" ? "eaten" : s.seen ? "seen" : "new") : s.seen ? "seen" : "new");
+type Item = HomeModel["stories"]["items"][number];
+const isDone = (s: Item) => (s.kind === "meal" && s.meal.state === "eaten") || (s.kind === "chore" && s.chore.done);
+const stateWord = (s: Item) => (isDone(s) ? "done" : s.seen ? "seen" : "new");
 
 /** The row of circles above the feed. Which ones exist comes from the server-driven feed. */
 export function Stories({ s }: { s: HomeModel["stories"] }) {
@@ -21,7 +24,7 @@ export function Stories({ s }: { s: HomeModel["stories"] }) {
     <>
       <div role="list" aria-label="Stories" className="rail flex shrink-0 gap-3.5 overflow-x-auto px-5 py-2 lg:px-2">
         {s.items.map((st, i) => {
-          const eaten = st.kind === "meal" && st.meal.state === "eaten";
+          const eaten = isDone(st);
           return (
             <div role="listitem" key={st.id} className="flex w-[68px] shrink-0 flex-col items-center gap-1.5">
               <button

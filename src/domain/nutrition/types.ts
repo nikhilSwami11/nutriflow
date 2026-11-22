@@ -7,8 +7,15 @@ export interface TargetRange {
   max: number;
 }
 
+export type Diet = "anything" | "vegetarian" | "eggetarian" | "vegan";
+export const DIETS: Diet[] = ["anything", "vegetarian", "eggetarian", "vegan"];
+
 export interface Profile {
   range: TargetRange;
+  /** Missing in profiles saved before preferences existed: read as "anything". */
+  diet?: Diet;
+  /** Foods to keep out of suggestions, one word or two each. */
+  dislikes?: string[];
 }
 
 /** Only real logged intake: a cook session or a photo estimate. Never a guessed "usual day". */

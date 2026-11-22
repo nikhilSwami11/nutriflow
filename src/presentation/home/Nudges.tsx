@@ -7,7 +7,7 @@ export function PantryNudge({ p }: { p: NonNullable<HomeModel["pantry"]> }) {
         <h2 className="m-0 text-sm font-medium">Running low</h2>
         <p className="m-0 mt-0.5 truncate text-sm text-ink2">{p.text}{p.more > 0 && ` and ${p.more} more`}</p>
       </div>
-      <button type="button" onClick={p.toggle} aria-pressed={p.listed} className={`touch shrink-0 rounded-full px-4 text-xs font-medium ${p.listed ? "bg-ink text-bg" : "bg-peach text-onp"}`}>
+      <button type="button" onClick={p.toggle} aria-pressed={p.listed} className={`touch shrink-0 rounded-full px-4 text-xs font-medium ${p.listed ? "bg-mint text-onp" : "bg-peach text-onp"}`}>
         {p.listed ? "On the list" : "Add to list"}
       </button>
     </section>

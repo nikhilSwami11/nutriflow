@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { HomeModel } from "@/view-models/home/useHome";
+import { NextAction } from "./NextAction";
 
 export function NextMealHero({ next, then, onOpen, onEaten }: { next: HomeModel["next"]; then: HomeModel["then"]; onOpen?: () => void; onEaten?: () => void }) {
   if (!next) {
@@ -16,16 +17,17 @@ export function NextMealHero({ next, then, onOpen, onEaten }: { next: HomeModel[
         <span className="min-w-0 flex-1">
           <span className="block text-xs font-medium text-muted">Up next · {next.meal}</span>
           <span className="mt-1 block text-[22px] font-medium leading-tight tracking-[-0.01em] lg:text-2xl">Cook {next.name.toLowerCase()}</span>
-          <span className="mt-1.5 block text-sm text-ink2 tabular-nums">{next.minutes} min · {next.kcal} kcal · {next.protein} g protein</span>
+          <span className="mt-1.5 block text-sm text-ink2 tabular-nums">{next.readyText} · {next.minutes} min</span>
         </span>
         <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[20px] transition-transform duration-300 group-hover:scale-[1.04] lg:h-28 lg:w-28" style={{ background: next.tint }} aria-hidden="true">
           <svg width="48" height="48" viewBox="0 0 200 200" fill="none" stroke="var(--ink)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M38 100h124a62 62 0 0 1-124 0z" fill="#FFFFFF" fillOpacity=".55" /><ellipse cx="100" cy="100" rx="62" ry="12" fill="#FFFFFF" fillOpacity=".8" /></svg>
         </span>
       </Link>
       <div className="flex items-center justify-between gap-2">
-        <span className={`rounded-full px-3 py-1 text-xs font-medium text-onp ${next.ready ? "bg-mint" : "bg-peach"}`}>{next.readyText}</span>
+        <NextAction next={next} onOpen={onOpen} />
         <button type="button" onClick={() => { onEaten?.(); next.toggle(); }} className="hoverable touch rounded-full border border-line2 px-4 text-sm font-medium">Mark eaten</button>
       </div>
+      <Link href="/eat" className="inline-flex min-h-11 items-center self-start text-sm text-ink2 underline underline-offset-[3px]">Not hungry for this? Pick something else</Link>
       {then.length > 0 && (
         <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3 text-sm text-muted">
           Then

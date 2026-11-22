@@ -1,5 +1,5 @@
 import type { PantryRepository, ShoppingListRepository } from "./ports";
-import type { PantryItem } from "./types";
+import type { Amount, PantryItem } from "./types";
 
 /** Test doubles, also reused by the in-memory data repository later. */
 export function fakePantry(seed: PantryItem[]): PantryRepository & { items: Map<string, PantryItem> } {
@@ -11,13 +11,21 @@ export function fakePantry(seed: PantryItem[]): PantryRepository & { items: Map<
   };
 }
 
-export function fakeList(seed: string[] = []): ShoppingListRepository & { ids: Set<string> } {
+export function fakeList(seed: string[] = []): ShoppingListRepository & { ids: Set<string>; amount: Record<string, Amount> } {
   const ids = new Set(seed);
+  const amount: Record<string, Amount> = {};
   return {
     ids,
+    amount,
+    amounts: async () => ({ ...amount }),
+    setAmount: async (id, a) => void (amount[id] = a),
     list: async () => [...ids],
-    add: async (xs) => xs.forEach((x) => ids.add(x)),
-    remove: async (xs) => xs.forEach((x) => ids.delete(x)),
+    add: async (xs, amounts = {}) =>
+      xs.forEach((x) => {
+        if (!ids.has(x) && amounts[x]) amount[x] = amounts[x];
+        ids.add(x);
+      }),
+    remove: async (xs) => xs.forEach((x) => (ids.delete(x), delete amount[x])),
   };
 }
 

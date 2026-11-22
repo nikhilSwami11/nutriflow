@@ -15,6 +15,15 @@ describe("in-memory repositories", () => {
     await l.remove(["a"]);
     expect(await l.list()).toEqual(["b"]);
   });
+  it("shopping list keeps an amount, and adding again does not reset it", async () => {
+    const l = new InMemoryShoppingListRepository();
+    await l.add(["a"], { a: { qty: 2, unit: "kg" } });
+    await l.add(["b"]);
+    await l.setAmount("a", { qty: 4, unit: "kg" });
+    await l.add(["a"], { a: { qty: 9, unit: "g" } });
+    await l.setAmount("ghost", { qty: 9, unit: "g" });
+    expect(await l.amounts()).toEqual({ a: { qty: 4, unit: "kg" }, b: { qty: 1, unit: "pcs" } });
+  });
 });
 
 describe("LocalUtteranceParser", () => {

@@ -37,6 +37,6 @@ for (const width of [320, 360, 412]) {
     // all five nav items fit side by side
     const navBox = (await page.getByRole("navigation", { name: "Main" }).boundingBox())!;
     expect(navBox.width).toBeLessThanOrEqual(width);
-    for (const name of ["Home", "Recipes", "Pantry", "Profile"]) await expect(page.getByRole("navigation", { name: "Main" }).getByLabel(name)).toBeVisible();
+    for (const name of ["Home", "Recipes", "Pantry", "Chores"]) await expect(page.getByRole("navigation", { name: "Main" }).getByLabel(name)).toBeVisible();
   });
 }

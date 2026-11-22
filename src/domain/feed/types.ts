@@ -17,6 +17,7 @@ export type FeedItem =
 /** A story: a short, tappable card in the row above the feed. Live data is bound by the client, like posts. */
 export type Story =
   | { id: string; kind: "meal"; meal: MealName; recipeId: string }
+  | { id: string; kind: "chore"; choreId: string }
   | { id: string; kind: "pantry" }
   | { id: string; kind: "plan"; notes: string[] };
 

@@ -3,6 +3,7 @@ import { FEED_KINDS, type FeedItem } from "@/view-models/feed/types";
 import type { HomeModel } from "@/view-models/home/useHome";
 import { Bowl } from "../../recipes/Bowl";
 import { MacroChart } from "../MacroChart";
+import { NextAction } from "../NextAction";
 import { TodayLine } from "../TodayLine";
 import { Post } from "./Post";
 import { Tracked } from "./Tracked";
@@ -39,9 +40,12 @@ export function Feed({ h }: { h: HomeModel }) {
               <>
                 <div>
                   <h3 className="m-0 text-base font-medium">Cook {n.name.toLowerCase()}</h3>
-                  <p className="m-0 mt-1 text-sm text-ink2 tabular-nums">{n.kcal} kcal · {n.protein} g protein · <span className={n.ready ? "" : "text-ink"}>{n.readyText}</span></p>
+                  <p className="m-0 mt-1 text-sm text-ink2 tabular-nums"><span className={n.ready ? "" : "text-ink"}>{n.readyText}</span></p>
                 </div>
-                <button type="button" onClick={() => { track(item, "mark-eaten", position); n.toggle(); }} className="hoverable touch self-start rounded-full border border-line2 px-4 text-sm font-medium">Mark eaten</button>
+                <div className="flex items-center justify-between gap-2">
+                  <NextAction next={n} onOpen={open} />
+                  <button type="button" onClick={() => { track(item, "mark-eaten", position); n.toggle(); }} className="hoverable touch rounded-full border border-line2 px-4 text-sm font-medium">Mark eaten</button>
+                </div>
                 {h.then.length > 0 && (
                   <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
                     Then

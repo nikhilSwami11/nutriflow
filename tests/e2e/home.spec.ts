@@ -159,3 +159,12 @@ test("desktop dashboard records the same events and follows the same feed", asyn
   const labels = await page.locator("article[aria-label], section[aria-label]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
   expect(labels.indexOf("Up next")).toBeLessThan(labels.indexOf("Calories and macros"));
 });
+
+test("Up next says what is missing and puts it on the shopping list in one tap", async ({ page }) => {
+  await page.goto("/");
+  const add = page.getByRole("button", { name: /^Add \d+ to shopping$/ });
+  await expect(add).toBeVisible();
+  const n = (await add.textContent())!.match(/\d+/)![0];
+  await add.click();
+  await expect(page.getByRole("link", { name: `${n} on your shopping list · View` })).toBeVisible();
+});

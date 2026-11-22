@@ -5,9 +5,11 @@ import { dayFromMeals, leftKcal } from "@/domain/dashboard";
 import { buildFeed, summarizeEvents, type FeedItem } from "@/domain/feed";
 import { toDateKey } from "@/domain/nutrition";
 import { isLow } from "@/domain/pantry";
-import { readiness, type MealName, type Recipe } from "@/domain/recipes";
+import { shopUnitFor } from "@/domain/shopping";
+import { ingredientStatus, type MealName, type Recipe } from "@/domain/recipes";
 import { buildChartModel, num, type Range } from "../dashboard/chartModel";
 import { joinList } from "../format";
+import { useChores } from "../chores/useChores";
 import { usePantry } from "../pantry/usePantry";
 import type { StoryModel } from "../feed/storyModel";
 import { useNutritionDeps } from "../nutrition/NutritionDeps";
@@ -15,17 +17,22 @@ import { useStoriesSeen } from "../feed/useStoriesSeen";
 import { useFeedStats, useFeedTracker } from "../feed/useFeedTracker";
 import { usePlanData } from "../plan/usePlanData";
 
-const MEAL_OF_SLOT = { breakfast: "Breakfast", lunch: "Lunch", snack: "Snack", dinner: "Dinner" } as const;
+export const MEAL_OF_SLOT = { breakfast: "Breakfast", lunch: "Lunch", snack: "Snack", dinner: "Dinner" } as const;
 
 export function useHome() {
   const data = usePlanData("balanced");
   const pantry = usePantry();
+  const chores = useChores();
+  // When "Start doing" was tapped, per chore, this visit only.
+  const [started, setStarted] = useState<Record<string, number>>({});
   const stats = useFeedStats();
   const { logs } = useNutritionDeps();
   const track = useFeedTracker();
   const { seen, markSeen } = useStoriesSeen();
   const [eaten, setEaten] = useState<MealName[] | null>(null);
   const [range, setRange] = useState<Range>("7d");
+  // Recipes whose missing things went onto the shopping list this visit.
+  const [listed, setListed] = useState<string[]>([]);
   // One timestamp per visit: the feed is built once, so it does not reshuffle while you scroll.
   const [now] = useState(() => Date.now());
 
@@ -64,7 +71,9 @@ export function useHome() {
 
   const open = todayMeals.filter((m) => !eatenNow.includes(m.meal));
   const card = (m: (typeof todayMeals)[number]) => {
-    const rd = readiness(m.recipe, pantryItems);
+    const missing = ingredientStatus(m.recipe, pantryItems).filter((x) => !x.inPantry).map((x) => ({ name: x.ingredient.name, qty: x.ingredient.qty, unit: shopUnitFor(x.ingredient.unit) }));
+    const n = missing.length;
+    const onList = listed.includes(m.recipe.id);
     return {
       meal: m.meal,
       id: m.recipe.id,
@@ -73,8 +82,16 @@ export function useHome() {
       kcal: m.recipe.kcal,
       protein: m.recipe.protein,
       tint: m.recipe.tint,
-      ready: rd.missing === 0,
-      readyText: rd.missing === 0 ? "Ready to cook" : `Missing ${rd.missing}`,
+      ready: n === 0,
+      /** Plain words for what stands between you and dinner. */
+      readyText: n === 0 ? "Ready to cook" : `You are missing ${n} ${n === 1 ? "thing" : "things"}`,
+      /** The one main action: shop for what is missing, or cook. */
+      actionText: n === 0 ? "Start cooking" : onList ? `${n} on your shopping list` : `Add ${n} to shopping`,
+      actionDone: n > 0 && onList,
+      addMissing: async () => {
+        await pantry.addNames(missing);
+        setListed((l) => [...l, m.recipe.id]);
+      },
       toggle: () => toggleEaten(m.meal),
     };
   };
@@ -88,6 +105,7 @@ export function useHome() {
     now,
     nextMeal: nextOpen ? { meal: nextOpen.meal, recipeId: nextOpen.recipe.id } : null,
     meals: todayMeals.map((m) => ({ meal: m.meal, recipeId: m.recipe.id })),
+    chores: chores.todays.map((c) => ({ id: c.id })),
     lowItems: lowItems.length,
     planNotes: problems,
     stats: stats ?? summarizeEvents([], now),
@@ -101,6 +119,17 @@ export function useHome() {
       if (!c) return [];
       const state = eatenNow.includes(st.meal) ? ("eaten" as const) : nextOpen?.meal === st.meal ? ("next" as const) : ("later" as const);
       return [{ id: st.id, kind: "meal", label: st.meal, seen: isSeen, tint: c.tint, meal: { ...c, state } }];
+    }
+    if (st.kind === "chore") {
+      const c = chores.todays.find((x) => x.id === st.choreId);
+      if (!c) return [];
+      const chore = {
+        id: c.id, title: c.title, when: c.when, done: c.done, startedAt: started[c.id] ?? null,
+        start: () => setStarted((m) => ({ ...m, [c.id]: Date.now() })),
+        complete: () => chores.setDone(c.id, true),
+        undo: () => { chores.setDone(c.id, false); setStarted((m) => Object.fromEntries(Object.entries(m).filter(([k]) => k !== c.id))); },
+      };
+      return [{ id: st.id, kind: "chore", label: c.title, seen: isSeen, tint: "#FBE3A6", chore }];
     }
     if (st.kind === "pantry") {
       return lowItems.length

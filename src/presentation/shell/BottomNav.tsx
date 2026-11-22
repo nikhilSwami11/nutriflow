@@ -18,7 +18,7 @@ export function BottomNav({ current }: { current: Page }) {
         {icon(<><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></>)}
       </button>
       <Link href="/pantry" aria-label="Pantry" aria-current={current === "pantry" ? "page" : undefined} className={`${cls} ${current === "pantry" ? "text-ink" : "text-ink2"}`}>{icon(<><rect x="6" y="8" width="12" height="13" rx="3" /><path d="M8 4h8v4H8z" /></>)}</Link>
-      <a href="#" aria-label="Profile" className={`${cls} text-ink2`}>{icon(<><circle cx="12" cy="8" r="4" /><path d="M4 20c1.5-4 4.5-5.5 8-5.5s6.5 1.5 8 5.5" /></>)}</a>
+      <Link href="/chores" aria-label="Chores" aria-current={current === "chores" ? "page" : undefined} className={`${cls} ${current === "chores" ? "text-ink" : "text-ink2"}`}>{icon(<><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M8.5 12l2.5 2.5 4.5-5" /></>)}</Link>
     </nav>
   );
 }

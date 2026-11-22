@@ -1,0 +1,275 @@
+/* Sign-in food loop (presentation/auth/LoopAnimation). One 20s cycle:
+   0-5s Decide, 5-10s Shop, 10-15s Cook, 15-20s Log. 1s = 5%.
+   Gates (lp-v*, lp-n*, lp-s*, ...) switch visibility on the cycle; motions start at --d and leave at --o.
+   Text never animates opacity: it sweeps in and out behind a soft-edged mask. */
+.lp {
+  --lp-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Illustration colours come from the app's tokens: pastel fills, thin ink lines. */
+  --lp-blue: var(--ink);
+  --lp-glaze: var(--panel);
+  --lp-leaf: var(--mint);
+  --lp-leaf-d: var(--ink);
+  --lp-cuke: var(--mint);
+  --lp-cuke-in: var(--bg);
+  --lp-tomato: var(--rose);
+  --lp-tomato-d: var(--ink);
+  --lp-tomato-in: var(--peach);
+  --lp-seed: var(--ink);
+  --lp-straw: var(--rose);
+  --lp-onion: var(--lavender);
+  --lp-onion-d: var(--ink);
+  --lp-berry: var(--sky);
+  --lp-berry-d: var(--ink);
+  --lp-bread: var(--butter);
+  --lp-crouton: var(--butter);
+  --lp-crust: var(--ink);
+  --lp-wood: var(--ink);
+}
+.lp g,
+.lp circle,
+.lp rect {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Scene gates */
+.lp-v0 { animation: lp-v0 20s infinite both; }
+.lp-v1 { animation: lp-v1 20s infinite both; }
+.lp-v1b { animation: lp-v1b 20s infinite both; }
+.lp-ph { animation: lp-ph 20s infinite both; }
+.lp-row { animation: lp-row 20s infinite both; }
+.lp-v2 { animation: lp-v2 20s infinite both; }
+.lp-v3 { animation: lp-v3 20s infinite both; }
+.lp-v4 { animation: lp-v4 20s infinite both; }
+.lp-v12 { animation: lp-v12 20s infinite both; }
+.lp-g11 { animation: lp-g11 20s infinite both; }
+.lp-n1 { animation: lp-n1 20s infinite both; }
+.lp-n2 { animation: lp-n2 20s infinite both; }
+
+@keyframes lp-v0 { 0%, 15.3% { visibility: visible; } 15.33%, 100% { visibility: hidden; } }
+@keyframes lp-v1b { 0%, 13.3% { visibility: hidden; } 13.33%, 26.9% { visibility: visible; } 27%, 100% { visibility: hidden; } }
+@keyframes lp-ph { 0%, 74.9% { visibility: hidden; } 75%, 81.6% { visibility: visible; } 81.67%, 100% { visibility: hidden; } }
+@keyframes lp-row { 0%, 81.6% { visibility: hidden; } 81.67%, 100% { visibility: visible; } }
+@keyframes lp-v1 { 0%, 24.9% { visibility: visible; } 25%, 100% { visibility: hidden; } }
+@keyframes lp-v2 { 0%, 24.9% { visibility: hidden; } 25%, 51.9% { visibility: visible; } 52%, 100% { visibility: hidden; } }
+@keyframes lp-v3 { 0%, 49.9% { visibility: hidden; } 50%, 76.9% { visibility: visible; } 77%, 100% { visibility: hidden; } }
+@keyframes lp-v4 { 0%, 74.9% { visibility: hidden; } 75%, 100% { visibility: visible; } }
+@keyframes lp-v12 { 0%, 16.6% { visibility: hidden; } 16.67%, 51.9% { visibility: visible; } 52%, 100% { visibility: hidden; } }
+@keyframes lp-g11 { 0%, 91.6% { visibility: hidden; } 91.67%, 100% { visibility: visible; } }
+@keyframes lp-n1 { 0%, 74.9% { visibility: hidden; } 75%, 88.3% { visibility: visible; } 88.33%, 100% { visibility: hidden; } }
+@keyframes lp-n2 { 0%, 88.3% { visibility: hidden; } 88.33%, 100% { visibility: visible; } }
+
+/* Captions: gate, then a soft-edged mask sweeps in at its start and out just before its end (never opacity). */
+.lp-c0,
+.lp-c1,
+.lp-c2a,
+.lp-c2b,
+.lp-c3,
+.lp-c4 {
+  -webkit-mask-image: linear-gradient(90deg, transparent 27%, #000 37.5%, #000 62.5%, transparent 73%);
+  mask-image: linear-gradient(90deg, transparent 27%, #000 37.5%, #000 62.5%, transparent 73%);
+  -webkit-mask-size: 400% 100%;
+  mask-size: 400% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+.lp-c0 { animation: lp-v0 20s infinite both, lp-m0 20s infinite both var(--lp-ease); }
+.lp-c1 { animation: lp-v1b 20s infinite both, lp-m1 20s infinite both var(--lp-ease); }
+.lp-c2a { animation: lp-c2a 20s infinite both, lp-m2a 20s infinite both var(--lp-ease); }
+.lp-c2b { animation: lp-c2b 20s infinite both, lp-m2b 20s infinite both var(--lp-ease); }
+.lp-c3 { animation: lp-v3 20s infinite both, lp-m3 20s infinite both var(--lp-ease); }
+.lp-c4 { animation: lp-v4 20s infinite both, lp-m4 20s infinite both var(--lp-ease); }
+@keyframes lp-c2a { 0%, 24.9% { visibility: hidden; } 25%, 40.8% { visibility: visible; } 40.83%, 100% { visibility: hidden; } }
+@keyframes lp-c2b { 0%, 40.8% { visibility: hidden; } 40.83%, 51.9% { visibility: visible; } 52%, 100% { visibility: hidden; } }
+@keyframes lp-m0 { 0% { mask-position: 100% 0; } 3.75%, 11.58% { mask-position: 50% 0; } 15.33%, 100% { mask-position: 0 0; } }
+@keyframes lp-m1 { 0%, 13.33% { mask-position: 100% 0; } 17.08%, 23.25% { mask-position: 50% 0; } 27%, 100% { mask-position: 0 0; } }
+@keyframes lp-m2a { 0%, 25% { mask-position: 100% 0; } 28.75%, 37.08% { mask-position: 50% 0; } 40.83%, 100% { mask-position: 0 0; } }
+@keyframes lp-m2b { 0%, 40.83% { mask-position: 100% 0; } 44.58%, 48.25% { mask-position: 50% 0; } 52%, 100% { mask-position: 0 0; } }
+@keyframes lp-m3 { 0%, 50% { mask-position: 100% 0; } 53.75%, 73.25% { mask-position: 50% 0; } 77%, 100% { mask-position: 0 0; } }
+@keyframes lp-m4 { 0%, 75% { mask-position: 100% 0; } 78.75%, 96.25% { mask-position: 50% 0; } 100% { mask-position: 0 0; } }
+
+/* SVG text: the same soft edge, as a mask rect sliding right. */
+.lp .lp-mask {
+  animation:
+    lp-mask 20s var(--d, 0s) infinite both cubic-bezier(0.25, 0.6, 0.3, 1),
+    lp-mask-out 20s var(--o, 20s) infinite both cubic-bezier(0.25, 0.6, 0.3, 1);
+}
+@keyframes lp-mask { 0% { transform: none; } 3.75%, 75% { transform: translateX(var(--w)); } 76%, 100% { transform: none; } }
+/* `translate` adds to `transform`, so the exit sweep stacks on the entrance; it resets once the gate has hidden the scene. */
+@keyframes lp-mask-out { 0% { translate: 0 0; } 3.75% { translate: var(--w) 0; } 4%, 100% { translate: 0 0; } }
+/* Drawings: blur and fade out at --o. Chips hold text, so they only blur. */
+.lp .lp-out { animation: lp-out 20s var(--o, 20s) infinite both var(--lp-ease); }
+@keyframes lp-out { 0% { opacity: 1; filter: none; transform: none; } 3.75% { opacity: 0; filter: blur(4px); transform: translateY(-6px); } 4%, 100% { opacity: 1; filter: none; transform: none; } }
+.lp .lp-out-soft { animation: lp-out-soft 20s var(--o, 20s) infinite both var(--lp-ease); }
+@keyframes lp-out-soft { 0% { filter: none; transform: none; } 3.75% { filter: blur(6px); transform: scale(0.94); } 4%, 100% { filter: none; transform: none; } }
+/* Cook steps, one at a time. */
+.lp-s1 { animation: lp-s1 20s infinite both; }
+.lp-s2 { animation: lp-s2 20s infinite both; }
+.lp-s3 { animation: lp-s3 20s infinite both; }
+@keyframes lp-s1 { 0%, 49.9% { visibility: hidden; } 50%, 58.3% { visibility: visible; } 58.33%, 100% { visibility: hidden; } }
+@keyframes lp-s2 { 0%, 58.3% { visibility: hidden; } 58.33%, 66.6% { visibility: visible; } 66.67%, 100% { visibility: hidden; } }
+@keyframes lp-s3 { 0%, 66.6% { visibility: hidden; } 66.67%, 76.9% { visibility: visible; } 77%, 100% { visibility: hidden; } }
+
+
+/* Motions, each starting at --d inside the cycle. */
+.lp-pop { animation: lp-pop 20s var(--d, 0s) infinite both var(--lp-ease); }
+.lp-rise { animation: lp-rise 20s var(--d, 0s) infinite both var(--lp-ease); }
+.lp-drop { animation: lp-drop 20s var(--d, 0s) infinite both var(--lp-ease); }
+.lp .lp-grow,
+.lp line.lp-grow { transform-origin: left center; animation: lp-grow 20s var(--d, 0s) infinite both var(--lp-ease); }
+@keyframes lp-pop { 0% { transform: scale(0.8); opacity: 0; } 5%, 75% { transform: none; opacity: 1; } 76%, 100% { transform: scale(0.8); opacity: 0; } }
+/* A delayed infinite animation sits in its end state until its delay comes round again on the next loop.
+   So every delayed motion holds its result to 75% (longer than any scene) and returns to its start state after,
+   which is what shows before its delay on loops 2 and up. The switch happens while the scene's gate hides it. */
+/* Cards hold text, so they slide and sharpen instead of fading; gates keep them hidden before their start. */
+@keyframes lp-rise { 0% { transform: translateY(12px); filter: blur(4px); } 5.5%, 75% { transform: none; filter: none; } 76%, 100% { transform: translateY(12px); filter: blur(4px); } }
+@keyframes lp-drop { 0% { transform: translateY(-80px); opacity: 0; } 1.5% { opacity: 1; } 5%, 75% { transform: none; opacity: 1; } 76%, 100% { transform: translateY(-80px); opacity: 0; } }
+@keyframes lp-grow { 0% { transform: scaleX(0); } 4.17%, 75% { transform: scaleX(1); } 76%, 100% { transform: scaleX(0); } }
+
+/* Checking: dots pulse while it thinks. */
+.lp .lp-dot { animation: lp-dot 0.9s var(--t, 0s) infinite ease-in-out; }
+@keyframes lp-dot { 0%, 100% { transform: none; opacity: 0.35; } 40% { transform: translateY(-4px); opacity: 1; } }
+
+/* Shop: the cart rolls in, the items arc from the list into it. */
+.lp-slide { animation: lp-slide 20s var(--d, 0s) infinite both var(--lp-ease); }
+@keyframes lp-slide { 0% { transform: translateX(40px); opacity: 0; } 4.17%, 75% { transform: none; opacity: 1; } 76%, 100% { transform: translateX(40px); opacity: 0; } }
+.lp-arc-t { animation: lp-arc-t 20s var(--d, 0s) infinite both; }
+.lp-arc-b { animation: lp-arc-b 20s var(--d, 0s) infinite both; }
+@keyframes lp-arc-t {
+  0% { transform: translate(-126px, -76px) scale(0.6); opacity: 0; animation-timing-function: cubic-bezier(0.3, 0, 0.7, 0.4); }
+  1% { opacity: 1; }
+  2.5% { transform: translate(-63px, -100px) scale(0.85); animation-timing-function: cubic-bezier(0.3, 0.6, 0.7, 1); }
+  5%, 75% { transform: none; opacity: 1; }
+  76%, 100% { transform: translate(-126px, -76px) scale(0.6); opacity: 0; }
+}
+@keyframes lp-arc-b {
+  0% { transform: translate(-152px, -40px) scale(0.6); opacity: 0; animation-timing-function: cubic-bezier(0.3, 0, 0.7, 0.4); }
+  1% { opacity: 1; }
+  2.5% { transform: translate(-76px, -70px) scale(0.85); animation-timing-function: cubic-bezier(0.3, 0.6, 0.7, 1); }
+  5%, 75% { transform: none; opacity: 1; }
+  76%, 100% { transform: translate(-152px, -40px) scale(0.6); opacity: 0; }
+}
+
+/* Salad toss. */
+.lp .lp-toss { animation: lp-toss 1.8s var(--t, 0s) infinite; }
+@keyframes lp-toss {
+  0%, 40% { transform: none; animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); }
+  58% { transform: translateY(var(--h)) rotate(var(--rot)); animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.5); }
+  76% { transform: none; }
+  82% { transform: translateY(-2px); }
+  88%, 100% { transform: none; }
+}
+
+/* Salad servers: dip in spread, close, lift (the pieces rise with them), settle. Pivot at each handle's top. */
+.lp .lp-srv-l,
+.lp .lp-srv-r {
+  transform-box: view-box;
+  animation: lp-srv-l 1.8s infinite ease-in-out;
+}
+.lp .lp-srv-l { transform-origin: 196px 48px; }
+.lp .lp-srv-r { transform-origin: 244px 48px; animation-name: lp-srv-r; }
+@keyframes lp-srv-l {
+  0%, 100% { transform: none; }
+  25% { transform: translateY(22px) rotate(6deg); }
+  40% { transform: translateY(22px) rotate(-5deg); }
+  60% { transform: translateY(2px) rotate(-5deg); }
+  80% { transform: none; }
+}
+@keyframes lp-srv-r {
+  0%, 100% { transform: none; }
+  25% { transform: translateY(22px) rotate(-6deg); }
+  40% { transform: translateY(22px) rotate(5deg); }
+  60% { transform: translateY(2px) rotate(5deg); }
+  80% { transform: none; }
+}
+
+/* Log: the bowl shrinks into the log row, the ring fills 1,200 -> 1,640 of 1,800, confetti flies out. */
+.lp .lp-kcal { transform-origin: left center; animation: lp-kcal 20s infinite both var(--lp-ease); }
+@keyframes lp-kcal { 0%, 85% { transform: scaleX(0.604); } 91.67%, 100% { transform: scaleX(0.7875); } }
+.lp-band { animation: lp-band 20s infinite both; }
+@keyframes lp-band { 0%, 90.8% { opacity: 0.35; } 91.67%, 100% { opacity: 1; } }
+.lp-confetti-all > circle { animation: lp-confetti 20s 18.333s infinite both var(--lp-ease); }
+@keyframes lp-confetti {
+  0% { transform: translate(0, 0) scale(0); opacity: 0; }
+  0.5% { opacity: 1; }
+  6% { transform: translate(var(--x), var(--y)) scale(1); opacity: 1; }
+  8.5%, 100% { transform: translate(var(--x), var(--y)) scale(0.6); opacity: 0; }
+}
+
+/* Chips: pop in (Decide), into the basket, onto the shelf, turn mint (Shop). */
+.lp-chip-t { animation: lp-chip-t 20s infinite both var(--lp-ease); }
+.lp-chip-b { animation: lp-chip-b 20s infinite both var(--lp-ease); }
+.lp-chipfill { animation: lp-chipfill 20s infinite both; }
+@keyframes lp-chip-t {
+  0%, 16.67% { transform: translateY(8px) scale(0.92); filter: blur(3px); }
+  20.83%, 25% { transform: none; filter: none; }
+  29.17%, 100% { transform: translate(15.6px, -109px) scale(0.8); }
+}
+@keyframes lp-chip-b {
+  0%, 17.5% { transform: translateY(8px) scale(0.92); filter: blur(3px); }
+  21.67%, 25.83% { transform: none; filter: none; }
+  30%, 100% { transform: translate(-94px, -69px) scale(0.8); }
+}
+@keyframes lp-chipfill { 0%, 40.83% { fill: var(--rose); } 42.5%, 100% { fill: var(--mint); } }
+
+/* Rest: after two plays (or with reduced motion) the loop stops on its last frame, Log with everything in place. */
+.lp-rest *,
+.lp-rest *::before {
+  animation: none !important;
+}
+.lp-rest .lp-v0,
+.lp-rest .lp-v1b,
+.lp-rest .lp-v2,
+.lp-rest .lp-v3,
+.lp-rest .lp-v12,
+.lp-rest .lp-c0,
+.lp-rest .lp-c1,
+.lp-rest .lp-c2a,
+.lp-rest .lp-c2b,
+.lp-rest .lp-c3,
+.lp-rest .lp-n1,
+.lp-rest .lp-ph,
+.lp-rest .lp-confetti-all {
+  display: none;
+}
+.lp-rest .lp-mask {
+  transform: translateX(var(--w));
+}
+.lp-rest .lp-kcal {
+  transform: scaleX(0.7875);
+}
+.lp-rest .lp-c4 {
+  -webkit-mask-position: 50% 0;
+  mask-position: 50% 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp *,
+  .lp *::before {
+    animation: none !important;
+  }
+  .lp .lp-v0,
+  .lp .lp-v1b,
+  .lp .lp-v2,
+  .lp .lp-v3,
+  .lp .lp-v12,
+  .lp .lp-c0,
+  .lp .lp-c1,
+  .lp .lp-c2a,
+  .lp .lp-c2b,
+  .lp .lp-c3,
+  .lp .lp-n1,
+  .lp .lp-ph,
+  .lp .lp-confetti-all {
+    display: none;
+  }
+  .lp .lp-mask {
+    transform: translateX(var(--w));
+  }
+  .lp .lp-kcal {
+    transform: scaleX(0.7875);
+  }
+  .lp .lp-c4 {
+    -webkit-mask-position: 50% 0;
+    mask-position: 50% 0;
+  }
+}

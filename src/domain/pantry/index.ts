@@ -6,3 +6,5 @@ export * from "./addItemsFromUtterance";
 export * from "./depleteForRecipe";
 export * from "./toggleShoppingList";
 export * from "./quantity";
+export * from "./addNamesToList";
+export * from "./adviseNeeds";

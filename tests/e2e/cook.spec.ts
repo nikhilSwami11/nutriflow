@@ -43,7 +43,7 @@ test.describe("a whole cook", () => {
     await next(page).click(); // step 2: boil the dal (a timed step)
     await expect(stepText(page, "Boil the dal until soft")).toBeVisible();
     await expect(page.getByRole("timer")).toHaveText("15:00");
-    await page.getByRole("button", { name: "Start timer" }).click();
+    await page.getByRole("button", { name: "Start" }).click();
     await page.clock.fastForward("04:00");
     await expect(page.getByRole("timer")).toHaveText("11:00");
     await page.getByRole("button", { name: "Pause" }).click();
