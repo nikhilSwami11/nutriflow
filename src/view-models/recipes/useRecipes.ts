@@ -1,6 +1,8 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { dietOf } from "@/domain/eat";
+import { cookability } from "@/domain/guide";
 import { ingredientStatus, readiness, scaleQty, type Recipe } from "@/domain/recipes";
 import { usePantry } from "../pantry/usePantry";
 import { useRecipeRepo } from "./RecipeDeps";
@@ -37,7 +39,7 @@ export function useRecipes() {
     filters: FILTERS.map((f) => ({ ...f, on: f.id === filter, pick: () => setFilter(f.id) })),
     query,
     setQuery,
-    cards: shown.map(({ r, rd }) => ({ id: r.id, name: r.name, tint: r.tint, meta: `${r.minutes} min, ${r.kcal} kcal`, ready: rd.missing === 0, chip: rd.missing === 0 ? "Ready to cook" : `Missing ${rd.missing}` })),
+    cards: shown.map(({ r, rd }) => ({ id: r.id, name: r.name, tint: r.tint, image: r.image, meta: `${r.minutes} min, ${r.kcal} kcal`, ready: rd.missing === 0, chip: rd.missing === 0 ? "Ready to cook" : `Missing ${rd.missing}` })),
   };
 }
 
@@ -59,6 +61,9 @@ export function useRecipe(id: string) {
   const sv = servings ?? r.servings;
   const status = ingredientStatus(r, items);
   const missing = status.filter((s) => !s.inPantry).length;
+  const cook = cookability(r, items);
+  const swapOf = new Map(cook.swaps.map((x) => [x.name, x.use]));
+  const DIET = { vegan: "Vegan", vegetarian: "Vegetarian", egg: "Contains egg", nonveg: "Non-veg" } as const;
   return {
     isLoading: false as const,
     notFound: false as const,
@@ -67,7 +72,12 @@ export function useRecipe(id: string) {
       { label: "Time", value: `${r.minutes} min` },
       { label: "Per serving", value: `${r.kcal} kcal` },
       { label: "Protein", value: `${r.protein} g` },
+      { label: "Carbs", value: `${r.carbs} g` },
+      { label: "Fat", value: `${r.fat} g` },
+      { label: "Diet", value: DIET[dietOf(r)] },
     ],
+    /** One plain line for what stands between you and cooking, like Home. */
+    cookLine: missing === 0 ? "Everything is in your pantry" : cook.canCook ? "You can cook this now with swaps or skips" : `Missing ${cook.needed.map((x) => x.name.toLowerCase()).join(", ")}`,
     servings: sv,
     fewer: () => setServings(Math.max(1, sv - 1)),
     more: () => setServings(Math.min(12, sv + 1)),
@@ -75,7 +85,9 @@ export function useRecipe(id: string) {
       name: s.ingredient.name,
       amount: fmtQty(scaleQty(s.ingredient.qty, r.servings, sv)) + (s.ingredient.unit ? ` ${s.ingredient.unit}` : ""),
       inPantry: s.inPantry,
-      tag: s.inPantry ? "In pantry" : listed ? "On list" : "Missing",
+      tag: s.inPantry ? "In pantry" : swapOf.has(s.ingredient.name) ? "Swap" : cook.skips.includes(s.ingredient.name) ? "Optional" : listed ? "On list" : "Missing",
+      /** What to use instead, when you own a stand-in. */
+      note: swapOf.has(s.ingredient.name) ? `Use ${swapOf.get(s.ingredient.name)}` : null,
     })),
     missing,
     listed,

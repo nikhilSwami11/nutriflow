@@ -3,7 +3,7 @@ import type { Recipe } from "../recipes/types";
 
 export type RecipeDiet = "vegan" | "vegetarian" | "egg" | "nonveg";
 
-const MEAT = /\b(chicken|mutton|lamb|beef|pork|fish|prawn|shrimp|salmon|tuna|meat|bacon|keema)\b/i;
+const MEAT = /\b(chicken|mutton|lamb|beef|pork|fish|prawn|shrimp|salmon|tuna|meat|bacon|keema|turkey|ham|sausage|pepperoni|anchov(y|ies))\b/i;
 const EGG = /\begg/i;
 const DAIRY = /\b(milk|ghee|butter|paneer|curd|yogurt|yoghurt|cheese|cream|honey)\b/i;
 

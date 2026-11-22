@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { HomeModel } from "@/view-models/home/useHome";
 import { NextAction } from "./NextAction";
+import { RecipeArt } from "../recipes/RecipeArt";
 
 export function NextMealHero({ next, then, onOpen, onEaten }: { next: HomeModel["next"]; then: HomeModel["then"]; onOpen?: () => void; onEaten?: () => void }) {
   if (!next) {
@@ -20,7 +21,7 @@ export function NextMealHero({ next, then, onOpen, onEaten }: { next: HomeModel[
           <span className="mt-1.5 block text-sm text-ink2 tabular-nums">{next.readyText} · {next.minutes} min</span>
         </span>
         <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[20px] transition-transform duration-300 group-hover:scale-[1.04] lg:h-28 lg:w-28" style={{ background: next.tint }} aria-hidden="true">
-          <svg width="48" height="48" viewBox="0 0 200 200" fill="none" stroke="var(--ink)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M38 100h124a62 62 0 0 1-124 0z" fill="#FFFFFF" fillOpacity=".55" /><ellipse cx="100" cy="100" rx="62" ry="12" fill="#FFFFFF" fillOpacity=".8" /></svg>
+          <RecipeArt image={next.image} size={84} />
         </span>
       </Link>
       <div className="flex items-center justify-between gap-2">

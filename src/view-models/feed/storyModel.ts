@@ -3,6 +3,7 @@ export interface StoryMeal {
   meal: string;
   name: string;
   minutes: number;
+  image?: string;
   kcal: number;
   protein: number;
   ready: boolean;

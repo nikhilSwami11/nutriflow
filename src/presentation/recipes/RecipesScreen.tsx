@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRecipes } from "@/view-models/recipes/useRecipes";
 import { AppShell } from "../shell/AppShell";
-import { Bowl } from "./Bowl";
+import { RecipeArt } from "./RecipeArt";
 
 export function RecipesScreen() {
   const r = useRecipes();
@@ -31,7 +31,7 @@ export function RecipesScreen() {
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {r.cards.map((c, i) => (
                 <Link key={c.id} href={`/recipes/${c.id}`} aria-label={c.name} className="rise hoverable flex flex-col gap-2 rounded-[20px] border border-line bg-bg p-2.5 transition-colors hover:border-ink" style={{ "--i": Math.min(i, 8) } as React.CSSProperties}>
-                  <span className="flex h-[92px] items-center justify-center rounded-2xl" style={{ background: c.tint }}><Bowl /></span>
+                  <span className="flex h-[92px] items-center justify-center rounded-2xl" style={{ background: c.tint }}><RecipeArt image={c.image} size={80} /></span>
                   <span className="block w-full text-left">
                     <span className="block text-[15px] font-medium leading-tight">{c.name}</span>
                     <span className="mt-[3px] block text-xs text-muted tabular-nums">{c.meta}</span>

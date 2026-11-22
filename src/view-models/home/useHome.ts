@@ -6,7 +6,8 @@ import { buildFeed, summarizeEvents, type FeedItem } from "@/domain/feed";
 import { toDateKey } from "@/domain/nutrition";
 import { isLow } from "@/domain/pantry";
 import { shopUnitFor } from "@/domain/shopping";
-import { ingredientStatus, type MealName, type Recipe } from "@/domain/recipes";
+import { cookability } from "@/domain/guide";
+import type { MealName, Recipe } from "@/domain/recipes";
 import { buildChartModel, num, type Range } from "../dashboard/chartModel";
 import { joinList } from "../format";
 import { useChores } from "../chores/useChores";
@@ -71,8 +72,11 @@ export function useHome() {
 
   const open = todayMeals.filter((m) => !eatenNow.includes(m.meal));
   const card = (m: (typeof todayMeals)[number]) => {
-    const missing = ingredientStatus(m.recipe, pantryItems).filter((x) => !x.inPantry).map((x) => ({ name: x.ingredient.name, qty: x.ingredient.qty, unit: shopUnitFor(x.ingredient.unit) }));
+    const cook = cookability(m.recipe, pantryItems);
+    const missing = cook.needed.map((x) => ({ name: x.name, qty: x.qty, unit: shopUnitFor(x.unit) }));
     const n = missing.length;
+    const count = (k: number, w: string) => `${k} ${w}${k === 1 ? "" : "s"}`;
+    const easy = [cook.swaps.length ? count(cook.swaps.length, "swap") : "", cook.skips.length ? count(cook.skips.length, "skip") : ""].filter(Boolean);
     const onList = listed.includes(m.recipe.id);
     return {
       meal: m.meal,
@@ -82,11 +86,13 @@ export function useHome() {
       kcal: m.recipe.kcal,
       protein: m.recipe.protein,
       tint: m.recipe.tint,
-      ready: n === 0,
+      image: m.recipe.image,
+      /** Nothing blocks cooking: all there, or every gap has a stand-in at home or can be skipped. */
+      ready: cook.canCook,
       /** Plain words for what stands between you and dinner. */
-      readyText: n === 0 ? "Ready to cook" : `You are missing ${n} ${n === 1 ? "thing" : "things"}`,
-      /** The one main action: shop for what is missing, or cook. */
-      actionText: n === 0 ? "Start cooking" : onList ? `${n} on your shopping list` : `Add ${n} to shopping`,
+      readyText: !cook.canCook ? `You are missing ${count(n, "thing")}` : easy.length ? `Can cook with ${easy.join(" and ")}` : "Ready to cook",
+      /** The one main action: cook when nothing blocks, else shop for what is needed. */
+      actionText: cook.canCook ? "Start cooking" : onList ? `${n} on your shopping list` : `Add ${n} to shopping`,
       actionDone: n > 0 && onList,
       addMissing: async () => {
         await pantry.addNames(missing);

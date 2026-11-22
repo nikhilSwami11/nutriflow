@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FEED_KINDS, type FeedItem } from "@/view-models/feed/types";
 import type { HomeModel } from "@/view-models/home/useHome";
-import { Bowl } from "../../recipes/Bowl";
+import { RecipeArt } from "../../recipes/RecipeArt";
 import { MacroChart } from "../MacroChart";
 import { NextAction } from "../NextAction";
 import { TodayLine } from "../TodayLine";
@@ -33,7 +33,7 @@ export function Feed({ h }: { h: HomeModel }) {
             label="Up next" color="#BFE5D2" icon={BOWL} title={`Up next · ${n.meal}`} sub={`${n.minutes} min`} onToggle={toggle}
             media={
               <Link href={`/recipes/${n.id}`} onClick={open} aria-label={`Open ${n.name}`} className="flex h-[210px] items-center justify-center" style={{ background: n.tint }}>
-                <Bowl size={84} />
+                <RecipeArt image={n.image} size={176} />
               </Link>
             }
             caption={

@@ -11,7 +11,7 @@ const env = Object.fromEntries(
 );
 const url = env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const secret = process.env.INDEX_SECRET;
+const secret = process.env.INDEX_SECRET ?? "";
 if (!url || !anon || !secret) throw new Error("Need NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local, and INDEX_SECRET in the environment");
 
 async function main() {

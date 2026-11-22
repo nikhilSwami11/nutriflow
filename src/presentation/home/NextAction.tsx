@@ -14,14 +14,24 @@ export function NextAction({ next, onOpen }: { next: NonNullable<HomeModel["next
   }
   if (next.actionDone) {
     return (
-      <Link href="/shopping" onClick={onOpen} className={`${BTN} bg-mint text-onp`}>
-        {next.actionText} · View
-      </Link>
+      <span className="flex flex-wrap items-center gap-2">
+        <Link href="/shopping" onClick={onOpen} className={`${BTN} bg-mint text-onp`}>
+          {next.actionText} · View
+        </Link>
+        <Link href={`/cook/${next.id}`} onClick={onOpen} className={`${BTN} border border-line2 text-ink`}>
+          Cook anyway
+        </Link>
+      </span>
     );
   }
   return (
-    <button type="button" onClick={() => void next.addMissing()} className={`${BTN} border-0 bg-ink text-bg`}>
-      {next.actionText}
-    </button>
+    <span className="flex flex-wrap items-center gap-2">
+      <button type="button" onClick={() => void next.addMissing()} className={`${BTN} border-0 bg-ink text-bg`}>
+        {next.actionText}
+      </button>
+      <Link href={`/cook/${next.id}`} onClick={onOpen} className={`${BTN} border border-line2 text-ink`}>
+        Cook anyway
+      </Link>
+    </span>
   );
 }

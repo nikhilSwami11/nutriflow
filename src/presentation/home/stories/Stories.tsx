@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import type { HomeModel } from "@/view-models/home/useHome";
-import { Bowl } from "../../recipes/Bowl";
+import { RecipeArt } from "../../recipes/RecipeArt";
 import { StoryViewer } from "./StoryViewer";
 
 const ICON = {
@@ -35,7 +35,7 @@ export function Stories({ s }: { s: HomeModel["stories"] }) {
                 style={{ background: st.seen || eaten ? "var(--line2)" : "conic-gradient(from 200deg, #8FD3C0, #B9A7EE, #F2A3A9, #8FD3C0)" }}
               >
                 <span className="flex h-full w-full items-center justify-center rounded-full border-[3px] border-bg" style={{ background: st.tint }}>
-                  {st.kind === "meal" ? <Bowl size={30} /> : (
+                  {st.kind === "meal" ? <RecipeArt image={st.meal.image} size={st.meal.image ? 46 : 50} /> : (
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICON[st.kind]}</svg>
                   )}
                 </span>

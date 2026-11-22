@@ -22,7 +22,7 @@ describe("stepGuide", () => {
     expect(stepGuide(recipe.steps[1]).look).toBe("The dal falls apart when pressed with a spoon.");
     expect(stepGuide(recipe.steps[1]).tip).toMatch(/heat down/); // from the verb
     expect(stepGuide(recipe.steps[2]).tip).toBe("Take it off the heat the moment the garlic turns golden.");
-    expect(stepGuide({ text: "x", verb: "Whisk" }).look).toMatch(/looks and smells/); // unknown verb still gets guidance
+    expect(stepGuide({ text: "x", verb: "Flambé" }).look).toMatch(/looks and smells/); // unknown verb still gets guidance
   });
 });
 

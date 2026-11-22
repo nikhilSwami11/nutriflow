@@ -6,6 +6,8 @@ export interface Ingredient {
   name: string;
   qty: number;
   unit: string;
+  /** Garnish or a finisher: the dish works without it. Guessed from the name when missing. */
+  optional?: boolean;
 }
 
 export interface Step {
@@ -44,6 +46,8 @@ export interface Recipe {
   carbs: number;
   fat: number;
   tint: string;
+  /** A cut-out picture of the dish (transparent webp) that sits on `tint`. Without one, the drawn bowl shows. */
+  image?: string;
   ingredients: Ingredient[];
   steps: Step[];
   /** Things to set out before starting. Derived from the ingredients when missing. */

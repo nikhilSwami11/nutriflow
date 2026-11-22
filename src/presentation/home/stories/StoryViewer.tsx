@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { StoryChore } from "@/view-models/feed/storyModel";
 import type { HomeModel } from "@/view-models/home/useHome";
-import { Bowl } from "../../recipes/Bowl";
+import { RecipeArt } from "../../recipes/RecipeArt";
 
 const SLIDE_MS = 6000;
 const reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -124,7 +124,7 @@ export function StoryViewer({ s, index, setIndex, onClose }: { s: HomeModel["sto
         <div key={st.id} className="story-in pointer-events-none relative flex flex-1 flex-col items-center justify-center gap-4 px-8 pt-16 text-center">
           {st.kind === "meal" && (
             <>
-              <Bowl size={120} />
+              <RecipeArt image={st.meal.image} size={200} />
               <h2 className="m-0 text-[28px] font-medium leading-tight tracking-[-0.02em]">{st.meal.state === "eaten" ? st.meal.name : `Cook ${st.meal.name.toLowerCase()}`}</h2>
               <p className="m-0 text-sm tabular-nums">{st.meal.minutes} min · {st.meal.kcal} kcal · {st.meal.protein} g protein</p>
               <span className={`rounded-full px-3 py-1 text-xs font-medium ${st.meal.state === "eaten" ? "bg-mint" : st.meal.ready ? "bg-mint" : "bg-peach"}`}>

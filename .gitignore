@@ -47,3 +47,6 @@ playwright-report/
 
 # supabase cli
 supabase/.temp/
+
+# original recipe art (large); public/recipes holds the compressed copies
+art-src/

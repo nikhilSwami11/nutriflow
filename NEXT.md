@@ -22,10 +22,12 @@ Plan of record. Edit as things ship. Product feel: the app decides and makes the
 - Migrations 0001 to 0009 are applied; edge functions `parse-pantry-utterance`, `suggest-buy-units`, `text-search`, `text-index` are deployed; secrets `OPENAI_API_KEY`, `INDEX_SECRET` are set.
 
 ## Next builds (in order)
-0. Cook "Serve" loop: 16 steps use verb Serve and have no animation (static bowl). Draw a plated dish in the recipe's `tint` with steam and a garnish drop, use it on Serve steps and on the Finish screen. Later add Boil, Bake, Whisk, Fry loops.
+-1. Recipe art: put originals (white background, named `<slug>.jpeg`) in `art-src/recipes/` (gitignored), run `node scripts/prepare-recipe-images.mjs` (cuts the white out, 512px webp, about 30 KB each into `public/recipes/`), then add the slug to `WITH_IMAGE` in `src/data/recipes/demo.ts` and add the recipe. 10 breakfast recipes are done. `RecipeArt` shows the image on the recipe tint, else the drawn bowl. Then move images to Supabase Storage with an `image_url` column.
+0. Unknown dishes (decided 2026-11-22): the user does not search. Voice ask -> look at the pantry -> own recipe first; if none fits, the LLM writes one (our format, our 14 animation verbs; macros marked estimated). Image: image search API (Brave Search images, free tier, or Serper) for the dish name, in an edge function; show the first result by URL with "Photo from site.com", never copy or store the file, drawn bowl if it fails to load; own card style so it reads as external. Save recipe + image URL to a `recipes` table once per dish. Needs Supabase secret `SEARCH_API_KEY`. Dishes asked for often get our own illustration later.
+0. Recipes: 148 to cover, list and image prompts in `docs/recipe-images.md` (you generate images over 2 days; then each needs steps, ingredients, `image_url`). Review the list first.
+0. Cook loops: Serve now plates the recipe's own picture (drops onto the tint, steam, sparkles), also on the Finish screen; recipes without a picture keep the drawn mound.
 0b. Tests: e2e for chore stories and the shopping bricks; run the shopping, cook and design-system specs (stop `next dev` on 3000 first). `tests/e2e/stories.spec.ts` may need counts updated for chore stories.
 0c. Shopping bricks: on long lists (15+) the bricks get thin; cap or switch to a continuous fill. Unfilled brick colour is `line2`.
-0d. `scripts/index-recipes.ts` has a typecheck error (header `x-index-secret` can be undefined).
 1. Stories: each story is a friend or a task, opens like a story, asks for input. Open questions: what is a "friend" story in a personal-only v1; what input does a task story ask for (tap, number, photo)?
 2. Chores on Home (new feed kind + migration widening `feed_events.kind`).
 3. Manual add on the shopping list (one input line).

@@ -15,6 +15,7 @@ describe("dietOf and dietAllows", () => {
     expect(dietOf(rec("b", { names: ["Rice", "Ghee"] }))).toBe("vegetarian");
     expect(dietOf(rec("c", { names: ["Eggs", "Onions"] }))).toBe("egg");
     expect(dietOf(rec("d", { names: ["Chicken thighs", "Eggs"] }))).toBe("nonveg");
+    expect(dietOf(rec("e", { names: ["Sliced turkey", "Bread"] }))).toBe("nonveg");
   });
   it("lets each diet keep to its own", () => {
     const egg = rec("c", { names: ["Eggs"] });

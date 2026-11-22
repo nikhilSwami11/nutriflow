@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRecipe } from "@/view-models/recipes/useRecipes";
 import { AppShell } from "../shell/AppShell";
-import { Bowl } from "./Bowl";
+import { RecipeArt } from "./RecipeArt";
 
 const VERB: Record<string, string> = { Chop: "#F7C9BB", Simmer: "#9EC8F3", Stir: "#B9A7EE", "Sauté": "#F4E3A1", Serve: "#8FD3C0", Mix: "#CFC8F0" };
 
@@ -27,14 +27,15 @@ export function RecipeDetailScreen({ id }: { id: string }) {
         {!r.isLoading && !r.notFound && (
           <>
             <div className="rail flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto px-5 pb-28">
-              <div role="img" aria-label={`Photo placeholder of ${r.recipe.name}`} className="rise flex h-[170px] shrink-0 items-center justify-center rounded-3xl" style={{ background: r.recipe.tint }}><Bowl /></div>
+              <div role="img" aria-label={`Picture of ${r.recipe.name}`} className="rise flex h-[170px] shrink-0 items-center justify-center rounded-3xl" style={{ background: r.recipe.tint }}><RecipeArt image={r.recipe.image} size={150} /></div>
               <div>
                 <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">{r.recipe.name}</h1>
                 {r.recipe.blurb && <p className="mt-1.5 text-sm leading-normal text-ink2">{r.recipe.blurb}</p>}
               </div>
-              <div className="grid grid-cols-3 rounded-[20px] border border-line">
+              <p className="m-0 -mb-2 text-sm text-ink2">{r.cookLine}</p>
+              <div className="grid shrink-0 grid-cols-3 overflow-hidden rounded-[20px] border border-line">
                 {r.stats.map((s, i) => (
-                  <div key={s.label} className={`px-3.5 py-3 ${i > 0 ? "border-l border-line" : ""}`}>
+                  <div key={s.label} className={`px-3.5 py-3 ${i % 3 > 0 ? "border-l border-line" : ""} ${i >= 3 ? "border-t border-line" : ""}`}>
                     <div className="text-xs text-muted">{s.label}</div>
                     <div className="mt-0.5 text-lg tabular-nums">{s.value}</div>
                   </div>
@@ -53,9 +54,12 @@ export function RecipeDetailScreen({ id }: { id: string }) {
                 {r.ingredients.map((i) => (
                   <div key={i.name} className="flex items-center gap-3 border-t border-line py-[11px]">
                     <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${i.inPantry ? "bg-mint" : "bg-peach"}`} />
-                    <span className="flex-1 text-[15px]">{i.name}</span>
+                    <span className="min-w-0 flex-1 text-[15px]">
+                      {i.name}
+                      {i.note && <span className="block text-sm text-ink2">{i.note}</span>}
+                    </span>
                     <span className="text-sm tabular-nums text-ink2">{i.amount}</span>
-                    <span className={`rounded-full px-2.5 py-[3px] text-xs font-medium text-onp ${i.inPantry ? "bg-mint" : r.listed ? "bg-sky" : "bg-peach"}`}>{i.tag}</span>
+                    <span className={`rounded-full px-2.5 py-[3px] text-xs font-medium text-onp ${i.inPantry || i.tag === "Swap" || i.tag === "Optional" ? "bg-mint" : r.listed ? "bg-sky" : "bg-peach"}`}>{i.tag}</span>
                   </div>
                 ))}
                 {r.missing > 0 && (

@@ -2,10 +2,9 @@
 import Link from "next/link";
 import { useCook, type CookModel } from "@/view-models/cook/useCook";
 import { AskSheet } from "./AskSheet";
-import { CookMotion } from "./CookMotion";
+import { CookMotion, ServedDish } from "./CookMotion";
 import { GuideCards } from "./GuideCards";
 import { Prep } from "./Prep";
-import { Bowl } from "../recipes/Bowl";
 
 const VERB: Record<string, string> = { Chop: "#F7C9BB", Simmer: "#9EC8F3", Stir: "#B9A7EE", "Sauté": "#F4E3A1", Serve: "#8FD3C0", Mix: "#CFC8F0" };
 const pill = "touch rounded-full px-6 text-[15px] font-medium";
@@ -39,7 +38,7 @@ function Steps({ c }: { c: CookModel }) {
 
       <div key={s.number} className="story-in flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4">
         <div className="relative">
-          <CookMotion verb={s.verb} />
+          <CookMotion verb={s.verb} tint={c.recipe.tint} image={c.recipe.image} />
           {c.timer && (
             <div aria-label="Timer" role="group" className="absolute right-2 top-2 flex items-center gap-2 rounded-2xl border border-line bg-bg py-1 pl-3 pr-1">
               <div>
@@ -91,7 +90,7 @@ function Finish({ c }: { c: CookModel }) {
   return (
     <Shell title={c.recipe.name}>
       <div className="flex min-h-0 flex-1 flex-col items-center gap-5 overflow-y-auto px-5 pb-4 pt-4 text-center">
-        <div className="flex h-36 w-36 items-center justify-center rounded-full" style={{ background: c.recipe.tint }} role="img" aria-label={`Bowl of ${c.recipe.name.toLowerCase()} ready to serve`}><Bowl size={80} /></div>
+        <div role="img" aria-label={`Bowl of ${c.recipe.name.toLowerCase()} ready to serve`}><ServedDish tint={c.recipe.tint} image={c.recipe.image} /></div>
         <h2 className="m-0 text-[28px] font-medium tracking-[-0.02em]">Nicely done</h2>
         <p className="m-0 text-[15px] text-ink2">You made {f.made} {f.made === 1 ? "serving" : "servings"}. How many did you eat?</p>
         <div className="flex items-center gap-4">

@@ -7,6 +7,17 @@ export const VERB_GUIDE: Record<string, { look: string; tip: string }> = {
   Mix: { look: "No dry patches left.", tip: "Mix only until combined. Over-mixing makes batters tough." },
   Simmer: { look: "Small bubbles break the surface gently. It is not a hard boil.", tip: "Turn the heat down once it bubbles and partly cover it so it does not dry out." },
   "Sauté": { look: "A steady sizzle, with the food turning golden at the edges.", tip: "Let the pan get hot first, and stir often so spices do not burn." },
+  Bake: { look: "Golden on top, and a skewer pushed into the middle comes out clean.", tip: "Preheat the oven first, and keep the door shut so the heat stays in." },
+  Toast: { look: "An even golden colour on both sides.", tip: "Watch it closely at the end. Toast goes from golden to burnt quickly." },
+  Blend: { look: "Smooth, with no chunks left, and it pours easily.", tip: "Start on low, then go faster. Add a splash of liquid if it will not turn." },
+  Chill: { look: "Cold all the way through and set a little thicker.", tip: "Cover it so it does not pick up fridge smells. Overnight is best." },
+  Whisk: { look: "Pale and frothy, with the whites and yolks fully mixed.", tip: "Whisk with your wrist in quick small circles. Keep the bowl steady on a damp cloth." },
+  Fry: { look: "Edges turn golden and set, and the oil sizzles around the food.", tip: "Wait until the oil shimmers before adding food. Do not crowd the pan." },
+  Boil: { look: "A steady rolling boil, with large bubbles breaking the surface.", tip: "Salt the water once it boils, and turn it down if it foams over." },
+  Mash: { look: "Mostly smooth, with only a few small lumps if you like it rustic.", tip: "Press straight down, then turn the bowl a little and press again." },
+  Grate: { look: "Thin, even shreds that pile up loosely.", tip: "Press gently and keep your fingers away from the last bit. Stop when the piece gets small." },
+  Knead: { look: "A smooth, soft dough that springs back when poked.", tip: "Push with the heel of your hand, fold, turn and repeat. Add flour a pinch at a time if it sticks." },
+  Roll: { look: "An even thickness all the way across, and a round shape.", tip: "Dust the board lightly and turn the dough a quarter after every few rolls." },
   Serve: { look: "Hot all the way through and tasting balanced.", tip: "Taste once more. A pinch of salt or a squeeze of lemon can lift it." },
 };
 
