@@ -1,4 +1,4 @@
-// Cooking loops: one small kitchen scene per step verb (17), no loop borrowed by another verb.
+// Cooking loops: one small kitchen scene per step verb (23), no loop borrowed by another verb.
 // CSS lives in app/cook-motions.css, scoped under .cook-motion. Each scene's resting frame reads as a still picture (reduced motion).
 import type { CSSProperties, ReactNode, JSX } from "react";
 import { Bowl } from "../recipes/Bowl";
@@ -526,9 +526,136 @@ function Roll() {
   </Scene>;
 }
 
+function Top({ tint }: { tint: string }) {
+  const bits: [number, number, string, number][] = [[88, 0, MINT, 0], [100, 4, BUTTER, 0.15], [94, 2, "currentColor", 0.3], [106, 0, MINT, 0.45], [98, 6, BUTTER, 0.6]];
+  return <Scene label="Fingers sprinkling herbs and cheese over a bowl">
+    <Shadow rx={72} />
+    <path d="M38 118h124c0 32-26 54-62 54s-62-22-62-54z" fill={SKY} {...ln} strokeWidth="2.5" />
+    <path d="M50 130c4 16 14 28 28 32" fill="none" stroke={WHITE} strokeWidth="3" strokeLinecap="round" opacity=".7" />
+    <ellipse cx="100" cy="118" rx="62" ry="12" fill="var(--bg)" {...ln} strokeWidth="2.5" />
+    <path d="M46 118c4-14 28-22 54-22s50 8 54 22c-14 6-94 6-108 0z" fill={tint} {...ln} strokeWidth="2.3" />
+    <path d="M66 108c8-5 18-7 26-7" fill="none" stroke={WHITE} strokeWidth="3" strokeLinecap="round" opacity=".6" />
+    <g className="tp-land"><path d="M76 110l4-2M118 106l4 2M96 104l3 3M132 112l3-2M64 114l3 1" stroke={MINT} strokeWidth="3.4" strokeLinecap="round" /><path d="M86 112h4M108 110h4M124 114h3" stroke={BUTTER} strokeWidth="3" strokeLinecap="round" /></g>
+    {bits.map(([x, dx, c, dl]) => (
+      <g key={dl} className="tp-bit" style={{ animationDelay: `${dl}s`, "--dx": `${dx}px` } as Vars}><circle cx={x} cy="62" r="2.4" fill={c} {...ln} strokeWidth="1.3" /></g>
+    ))}
+    <g className="tp-hand">
+      <path d="M86 6h28l-2 26H88z" fill={LAV} {...ln} strokeWidth="2.4" />
+      <path d="M86 32c0-4 6-6 14-6s14 2 14 6v12c0 6-4 10-8 12l-6 4-6-4c-4-2-8-6-8-12z" fill={PEACH} {...ln} strokeWidth="2.4" />
+      <path d="M94 44l6 12 6-12" fill="none" {...ln} strokeWidth="2" opacity=".4" />
+    </g>
+  </Scene>;
+}
+
+function Assemble() {
+  return <Scene label="Filling a tortilla with lettuce, tomato and cheese, then folding it">
+    <Shadow rx={84} />
+    <ellipse cx="100" cy="132" rx="84" ry="30" fill="var(--panel)" {...ln} strokeWidth="2.5" />
+    <ellipse cx="100" cy="130" rx="64" ry="20" fill="var(--bg)" {...ln} strokeWidth="2" />
+    <path d="M100 104a50 26 0 0 1 0 52z" fill={BUTTER} {...ln} strokeWidth="2.4" />
+    <path d="M118 116l3 2M132 126l2 3M120 142l3-1" {...ln} strokeWidth="2" opacity=".3" />
+    <g className="as-f as-f1"><path d="M106 120c8-6 18-4 22 2-6 6-16 8-22-2zM104 134c8-4 18-2 22 4-8 4-16 4-22-4z" fill={MINT} {...ln} strokeWidth="2" /></g>
+    <g className="as-f as-f2"><circle cx="122" cy="128" r="6" fill={ROSE} {...ln} strokeWidth="2" /><circle cx="110" cy="142" r="5" fill={ROSE} {...ln} strokeWidth="2" /></g>
+    <g className="as-f as-f3"><path d="M110 124l10 4M116 134l10 2M106 130l8 6M124 140l6-4" stroke={BUTTER} strokeWidth="3.4" strokeLinecap="round" /><path d="M110 124l10 4M116 134l10 2M106 130l8 6M124 140l6-4" {...ln} strokeWidth="1" opacity=".5" /></g>
+    <g className="as-fold"><path d="M100 104a50 26 0 0 0 0 52z" fill={BUTTER} {...ln} strokeWidth="2.4" /><path d="M66 124l3 2M80 138l2-3" {...ln} strokeWidth="2" opacity=".3" /></g>
+  </Scene>;
+}
+
+function Toss() {
+  return <Scene label="Two salad servers tossing leaves in a bowl">
+    <Shadow rx={80} />
+    {([[70, MINT, "tl1"], [92, LAV, "tl2"], [112, MINT, "tl3"], [130, ROSE, "tl4"]] as const).map(([x, c, k]) => (
+      <g key={k} className={`to-up ${k}`}><g className="sa-spin">
+        {c === ROSE ? <circle cx={x} cy="104" r="6" fill={c} {...ln} strokeWidth="2.2" /> : <path d={`M${x - 8} 108c0-10 8-16 16-16 0 10-8 16-16 16z`} fill={c} {...ln} strokeWidth="2.2" />}
+      </g></g>
+    ))}
+    <g className="to-l"><path d="M24 40l46 66" {...ln} strokeWidth="8" /><path d="M24 40l46 66" stroke={PEACH} strokeWidth="3.6" strokeLinecap="round" /><ellipse cx="72" cy="110" rx="10" ry="6" transform="rotate(55 72 110)" fill={PEACH} {...ln} strokeWidth="2.4" /></g>
+    <g className="to-r"><path d="M176 40l-46 66" {...ln} strokeWidth="8" /><path d="M176 40l-46 66" stroke={PEACH} strokeWidth="3.6" strokeLinecap="round" /><path d="M124 104l4 12M130 102l4 12M136 100l4 12" {...ln} strokeWidth="2.6" /></g>
+    <path d="M30 108h140c0 36-30 64-70 64s-70-28-70-64z" fill={BUTTER} {...ln} strokeWidth="2.5" />
+    <path d="M44 122c6 20 18 34 34 40" fill="none" stroke={WHITE} strokeWidth="3" strokeLinecap="round" opacity=".7" />
+    <path d="M40 132c34 12 86 12 120 0" fill="none" stroke={MINT} strokeWidth="4" strokeLinecap="round" />
+    <ellipse cx="100" cy="108" rx="70" ry="12" fill="none" {...ln} strokeWidth="2.5" />
+    <path d="M46 106c6-8 16-10 22-4 6-8 18-8 22 0 6-8 18-6 22 0 6-6 18-6 22 2 6-4 12-2 16 4" fill={MINT} {...ln} strokeWidth="2.2" />
+    <Fly dx="-6px" dy="-20px" d="1.6s" dl=".3s"><circle cx="84" cy="98" r="2" fill={BUTTER} {...ln} strokeWidth="1.3" /></Fly>
+    <Fly dx="8px" dy="-22px" d="1.6s" dl=".5s"><circle cx="118" cy="96" r="2" fill={BUTTER} {...ln} strokeWidth="1.3" /></Fly>
+  </Scene>;
+}
+
+function Slice() {
+  return <Scene label="Bread knife sawing a loaf into slices">
+    <Shadow rx={88} />
+    <Board y={150} x={8} w={184} />
+    <g className="sl-fall"><path d="M52 150v-34c0-8 4-12 8-12h2v46z" fill={BUTTER} {...ln} strokeWidth="2.3" /><path d="M54 112h6" stroke={PEACH} strokeWidth="3" strokeLinecap="round" /></g>
+    <path d="M24 150l10-30 8 2-6 28zM38 150l10-32 8 2-6 30z" fill={BUTTER} {...ln} strokeWidth="2.3" />
+    <path d="M64 150v-36c0-14 18-24 46-24s52 10 52 24v36z" fill={PEACH} {...ln} strokeWidth="2.5" />
+    <path d="M64 114c0-10 6-16 10-16v52H64z" fill={BUTTER} {...ln} strokeWidth="2.3" />
+    <path d="M90 100l8-6M112 96l8-6M134 100l8-6" {...ln} strokeWidth="2.2" opacity=".35" />
+    <path d="M100 106c14-6 34-6 50 0" fill="none" stroke={WHITE} strokeWidth="3" strokeLinecap="round" opacity=".6" />
+    <g className="sl-knife">
+      <path d="M78 96l4 54h8l-4-54z" fill="var(--bg)" {...ln} strokeWidth="2.4" />
+      <path d="M80 104l2 6 2-6 1 6 2-6" fill="none" {...ln} strokeWidth="1.6" opacity=".4" />
+      <rect x="74" y="64" width="14" height="34" rx="6" fill={LAV} {...ln} strokeWidth="2.5" />
+      <circle cx="81" cy="74" r="1.8" fill="currentColor" /><circle cx="81" cy="86" r="1.8" fill="currentColor" />
+    </g>
+    <Fly dx="-10px" dy="-12px" d="1.6s" dl=".2s"><circle cx="72" cy="140" r="1.8" fill={PEACH} {...ln} strokeWidth="1.3" /></Fly>
+    <Fly dx="8px" dy="-14px" d="1.6s" dl=".9s"><circle cx="90" cy="142" r="1.8" fill={BUTTER} {...ln} strokeWidth="1.3" /></Fly>
+  </Scene>;
+}
+
+function Sear() {
+  return <Scene label="Tongs pressing a steak in a smoking hot pan">
+    <Shadow rx={80} />
+    <g className="se-smoke"><path d="M70 66c-7 0-10-6-6-10-2-7 6-11 11-7 3-6 13-6 15 1 7-1 10 7 5 11 2 4-1 7-5 7z" fill="var(--panel)" {...ln} strokeWidth="2" /></g>
+    <g className="se-smoke se-s2"><path d="M116 58c-6 0-9-5-5-9-1-6 5-9 10-6 3-5 11-5 13 1 6-1 9 6 4 9 2 4-1 6-4 6z" fill="var(--panel)" {...ln} strokeWidth="2" /></g>
+    <Burner y={170} />
+    <path d="M32 140l-24-4c-4-1-7 2-7 5s2 5 5 5l26 2z" fill="currentColor" opacity=".8" />
+    <ellipse cx="100" cy="140" rx="70" ry="24" fill={LAV} {...ln} strokeWidth="2.5" />
+    <ellipse cx="100" cy="140" rx="60" ry="17" fill="var(--panel)" {...ln} strokeWidth="2" />
+    <g className="se-steak">
+      <path d="M66 138c0-12 14-18 34-18 22 0 36 6 36 16s-12 18-34 18c-22 0-36-6-36-16z" fill={ROSE} {...ln} strokeWidth="2.4" />
+      <path d="M70 146c8 6 22 8 34 8 16 0 28-4 32-12" fill="none" stroke={PEACH} strokeWidth="5" strokeLinecap="round" />
+      <g className="se-marks"><path d="M82 128l-8 14M98 126l-8 18M114 126l-8 18M128 128l-6 12" {...ln} strokeWidth="3.2" opacity=".55" /></g>
+    </g>
+    <Pop d="1s"><circle cx="58" cy="142" r="3.5" fill="var(--bg)" {...ln} strokeWidth="1.6" /></Pop>
+    <Pop d="1s" dl=".5s"><circle cx="144" cy="140" r="3.5" fill="var(--bg)" {...ln} strokeWidth="1.6" /></Pop>
+    <Fly dx="-14px" dy="-24px" d="1.4s" dl=".2s"><circle cx="62" cy="126" r="2.4" fill={BUTTER} {...ln} strokeWidth="1.5" /></Fly>
+    <Fly dx="14px" dy="-26px" d="1.4s" dl=".7s"><circle cx="140" cy="124" r="2.4" fill={BUTTER} {...ln} strokeWidth="1.5" /></Fly>
+    <g className="se-tongs">
+      <path d="M186 40l-70 82M192 48l-72 78" fill="none" {...ln} strokeWidth="6" />
+      <path d="M186 40l-70 82M192 48l-72 78" fill="none" stroke="var(--panel)" strokeWidth="2.6" strokeLinecap="round" />
+      <rect x="176" y="34" width="22" height="14" rx="5" transform="rotate(40 187 41)" fill={ROSE} {...ln} strokeWidth="2.2" />
+    </g>
+  </Scene>;
+}
+
+function Roast() {
+  return <Scene label="Tray of vegetables browning under the oven grill">
+    <Shadow rx={84} />
+    <rect x="18" y="30" width="164" height="144" rx="12" fill="var(--panel)" {...ln} strokeWidth="2.5" />
+    <path className="ra-coil" d="M32 48c8-8 16 8 24 0s16 8 24 0 16 8 24 0 16 8 24 0 16 8 24 0 16 8 16 0" fill="none" stroke={ROSE} strokeWidth="4" strokeLinecap="round" />
+    <path d="M32 48c8-8 16 8 24 0s16 8 24 0 16 8 24 0 16 8 24 0 16 8 24 0 16 8 16 0" fill="none" {...ln} strokeWidth="1.2" opacity=".4" />
+    <g className="ra-heat"><path d="M60 70l-3 8 3 8M100 70l-3 8 3 8M140 70l-3 8 3 8" fill="none" {...ln} strokeWidth="2" /></g>
+    <g transform="translate(-20 -22) scale(1.2)">
+    <path d="M24 156h152M24 164h152" {...ln} strokeWidth="2" opacity=".35" />
+    <path d="M30 150h140l-6 10H36z" fill="var(--bg)" {...ln} strokeWidth="2.4" />
+    <g>
+      <rect x="40" y="134" width="16" height="14" rx="4" fill={BUTTER} {...ln} strokeWidth="2.2" />
+      <rect x="62" y="136" width="14" height="12" rx="4" fill={BUTTER} {...ln} strokeWidth="2.2" />
+      <path d="M86 148v-8M86 140c-8 0-10-8-4-12 0-6 8-8 12-4 6-2 10 4 6 10-2 4-8 6-14 6z" fill={MINT} {...ln} strokeWidth="2.2" />
+      <path d="M108 140h24c4 0 6 4 6 6s-2 4-6 4h-24z" fill={PEACH} {...ln} strokeWidth="2.2" transform="rotate(-8 120 145)" />
+      <path d="M150 148v-8M150 140c-8 0-10-8-4-12 0-6 8-8 12-4 6-2 10 4 6 10-2 4-8 6-14 6z" fill={MINT} {...ln} strokeWidth="2.2" />
+      <g className="ra-brown"><circle cx="46" cy="140" r="2" fill="currentColor" opacity=".45" /><circle cx="70" cy="142" r="2" fill="currentColor" opacity=".45" /><circle cx="118" cy="143" r="2" fill="currentColor" opacity=".45" /><circle cx="90" cy="132" r="1.8" fill="currentColor" opacity=".45" /></g>
+    </g>
+    <Pop d="1.3s"><circle cx="58" cy="128" r="2.6" fill="var(--bg)" {...ln} strokeWidth="1.5" /></Pop>
+    <Pop d="1.3s" dl=".65s"><circle cx="136" cy="130" r="2.6" fill="var(--bg)" {...ln} strokeWidth="1.5" /></Pop>
+    </g>
+  </Scene>;
+}
+
 /** Which loop plays for which step verb. Every verb has its own scene. */
 const BY_VERB: Record<string, (p: { tint: string; image?: string }) => JSX.Element> = {
   Chop, Stir, Mix, Simmer, "Sauté": Saute, Serve, Bake, Toast, Blend, Chill, Whisk, Fry, Boil, Mash, Grate, Knead, Roll,
+  Top, Assemble, Toss, Slice, Sear, Roast,
 };
 
 export function CookMotion({ verb, tint = BUTTER, image }: { verb: string; tint?: string; image?: string }) {

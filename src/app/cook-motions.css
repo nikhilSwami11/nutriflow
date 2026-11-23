@@ -209,7 +209,63 @@
 @keyframes roDough{from{transform:scale(1,.92)}to{transform:scale(1.04,1.08)}}
 .cook-motion .ro-pin~.kn-puff,.cook-motion .ro-dough~.kn-puff{animation-duration:2s}
 
+/* Top */
+.cook-motion .tp-hand{transform-origin:100px 20px;animation:tpHand .25s ease-in-out infinite alternate}
+@keyframes tpHand{from{transform:rotate(-3deg)}to{transform:rotate(3deg) translateY(1px)}}
+.cook-motion .tp-bit{opacity:0;animation:tpBit 1s ease-in infinite}
+@keyframes tpBit{0%{opacity:0;transform:translate(0,0)}15%{opacity:1}85%{opacity:1;transform:translate(var(--dx),44px)}100%{opacity:0;transform:translate(var(--dx),46px)}}
+.cook-motion .tp-land{animation:tpLand 4s ease-out infinite}
+@keyframes tpLand{0%{opacity:.25}85%{opacity:1}100%{opacity:.25}}
+
+/* Assemble */
+.cook-motion .as-f{animation:asF 3s infinite}
+.cook-motion .as-f2{animation-name:asF2}
+.cook-motion .as-f3{animation-name:asF3}
+@keyframes asF{0%{opacity:0;transform:translateY(-30px)}12%{opacity:1;transform:none}92%{opacity:1}100%{opacity:0}}
+@keyframes asF2{0%,14%{opacity:0;transform:translateY(-30px)}26%{opacity:1;transform:none}92%{opacity:1}100%{opacity:0}}
+@keyframes asF3{0%,28%{opacity:0;transform:translateY(-30px)}40%{opacity:1;transform:none}92%{opacity:1}100%{opacity:0}}
+.cook-motion .as-fold{transform-origin:100px 130px;animation:asFold 3s ease-in-out infinite}
+@keyframes asFold{0%,50%{transform:none}66%,90%{transform:scaleX(-1)}100%{transform:none}}
+
+/* Toss */
+.cook-motion .to-l{transform-origin:24px 40px;animation:toL 1.6s ease-in-out infinite}
+@keyframes toL{0%,100%{transform:none}25%{transform:rotate(-14deg) translateY(-4px)}45%{transform:none}}
+.cook-motion .to-r{transform-origin:176px 40px;animation:toR 1.6s ease-in-out infinite}
+@keyframes toR{0%,100%{transform:none}25%{transform:rotate(14deg) translateY(-4px)}45%{transform:none}}
+.cook-motion .to-up{animation:toUp 1.6s infinite}
+.cook-motion .tl1{--h:-40px}
+.cook-motion .tl2{--h:-56px;animation-delay:.04s}
+.cook-motion .tl3{--h:-48px;animation-delay:.08s}
+.cook-motion .tl4{--h:-34px;animation-delay:.12s}
+@keyframes toUp{0%,8%{transform:translateY(0);animation-timing-function:cubic-bezier(.2,.7,.4,1)}26%{transform:translateY(var(--h));animation-timing-function:cubic-bezier(.6,0,.8,.4)}46%,100%{transform:translateY(0)}}
+.cook-motion .to-up .sa-spin{animation-name:toSpin}
+@keyframes toSpin{0%,8%{transform:rotate(0)}46%,100%{transform:rotate(300deg)}}
+
+/* Slice */
+.cook-motion .sl-knife{animation:slKnife 1.8s ease-in-out infinite}
+@keyframes slKnife{0%{transform:translate(0,-44px)}10%{transform:translate(-10px,-40px)}20%{transform:translate(10px,-32px)}30%{transform:translate(-10px,-24px)}40%{transform:translate(10px,-14px)}50%{transform:translate(-6px,-6px)}58%,66%{transform:none}100%{transform:translate(0,-44px)}}
+.cook-motion .sl-fall{transform-origin:52px 150px;animation:slFall 1.8s ease-in infinite}
+@keyframes slFall{0%,60%{transform:none;opacity:1}74%{transform:rotate(-28deg)}80%{transform:rotate(-24deg)}90%{opacity:1;transform:rotate(-26deg)}99%{opacity:0;transform:rotate(-26deg)}100%{opacity:0;transform:none}}
+
+/* Sear */
+.cook-motion .se-tongs{animation:seTongs 1.4s ease-in-out infinite}
+@keyframes seTongs{0%,15%,60%,100%{transform:none}30%,45%{transform:translate(-4px,5px)}}
+.cook-motion .se-steak{transform-origin:100px 150px;animation:seSteak 1.4s ease-in-out infinite}
+@keyframes seSteak{0%,15%,60%,100%{transform:none}30%,45%{transform:scale(1.03,.95)}}
+.cook-motion .se-marks{animation:seMarks 4.2s ease-in infinite}
+@keyframes seMarks{0%{opacity:.15}80%,95%{opacity:1}100%{opacity:.15}}
+.cook-motion .se-smoke{opacity:0;transform-box:fill-box;transform-origin:center;animation:boCloud 2.2s ease-out infinite}
+.cook-motion .se-s2{animation-delay:1.1s}
+
+/* Roast */
+.cook-motion .ra-coil{animation:raCoil 1.2s ease-in-out infinite alternate}
+@keyframes raCoil{from{opacity:.55}to{opacity:1}}
+.cook-motion .ra-heat{opacity:0;animation:raHeat 1.6s ease-in-out infinite}
+@keyframes raHeat{0%{opacity:0;transform:translateY(-6px)}40%{opacity:.5}100%{opacity:0;transform:translateY(14px)}}
+.cook-motion .ra-brown{animation:raBrown 4s ease-in infinite}
+@keyframes raBrown{0%{opacity:0}75%,95%{opacity:1}100%{opacity:0}}
+
 @media (prefers-reduced-motion:reduce){
   .cook-motion svg *{animation:none !important}
-  .cook-motion .ch-hit,.cook-motion .wisp,.cook-motion .pop,.cook-motion .fly,.cook-motion .puff,.cook-motion .mx-fl,.cook-motion .mx-puff,.cook-motion .mx-dollop,.cook-motion .sv-stream,.cook-motion .pl-wisp,.cook-motion .pl-sp,.cook-motion .bk-heat,.cook-motion .ts-glow,.cook-motion .cl-fr,.cook-motion .cl-air,.cook-motion .fr-zz,.cook-motion .bo-bub,.cook-motion .bo-cloud,.cook-motion .ms-ch,.cook-motion .gr-sh,.cook-motion .kn-puff{opacity:0}
+  .cook-motion .ch-hit,.cook-motion .wisp,.cook-motion .pop,.cook-motion .fly,.cook-motion .puff,.cook-motion .mx-fl,.cook-motion .mx-puff,.cook-motion .mx-dollop,.cook-motion .sv-stream,.cook-motion .pl-wisp,.cook-motion .pl-sp,.cook-motion .bk-heat,.cook-motion .ts-glow,.cook-motion .cl-fr,.cook-motion .cl-air,.cook-motion .fr-zz,.cook-motion .bo-bub,.cook-motion .bo-cloud,.cook-motion .ms-ch,.cook-motion .gr-sh,.cook-motion .kn-puff,.cook-motion .tp-bit,.cook-motion .se-smoke,.cook-motion .ra-heat{opacity:0}
 }

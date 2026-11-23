@@ -19,6 +19,12 @@ export const VERB_GUIDE: Record<string, { look: string; tip: string }> = {
   Knead: { look: "A smooth, soft dough that springs back when poked.", tip: "Push with the heel of your hand, fold, turn and repeat. Add flour a pinch at a time if it sticks." },
   Roll: { look: "An even thickness all the way across, and a round shape.", tip: "Dust the board lightly and turn the dough a quarter after every few rolls." },
   Serve: { look: "Hot all the way through and tasting balanced.", tip: "Taste once more. A pinch of salt or a squeeze of lemon can lift it." },
+  Top: { look: "An even scatter over the whole dish, not a pile in the middle.", tip: "Sprinkle from a little higher up so it spreads out." },
+  Assemble: { look: "Fillings sit in the middle with a clear edge, so it closes without spilling.", tip: "Put wet things like salsa on top of dry ones so the base stays crisp." },
+  Toss: { look: "Every piece is lightly coated, with no dressing pooled at the bottom.", tip: "Lift from the bottom and let it fall. Add dressing a little at a time." },
+  Slice: { look: "Even slices that hold their shape.", tip: "Use long, gentle strokes and let the knife do the work. Do not press down." },
+  Sear: { look: "A deep brown crust that lets go of the pan on its own.", tip: "Pat it dry first and do not move it until it releases." },
+  Roast: { look: "Golden brown edges and tender when poked with a knife.", tip: "Spread it out in one layer with space between pieces, or it steams instead." },
 };
 
 export const FALLBACK_GUIDE = { look: "It looks and smells the way you expect.", tip: "Taste as you go. You can always add more, never take it out." };
