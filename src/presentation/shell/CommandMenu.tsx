@@ -4,14 +4,14 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 /** The screens the menu jumps to. Extra words so "groceries" finds Shopping and "hungry" finds What to eat. */
 const PLACES = [
-  { href: "/", label: "Today", words: "home feed dashboard" },
-  { href: "/eat", label: "What to eat", words: "hungry suggest meal food" },
-  { href: "/recipes", label: "Recipes", words: "saved cook" },
-  { href: "/plan", label: "Plan", words: "week meals" },
-  { href: "/pantry", label: "Pantry", words: "kitchen stock have" },
-  { href: "/shopping", label: "Shopping", words: "groceries list buy store" },
-  { href: "/chores", label: "Chores", words: "tasks clean" },
-  { href: "/profile", label: "Profile", words: "account diet calories settings sign" },
+  { href: "/", label: "Today", words: "home feed dashboard", tag: "Home" },
+  { href: "/eat", label: "What to eat", tag: "Food", words: "hungry suggest meal food" },
+  { href: "/recipes", label: "Recipes", tag: "Food", words: "saved cook" },
+  { href: "/plan", label: "Plan", tag: "Food", words: "week meals" },
+  { href: "/pantry", label: "Pantry", tag: "Kitchen", words: "kitchen stock have" },
+  { href: "/shopping", label: "Shopping", tag: "Kitchen", words: "groceries list buy store" },
+  { href: "/chores", label: "Chores", tag: "Chores", words: "tasks clean" },
+  { href: "/profile", label: "Profile", tag: "You", words: "account diet calories settings sign" },
 ];
 
 const noop = () => () => {};
@@ -75,9 +75,9 @@ export function CommandMenu() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center px-5 pt-[12vh]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center px-5 pt-[10vh]">
       <button type="button" aria-label="Close" tabIndex={-1} onClick={() => setOpen(false)} className="absolute inset-0 bg-black/30" />
-      <div role="dialog" aria-modal="true" aria-label="Go to" className="story-in relative flex w-full max-w-[460px] flex-col overflow-hidden rounded-[20px] border border-line bg-bg">
+      <div role="dialog" aria-modal="true" aria-label="Go to" className="story-in relative flex w-full max-w-[680px] flex-col overflow-hidden rounded-[28px] border border-line bg-bg shadow-[0_24px_70px_rgba(0,0,0,0.22)]">
         <input
           autoFocus
           role="combobox"
@@ -92,9 +92,9 @@ export function CommandMenu() {
             setActive(0);
           }}
           onKeyDown={onKey}
-          className="min-h-14 border-0 border-b border-line bg-transparent px-5 text-[15px] text-ink outline-none placeholder:text-muted"
+          className="min-h-[68px] border-0 border-b border-line bg-transparent px-6 text-xl text-ink outline-none placeholder:text-muted"
         />
-        <ul id="command-list" role="listbox" aria-label="Screens" className="m-0 flex max-h-[50vh] list-none flex-col overflow-y-auto p-2">
+        <ul id="command-list" role="listbox" aria-label="Screens" className="m-0 flex max-h-[56vh] list-none flex-col gap-0.5 overflow-y-auto p-3">
           {shown.map((p, i) => (
             <li
               key={p.href}
@@ -103,15 +103,18 @@ export function CommandMenu() {
               aria-selected={i === at}
               onMouseMove={() => setActive(i)}
               onClick={() => go(p.href)}
-              className={`flex min-h-11 cursor-pointer items-center justify-between rounded-2xl px-3.5 text-[15px] ${i === at ? "bg-mint text-onp" : "text-ink"}`}
+              className={`flex min-h-14 cursor-pointer items-center justify-between rounded-2xl px-4 text-[17px] ${i === at ? "bg-mint text-onp" : "text-ink"}`}
             >
               {p.label}
-              {i === at && <kbd aria-hidden="true" className="font-sans text-xs text-onp">↵</kbd>}
+              <span className="flex items-center gap-3">
+                <span aria-hidden="true" className={`text-sm ${i === at ? "text-onp" : "text-muted"}`}>{p.tag}</span>
+                {i === at && <kbd aria-hidden="true" className="font-sans text-sm text-onp">↵</kbd>}
+              </span>
             </li>
           ))}
           {!shown.length && <li className="px-3.5 py-3 text-sm text-ink2">No screen called “{query}”</li>}
         </ul>
-        <p className="m-0 flex gap-4 border-t border-line px-5 py-2.5 text-xs text-muted">
+        <p className="m-0 flex gap-5 border-t border-line px-6 py-3 text-sm text-muted">
           <span><kbd className="font-sans">↑↓</kbd> move</span>
           <span><kbd className="font-sans">↵</kbd> open</span>
           <span><kbd className="font-sans">esc</kbd> close</span>
