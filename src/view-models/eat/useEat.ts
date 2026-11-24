@@ -36,7 +36,8 @@ export function useEat() {
   const prof = useQuery({ queryKey: PROFILE, queryFn: () => profile.get() });
   const todayLogs = useQuery({ queryKey: ["meal-logs", today], queryFn: () => logs.listBetween(today, today) });
   const items = pantry.isLoading ? null : pantry.view.groups.flatMap((g) => g.items);
-  const ready = !!items && !!todayLogs.data && prof.data !== undefined;
+  // A profile or log read that fails counts as empty: the screen still answers (defaults) instead of waiting forever.
+  const ready = !!items && (!!todayLogs.data || todayLogs.isError) && (prof.data !== undefined || prof.isError);
 
   const meal = useQuery({
     queryKey: ["what-to-eat", today, wants, idea],
@@ -45,7 +46,7 @@ export function useEat() {
     staleTime: Infinity,
     queryFn: async () => {
       const dayMax = prof.data?.range.max ?? DEFAULT_RANGE.max;
-      const eaten = todayLogs.data!.reduce((sum, l) => sum + l.kcal, 0);
+      const eaten = (todayLogs.data ?? []).reduce((sum, l) => sum + l.kcal, 0);
       const out = await whatToEat(deps, {
         builtins: await deps.builtins.list(), pantry: items!, diet: prof.data?.diet, dislikes: prof.data?.dislikes,
         dayMax, kcalLeft: eaten > 0 ? Math.max(0, dayMax - eaten) : undefined, hour: now.getHours(), wants, idea: idea ?? undefined,

@@ -12,7 +12,7 @@ export function stepGuide(step: Step): { look: string; tip: string } {
   return { look: step.look ?? v.look, tip: step.tip ?? v.tip };
 }
 
-const fmt = (v: number) => {
+export const fmtQuarters = (v: number) => {
   const w = Math.floor(v), f = v - w;
   const frac = f === 0.25 ? "¼" : f === 0.5 ? "½" : f === 0.75 ? "¾" : "";
   return `${w || ""}${frac}` || "0";
@@ -29,7 +29,7 @@ export function prepList(recipe: Recipe, servings: number): PrepItem[] {
   return recipe.ingredients.map((i, n) => {
     const qty = scaleQty(i.qty, recipe.servings, servings);
     const w = weightOf(i, qty);
-    return { id: `p${n}`, text: `${fmt(qty)}${i.unit ? ` ${i.unit}` : ""} ${i.name.toLowerCase()}${w ? ` · ≈ ${w}` : ""}`.trim() };
+    return { id: `p${n}`, text: `${fmtQuarters(qty)}${i.unit ? ` ${i.unit}` : ""} ${i.name.toLowerCase()}${w ? ` · ≈ ${w}` : ""}`.trim() };
   });
 }
 
@@ -85,7 +85,7 @@ export function answerQuestion(question: string, { recipe, stepIndex, servings, 
   if (/\b(how much|how many|quantity|amount)\b/.test(q)) {
     if (!ingredient) return { topic: "amount", text: "Tell me which ingredient, for example: how much garlic?" };
     const amt = scaleQty(ingredient.qty, recipe.servings, servings);
-    return { topic: "amount", text: `${fmt(amt)}${ingredient.unit ? ` ${ingredient.unit}` : ""} ${ingredient.name.toLowerCase()} for ${servings} servings.` };
+    return { topic: "amount", text: `${fmtQuarters(amt)}${ingredient.unit ? ` ${ingredient.unit}` : ""} ${ingredient.name.toLowerCase()} for ${servings} servings.` };
   }
 
   // 4. timing

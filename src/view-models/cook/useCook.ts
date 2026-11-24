@@ -5,7 +5,7 @@ import {
   elapsedMs, finishCooking, formatRemaining, habitNote, isDone, isRunning, newTimer, nextStep, nutritionEaten, pauseTimer,
   prevStep, remainingMs, startTimer, stepAt, suggestedServings, type FinishResult, type TimerState, type VoiceCommand,
 } from "@/domain/cooking";
-import { answerQuestion, prepList, stepGuide, suggestedQuestions, swapsFor } from "@/domain/guide";
+import { answerQuestion, prepList, processTiles, stepGuide, suggestedQuestions, swapsFor } from "@/domain/guide";
 import { toDateKey } from "@/domain/nutrition";
 import { ingredientStatus } from "@/domain/recipes";
 import { useNutritionDeps } from "../nutrition/NutritionDeps";
@@ -148,6 +148,7 @@ export function useCook(id: string, servingsMade?: number) {
     phase,
     step: { number: nav.index + 1, count: nav.count, text: step.text, verb: step.verb, isFirst: nav.isFirst, isLast: nav.isLast, look: guide.look, tip: guide.tip },
     prep: {
+      process: processTiles(recipe, made),
       items: prepItems.map((i) => ({ ...i, checked: checked.includes(i.id), toggle: () => setChecked((c) => (c.includes(i.id) ? c.filter((x) => x !== i.id) : [...c, i.id])) })),
       done: prepItems.filter((i) => checked.includes(i.id)).length,
       total: prepItems.length,
