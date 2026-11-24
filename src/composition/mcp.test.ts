@@ -24,6 +24,14 @@ describe("MCP connector", () => {
     ]);
   });
 
+  it("eat_next points at a card and the card is served as an MCP app page", async () => {
+    const tools = (await json(await call(mcp, { jsonrpc: "2.0", id: 5, method: "tools/list", params: {} }))).result.tools;
+    expect(tools.find((t: { name: string }) => t.name === "eat_next")._meta.ui.resourceUri).toBe("ui://nutriflow/eat-next");
+    const res = (await json(await call(mcp, { jsonrpc: "2.0", id: 6, method: "resources/read", params: { uri: "ui://nutriflow/eat-next" } }))).result;
+    expect(res.contents[0]).toMatchObject({ uri: "ui://nutriflow/eat-next", mimeType: "text/html;profile=mcp-app" });
+    expect(res.contents[0].text).toContain("ui/notifications/tool-result");
+  });
+
   it("a tool call without a token is a tool error, not a crash", async () => {
     const res = await call(mcp, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "pantry", arguments: {} } });
     expect((await json(res)).result).toMatchObject({ isError: true, content: [{ text: "Not signed in." }] });

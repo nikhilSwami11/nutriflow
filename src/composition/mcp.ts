@@ -1,5 +1,6 @@
 import { createMcpHandler, getPublicOrigin, metadataCorsOptionsRequestHandler, protectedResourceHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
+import { CARD_MIME, EAT_NEXT_URI, eatNextHtml } from "./mcpCards";
 import { clientForToken, verifyAccessToken } from "@/data/auth/token";
 import { SupabaseChoreRepository } from "@/data/chores/supabase";
 import { SupabaseMealPlanRepository } from "@/data/planning/supabase";
@@ -106,8 +107,13 @@ export const mcp = createMcpHandler(
       annotations: read,
     }, run((d, i) => A.suggestNow(d, { date: dayOf(i.date), hour: i.hour, wish: i.wish })));
 
+    server.registerResource("eat-next-card", EAT_NEXT_URI, { title: "Eat next card", mimeType: CARD_MIME }, async (uri) => ({
+      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: eatNextHtml() }],
+    }));
+
     server.registerTool("eat_next", {
       title: "Eat next",
+      _meta: { ui: { resourceUri: EAT_NEXT_URI }, "ui/resourceUri": EAT_NEXT_URI },
       description: "The one planned meal to eat next by the person's clock, what to buy, swap or skip to cook it, and the rest of today. Same answer as the app's Home.",
       inputSchema: z.object({ date, hour: z.number().int().min(0).max(23).describe("Local hour, 0-23") }), annotations: read,
     }, run((d, i) => A.eatNextNow(d, { date: dayOf(i.date), hour: i.hour })));
