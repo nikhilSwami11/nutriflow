@@ -64,6 +64,7 @@ export function RecipeDetailScreen({ id }: { id: string }) {
                       {i.amount}
                       {i.weight && <span className="block text-xs text-muted">≈ {i.weight}</span>}
                     </span>
+                    {!i.inPantry && i.tag !== "Optional" && i.tag !== "Swap" && <button type="button" onClick={i.iHave} aria-label={`I have ${i.name}`} className="touch rounded-full border border-line2 bg-bg px-3 text-sm font-medium text-ink">I have it</button>}
                     <span className={`rounded-full px-2.5 py-[3px] text-xs font-medium text-onp ${i.inPantry || i.tag === "Swap" || i.tag === "Optional" ? "bg-mint" : r.listed ? "bg-sky" : "bg-peach"}`}>{i.tag}</span>
                   </div>
                 ))}

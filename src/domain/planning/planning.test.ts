@@ -96,7 +96,8 @@ describe("eatNext", () => {
     expect(n.recipe.id).toBe("dal");
     expect(n.tomorrow).toBe(false);
     expect(n.then.map((m) => m.meal)).toEqual(["Dinner"]);
-    expect(n.cook.needed.map((i) => i.name)).toEqual(["Rice"]);
+    expect(n.cook.unknown.map((i) => i.name)).toEqual(["Rice"]); // an empty pantry: unknown, not missing
+    expect(eatNext({ today, tomorrow, eaten: [], hour: 13, pantry: [{ name: "rice", qty: 0 } as never] })!.cook.needed.map((i) => i.name)).toEqual(["Rice"]);
     expect(eatNext({ today, tomorrow, eaten: [], hour: 13, pantry: [{ name: "rice", qty: 2 } as never] })!.cook.canCook).toBe(true);
   });
   it("is tomorrow's first meal when today is done, and null with no plan", () => {

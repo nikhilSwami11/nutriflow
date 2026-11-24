@@ -6,6 +6,7 @@ import { cookability } from "@/domain/guide";
 import { ingredientStatus, readiness, scaleQty, weightOf, type Recipe } from "@/domain/recipes";
 import { usePantry } from "../pantry/usePantry";
 import { useRecipeRepo } from "./RecipeDeps";
+import { useHave } from "../pantry/useHave";
 import { useMyRecipes } from "./useMyRecipes";
 import { savedOnly } from "@/domain/recipes";
 
@@ -58,6 +59,7 @@ const fmtQty = (v: number) => {
 export function useRecipe(id: string) {
   const { recipes, items } = useRecipeData();
   const my = useMyRecipes();
+  const have = useHave();
   const [servings, setServings] = useState<number | null>(null);
   const [listed, setListed] = useState(false);
   if (!recipes) return { isLoading: true as const };
@@ -83,7 +85,7 @@ export function useRecipe(id: string) {
       { label: "Diet", value: DIET[dietOf(r)] },
     ],
     /** One plain line for what stands between you and cooking, like Home. */
-    cookLine: missing === 0 ? "Everything is in your pantry" : cook.canCook ? "You can cook this now with swaps or skips" : `Missing ${cook.needed.map((x) => x.name.toLowerCase()).join(", ")}`,
+    cookLine: cook.state === "check" ? "Tell me what you have and I will work out what is missing" : missing === 0 ? "Everything is in your pantry" : cook.canCook ? "You can cook this now with swaps or skips" : `Missing ${cook.needed.map((x) => x.name.toLowerCase()).join(", ")}`,
     servings: sv,
     fewer: () => setServings(Math.max(1, sv - 1)),
     more: () => setServings(Math.min(12, sv + 1)),
@@ -93,6 +95,8 @@ export function useRecipe(id: string) {
       /** About how much it weighs, gray on the right: "400 g dry". Null when unknown. */
       weight: weightOf(s.ingredient, scaleQty(s.ingredient.qty, r.servings, sv)),
       inPantry: s.inPantry,
+      /** The pantry may be wrong: let the person say they have it. */
+      iHave: () => void have.have({ name: s.ingredient.name, qty: scaleQty(s.ingredient.qty, r.servings, sv), unit: s.ingredient.unit }),
       tag: s.inPantry ? "In pantry" : swapOf.has(s.ingredient.name) ? "Swap" : cook.skips.includes(s.ingredient.name) ? "Optional" : listed ? "On list" : "Missing",
       /** What to use instead, when you own a stand-in. */
       note: swapOf.has(s.ingredient.name) ? `Use ${swapOf.get(s.ingredient.name)}` : null,

@@ -65,8 +65,11 @@ export function useEat() {
       id: r.id, name: r.name, blurb: r.blurb, tint: r.tint, image: r.image, recipe: r,
       written: m.source === "ai",
       ready: cook.canCook,
+      state: cook.state,
       missing: cook.needed.length,
-      status: cook.canCook ? "Ready to cook" : `Missing ${cook.needed.length}`,
+      status: cook.canCook ? "Ready to cook" : cook.state === "check" ? "Check what you have" : `Missing ${cook.needed.length}`,
+      ask: [...cook.unknown, ...cook.needed].map((x) => ({ name: x.name, qty: x.qty, unit: x.unit })),
+      assumed: cook.assumed,
       facts: `${r.minutes} min · ${r.kcal} kcal · ${r.protein} g protein`,
       needs: cook.needed.map((x) => ({ name: x.name, qty: x.qty, unit: shopUnitFor(x.unit) })),
     };

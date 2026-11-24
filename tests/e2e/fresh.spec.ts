@@ -25,3 +25,17 @@ test("plan does not claim a history", async ({ page }) => {
   await page.goto("/plan");
   await expect(page.getByText("Picked to fit your diet")).toBeVisible();
 });
+
+test("an empty pantry asks what you have instead of saying everything is missing", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText(/You are missing/)).toHaveCount(0);
+  await expect(page.getByText("Check what you have").first()).toBeVisible();
+  await page.getByRole("button", { name: "Check ingredients" }).first().click();
+  const sheet = page.getByRole("dialog", { name: "Do you have these?" });
+  await expect(sheet).toBeVisible();
+  const first = sheet.getByRole("button", { name: /^I have / }).first();
+  await first.click();
+  await expect(first).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+});

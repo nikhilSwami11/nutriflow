@@ -95,6 +95,8 @@ export function useHome() {
     const count = (k: number, w: string) => `${k} ${w}${k === 1 ? "" : "s"}`;
     const easy = [cook.swaps.length ? count(cook.swaps.length, "swap") : "", cook.skips.length ? count(cook.skips.length, "skip") : ""].filter(Boolean);
     const onList = listed.includes(m.recipe.id);
+    // Main things we cannot be sure of: ask the person instead of claiming they are missing.
+    const ask = [...cook.unknown, ...cook.needed].map((x) => ({ name: x.name, qty: x.qty, unit: x.unit }));
     return {
       meal: m.meal,
       id: m.recipe.id,
@@ -107,9 +109,12 @@ export function useHome() {
       /** Nothing blocks cooking: all there, or every gap has a stand-in at home or can be skipped. */
       ready: cook.canCook,
       /** Plain words for what stands between you and dinner. */
-      readyText: !cook.canCook ? `You are missing ${count(n, "thing")}` : easy.length ? `Can cook with ${easy.join(" and ")}` : "Ready to cook",
+      state: cook.state,
+      ask,
+      assumed: cook.assumed,
+      readyText: cook.state === "check" ? "Check what you have" : !cook.canCook ? `You are missing ${count(n, "thing")}` : easy.length ? `Can cook with ${easy.join(" and ")}` : "Ready to cook",
       /** The one main action: cook when nothing blocks, else shop for what is needed. */
-      actionText: cook.canCook ? "Start cooking" : onList ? `${n} on your shopping list` : `Add ${n} to shopping`,
+      actionText: cook.canCook ? "Start cooking" : cook.state === "check" ? "Check ingredients" : onList ? `${n} on your shopping list` : `Add ${n} to shopping`,
       actionDone: n > 0 && onList,
       addMissing: async () => {
         await pantry.addNames(missing);

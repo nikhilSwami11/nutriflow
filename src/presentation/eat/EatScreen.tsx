@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
 import { useEat, WANTS } from "@/view-models/eat/useEat";
+import { HaveSheet } from "../home/HaveSheet";
 import { RecipeArt } from "../recipes/RecipeArt";
 import { AppShell } from "../shell/AppShell";
 
@@ -8,6 +10,7 @@ const btn = "touch inline-flex items-center rounded-full px-5 text-[15px] font-m
 
 export function EatScreen() {
   const e = useEat();
+  const [asking, setAsking] = useState<{ items: { name: string; qty: number; unit: string }[]; assumed: string[] } | null>(null);
   const b = e.best;
 
   return (
@@ -55,6 +58,11 @@ export function EatScreen() {
               <div className="flex flex-wrap items-center gap-2">
                 {b.ready ? (
                   <Link href={`/cook/${b.id}`} className={`${btn} bg-ink text-bg`}>Start cooking</Link>
+                ) : b.state === "check" ? (
+                  <>
+                    <button type="button" onClick={() => setAsking({ items: b.ask, assumed: b.assumed })} className={`${btn} border-0 bg-ink text-bg`}>Check ingredients</button>
+                    <Link href={`/cook/${b.id}`} className={`${btn} border border-line2`}>Cook anyway</Link>
+                  </>
                 ) : (
                   <>
                     <button type="button" onClick={e.addMissing} disabled={e.listed} className={`${btn} border-0 ${e.listed ? "bg-mint text-onp" : "bg-ink text-bg"}`}>
@@ -101,6 +109,7 @@ export function EatScreen() {
           </p>
         )}
       </div>
+          {asking && e.best && <HaveSheet dish={e.best.name} items={asking.items} assumed={asking.assumed} onClose={() => setAsking(null)} />}
     </AppShell>
   );
 }
