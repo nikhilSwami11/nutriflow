@@ -20,7 +20,7 @@ import { alpha, readChartTokens, type ChartTokens } from "../shared/chartTokens"
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Filler, Tooltip);
 
-const SWATCH = [["Protein", "#F2A3A9"], ["Carbs", "#9EC8F3"], ["Fats", "#B9A7EE"]] as const;
+const SWATCH = [["Protein", "var(--rose)"], ["Carbs", "var(--sky)"], ["Fats", "var(--lavender)"]] as const;
 const EATEN = 3; // dataset index of the eaten line: drives the tooltip and the highlighted point
 
 type Points = ChartModel["points"];
@@ -66,7 +66,7 @@ function buildData(points: Points, t: ChartTokens): ChartData<"line"> {
       band("Fats", 2, t.lavender, "-1"),
       {
         label: "Eaten",
-        data: points.map((p) => Math.min(p.eaten, CHART_MAX)),
+        data: points.map((p) => (p.eaten === null ? null : Math.min(p.eaten, CHART_MAX))),
         stack: "eaten",
         borderColor: t.ink,
         borderWidth: 1.5,
@@ -167,12 +167,20 @@ export function MacroChart({ c, above, below, bare }: { c: ChartModel & { range:
     } else {
       const els = [{ datasetIndex: EATEN, index: i }];
       const x = chart.scales.x.getPixelForValue(i);
-      const y = chart.scales.y.getPixelForValue(Math.min(c.points[i].eaten, CHART_MAX));
+      const y = chart.scales.y.getPixelForValue(Math.min(c.points[i].eaten ?? c.points[i].planned, CHART_MAX));
       chart.setActiveElements(els);
       chart.tooltip?.setActiveElements(els, { x, y });
     }
     chart.update();
     setIdx(i);
+  };
+
+  // A tap (touch or click) picks the day under the finger; Chart.js touch hover alone does not fire reliably on a tap.
+  const tap = (e: React.MouseEvent) => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const v = chart.scales.x.getValueForPixel(e.clientX - chart.canvas.getBoundingClientRect().left);
+    if (v !== undefined) show(Math.min(last, Math.max(0, Math.round(v))));
   };
 
   const key = (e: React.KeyboardEvent) => {
@@ -226,11 +234,18 @@ export function MacroChart({ c, above, below, bare }: { c: ChartModel & { range:
         aria-valuenow={idx ?? last}
         aria-valuetext={c.points[idx ?? last].summary}
         onKeyDown={key}
+        onClick={tap}
         onBlur={() => show(null)}
         onPointerLeave={(e) => e.pointerType === "mouse" && setIdx(null)} // Chart.js only reports hover inside the plot
         className="relative h-[250px] touch-pan-y"
       >
         <Line ref={chartRef} data={data} options={options} plugins={plugins} aria-label={c.aria} role="img" />
+        {!c.hasHistory && (
+          <div className="pointer-events-none absolute inset-x-6 top-1/3 flex flex-col items-center gap-1 text-center">
+            <p className="m-0 text-[15px] font-medium text-ink">Your first day</p>
+            <p className="m-0 text-sm text-ink2">Each meal you log draws a point here.</p>
+          </div>
+        )}
         <p role="status" className="sr-only">{idx === null ? "" : c.points[idx].summary}</p>
       </div>
 

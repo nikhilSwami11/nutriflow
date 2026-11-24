@@ -1,10 +1,12 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { dayFromMeals, leftKcal } from "@/domain/dashboard";
+import { logRecipeEaten } from "@/domain/cooking";
 import { buildFeed, summarizeEvents, type FeedItem } from "@/domain/feed";
 import { toDateKey } from "@/domain/nutrition";
 import { isLow } from "@/domain/pantry";
+import { eatNext as pickNext, prepTasks, upcomingMeals } from "@/domain/planning";
 import { shopUnitFor } from "@/domain/shopping";
 import { cookability } from "@/domain/guide";
 import type { MealName, Recipe } from "@/domain/recipes";
@@ -19,27 +21,34 @@ import { useFeedStats, useFeedTracker } from "../feed/useFeedTracker";
 import { usePlanData } from "../plan/usePlanData";
 
 export const MEAL_OF_SLOT = { breakfast: "Breakfast", lunch: "Lunch", snack: "Snack", dinner: "Dinner" } as const;
+const SLOT_OF_MEAL = { Breakfast: "breakfast", Lunch: "lunch", Snack: "snack", Dinner: "dinner" } as const;
 
 export function useHome() {
-  const data = usePlanData("balanced");
+  const data = usePlanData();
   const pantry = usePantry();
   const chores = useChores();
   // When "Start doing" was tapped, per chore, this visit only.
   const [started, setStarted] = useState<Record<string, number>>({});
   const stats = useFeedStats();
-  const { logs } = useNutritionDeps();
+  const { logs, prep: prepRepo } = useNutritionDeps();
   const track = useFeedTracker();
   const { seen, markSeen } = useStoriesSeen();
-  const [eaten, setEaten] = useState<MealName[] | null>(null);
+  const qc = useQueryClient();
   const [range, setRange] = useState<Range>("7d");
   // Recipes whose missing things went onto the shopping list this visit.
   const [listed, setListed] = useState<string[]>([]);
   // One timestamp per visit: the feed is built once, so it does not reshuffle while you scroll.
   const [now] = useState(() => Date.now());
 
-  // Meals really logged today (cooked, later photographed). They win over the demo and the local toggles.
+  // Meals logged today (cooked, photographed, marked eaten, or told to a chat). Only the offline demo adds more.
   const [today] = useState(() => toDateKey(new Date()));
   const todayLogs = useQuery({ queryKey: ["meal-logs", today], queryFn: () => logs.listBetween(today, today) });
+  // Prep ticks live in the account (the chat sees them too); a failed read just shows nothing ticked.
+  const prepDone = useQuery({ queryKey: ["prep-done", today], queryFn: () => prepRepo.doneOn(today).catch(() => [] as string[]) });
+  const setPrep = async (id: string, done: boolean) => {
+    qc.setQueryData<string[]>(["prep-done", today], (cur = []) => (done ? [...cur, id] : cur.filter((x) => x !== id)));
+    await prepRepo.set(id, done).catch(() => qc.invalidateQueries({ queryKey: ["prep-done", today] }));
+  };
 
   // Today is built from the meals actually eaten, so marking one eaten moves the chart's last point too.
   const core = useMemo(() => {
@@ -47,8 +56,9 @@ export function useHome() {
     const { recipes, dashboard, plan } = data;
     const byId = new Map(recipes.map((r) => [r.id, r]));
     const logged = new Map((todayLogs.data ?? []).map((l) => [MEAL_OF_SLOT[l.slot], l]));
-    const eatenNow = [...new Set([...(eaten ?? dashboard.eatenToday), ...logged.keys()])];
+    const eatenNow = [...new Set([...dashboard.eatenToday, ...logged.keys()])];
     const todayMeals = plan[0].meals.map((m) => ({ meal: m.meal, recipe: byId.get(m.recipeId) as Recipe }));
+    const tomorrowMeals = (plan[1]?.meals ?? []).map((m) => ({ meal: m.meal, recipe: byId.get(m.recipeId) as Recipe }));
     const todayDay = dayFromMeals(
       dashboard.days[dashboard.days.length - 1].date,
       dashboard.goals.calories,
@@ -61,16 +71,23 @@ export function useHome() {
     );
     const days = [...dashboard.days.slice(0, -1), todayDay];
     const chart = buildChartModel(range === "7d" ? days.slice(-7) : days, range);
-    return { eatenNow, todayMeals, todayDay, chart, goals: dashboard.goals, notes: data.balance.notes };
-  }, [data, eaten, range, todayLogs.data]);
+    return { logged, eatenNow, todayMeals, tomorrowMeals, todayDay, chart, goals: dashboard.goals, notes: data.balance.notes };
+  }, [data, range, todayLogs.data]);
 
   if (!core || !stats) return { isLoading: true as const };
-  const { eatenNow, todayMeals, todayDay, goals } = core;
+  const { eatenNow, todayMeals, tomorrowMeals, todayDay, goals } = core;
   const pantryItems = pantry.view.groups.flatMap((g) => g.items);
-  // A meal that is really logged stays eaten; the toggle only moves the demo ones.
-  const toggleEaten = (meal: MealName) => setEaten(eatenNow.includes(meal) ? eatenNow.filter((x) => x !== meal) : [...eatenNow, meal]);
+  // Mark eaten logs one serving, so it survives a reload and every device and the chat see it; unmarking removes that log.
+  const toggleEaten = async (meal: MealName, recipe: Recipe) => {
+    const log = core.logged.get(meal);
+    if (log) await logs.remove(log.id);
+    else if (!eatenNow.includes(meal)) await logRecipeEaten(logs, { id: crypto.randomUUID(), date: today, slot: SLOT_OF_MEAL[meal], recipe, source: "cook" });
+    await qc.invalidateQueries({ queryKey: ["meal-logs"] });
+  };
 
-  const open = todayMeals.filter((m) => !eatenNow.includes(m.meal));
+  // What to eat next goes by the clock: a skipped breakfast is not offered at lunch time.
+  const hour = new Date(now).getHours();
+  const open = upcomingMeals(todayMeals, eatenNow, hour);
   const card = (m: (typeof todayMeals)[number]) => {
     const cook = cookability(m.recipe, pantryItems);
     const missing = cook.needed.map((x) => ({ name: x.name, qty: x.qty, unit: shopUnitFor(x.unit) }));
@@ -98,33 +115,46 @@ export function useHome() {
         await pantry.addNames(missing);
         setListed((l) => [...l, m.recipe.id]);
       },
-      toggle: () => toggleEaten(m.meal),
+      toggle: () => void toggleEaten(m.meal, m.recipe),
     };
   };
   const lowItems = pantryItems.filter(isLow);
 
   // The feed decides which posts, in what order. The data inside each post stays live on the client.
   const nextOpen = open[0];
+  // The same rule the chat's eat_next uses.
+  const eatNext = pickNext({ today: todayMeals, tomorrow: tomorrowMeals, eaten: eatenNow, hour, pantry: pantryItems });
+  const date = toDateKey(new Date(now));
+  const prep = prepTasks(date, open.map((m) => m.recipe), tomorrowMeals.map((m) => m.recipe));
   const problems = core.notes.filter((n) => !n.startsWith("Every day lands"));
   const feed = buildFeed({
-    date: toDateKey(new Date(now)),
+    date,
     now,
     nextMeal: nextOpen ? { meal: nextOpen.meal, recipeId: nextOpen.recipe.id } : null,
-    meals: todayMeals.map((m) => ({ meal: m.meal, recipeId: m.recipe.id })),
+    eatNext: eatNext ? { meal: eatNext.meal, recipeId: eatNext.recipe.id, tomorrow: !nextOpen } : null,
+    prep: prep.length,
     chores: chores.todays.map((c) => ({ id: c.id })),
     lowItems: lowItems.length,
     planNotes: problems,
     stats: stats ?? summarizeEvents([], now),
   });
 
-  const mealCards = new Map(todayMeals.map((m) => [m.meal, card(m)]));
   const stories = (feed.stories ?? []).flatMap<StoryModel>((st) => {
     const isSeen = seen.includes(st.id);
     if (st.kind === "meal") {
-      const c = mealCards.get(st.meal);
-      if (!c) return [];
-      const state = eatenNow.includes(st.meal) ? ("eaten" as const) : nextOpen?.meal === st.meal ? ("next" as const) : ("later" as const);
-      return [{ id: st.id, kind: "meal", label: st.meal, seen: isSeen, tint: c.tint, meal: { ...c, state } }];
+      if (!eatNext) return [];
+      const c = card(eatNext);
+      const today = !st.tomorrow;
+      const meal = { ...c, when: today ? "" : "Tomorrow", toggle: today ? c.toggle : undefined };
+      return [{ id: st.id, kind: "meal", label: "Eat next", seen: isSeen, tint: c.tint, meal }];
+    }
+    if (st.kind === "prep") {
+      const tasks = prep.map((t) => {
+        const done = (prepDone.data ?? []).includes(t.id);
+        const sub = `${t.due === "now" ? "Now" : "Tonight"}, for ${t.dish.toLowerCase()} ${t.forDay}`;
+        return { id: t.id, action: t.action, sub, done, toggle: () => void setPrep(t.id, !done) };
+      });
+      return tasks.length ? [{ id: st.id, kind: "prep", label: "Prep", seen: isSeen, tint: "var(--sky)", tasks }] : [];
     }
     if (st.kind === "chore") {
       const c = chores.todays.find((x) => x.id === st.choreId);
@@ -135,14 +165,14 @@ export function useHome() {
         complete: () => chores.setDone(c.id, true),
         undo: () => { chores.setDone(c.id, false); setStarted((m) => Object.fromEntries(Object.entries(m).filter(([k]) => k !== c.id))); },
       };
-      return [{ id: st.id, kind: "chore", label: c.title, seen: isSeen, tint: "#FBE3A6", chore }];
+      return [{ id: st.id, kind: "chore", label: c.title, seen: isSeen, tint: "var(--butter-soft)", chore }];
     }
     if (st.kind === "pantry") {
       return lowItems.length
-        ? [{ id: st.id, kind: "pantry", label: "Pantry", seen: isSeen, tint: "#F7C9BB", rows: lowItems.slice(0, 4).map((i) => ({ id: i.id, name: i.name, qty: `${i.qty} ${i.unit}` })), listed: pantry.listed, toggleList: pantry.toggleList }]
+        ? [{ id: st.id, kind: "pantry", label: "Pantry", seen: isSeen, tint: "var(--peach)", rows: lowItems.slice(0, 4).map((i) => ({ id: i.id, name: i.name, qty: `${i.qty} ${i.unit}` })), listed: pantry.listed, toggleList: pantry.toggleList }]
         : [];
     }
-    return [{ id: st.id, kind: "plan", label: "Plan", seen: isSeen, tint: "#CFC8F0", notes: st.notes }];
+    return [{ id: st.id, kind: "plan", label: "Plan", seen: isSeen, tint: "var(--lavender-soft)", notes: st.notes }];
   });
 
   return {
@@ -167,9 +197,9 @@ export function useHome() {
       goal: num(goals.calories),
       left: `${num(leftKcal(goals.calories, todayDay.eaten))} left`,
       macros: [
-        { label: "Protein", value: todayDay.macros.protein, goal: goals.protein, color: "#F2A3A9" },
-        { label: "Carbs", value: todayDay.macros.carbs, goal: goals.carbs, color: "#9EC8F3" },
-        { label: "Fat", value: todayDay.macros.fat, goal: goals.fat, color: "#B9A7EE" },
+        { label: "Protein", value: todayDay.macros.protein, goal: goals.protein, color: "var(--rose)" },
+        { label: "Carbs", value: todayDay.macros.carbs, goal: goals.carbs, color: "var(--sky)" },
+        { label: "Fat", value: todayDay.macros.fat, goal: goals.fat, color: "var(--lavender)" },
       ].map((m) => ({ ...m, pct: Math.min(100, (m.value / m.goal) * 100) })),
     },
     pantry: lowItems.length

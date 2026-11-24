@@ -14,6 +14,11 @@ test("a sleek plain list: amounts prefilled, tap turns it green then it goes int
   const total = await list.getByRole("button", { name: /, tap when shopped$/ }).count();
   const how = page.getByRole("group", { name: `How much ${name}` });
 
+  // the brick bar: one brick per item, nothing shopped yet so it cannot open
+  const bricks = page.getByRole("button", { name: `0 of ${total} shopped` });
+  await expect(bricks).toBeDisabled();
+  await expect(bricks.locator("span[aria-hidden] > span")).toHaveCount(total);
+
   // change the quantity; the prefilled unit stays
   const before = (await how.textContent())!;
   await page.getByRole("button", { name: `More ${name}` }).click();

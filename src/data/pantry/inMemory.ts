@@ -1,3 +1,4 @@
+import { DEFAULT_AMOUNT } from "@/domain/pantry/types";
 import type { Amount, ParsedItem, PantryItem, PantryRepository, ShoppingListRepository, UtteranceParser } from "@/domain/pantry";
 
 export class InMemoryPantryRepository implements PantryRepository {
@@ -19,7 +20,7 @@ export class InMemoryShoppingListRepository implements ShoppingListRepository {
     return [...this.ids.keys()];
   }
   async add(ids: string[], amounts: Record<string, Amount> = {}) {
-    ids.forEach((i) => this.ids.has(i) || this.ids.set(i, amounts[i] ?? { qty: 1, unit: "pcs" }));
+    ids.forEach((i) => this.ids.has(i) || this.ids.set(i, amounts[i] ?? DEFAULT_AMOUNT));
   }
   async remove(ids: string[]) {
     ids.forEach((i) => this.ids.delete(i));

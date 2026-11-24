@@ -121,15 +121,34 @@ export function StoryViewer({ s, index, setIndex, onClose }: { s: HomeModel["sto
         <button type="button" tabIndex={-1} aria-label="Previous story" onClick={prev} className="absolute bottom-40 left-0 top-24 z-10 w-1/3 bg-transparent" />
         <button type="button" tabIndex={-1} aria-label="Next story" onClick={next} className="absolute bottom-40 right-0 top-24 z-10 w-2/3 bg-transparent" />
 
-        <div key={st.id} className="story-in pointer-events-none relative flex flex-1 flex-col items-center justify-center gap-4 px-8 pt-16 text-center">
+        <div key={st.id} className="story-in pointer-events-none relative z-20 flex flex-1 flex-col items-center justify-center gap-4 px-8 pt-16 text-center">
           {st.kind === "meal" && (
             <>
               <RecipeArt image={st.meal.image} size={200} />
-              <h2 className="m-0 text-[28px] font-medium leading-tight tracking-[-0.02em]">{st.meal.state === "eaten" ? st.meal.name : `Cook ${st.meal.name.toLowerCase()}`}</h2>
+              {st.meal.when && <span className="rounded-full bg-white/60 px-3 py-1 text-xs font-medium">{st.meal.when}</span>}
+              <h2 className="m-0 text-[28px] font-medium leading-tight tracking-[-0.02em]">{st.meal.name}</h2>
               <p className="m-0 text-sm tabular-nums">{st.meal.minutes} min · {st.meal.kcal} kcal · {st.meal.protein} g protein</p>
-              <span className={`rounded-full px-3 py-1 text-xs font-medium ${st.meal.state === "eaten" ? "bg-mint" : st.meal.ready ? "bg-mint" : "bg-peach"}`}>
-                {st.meal.state === "eaten" ? "Eaten" : st.meal.readyText}
-              </span>
+              <span className={`rounded-full px-3 py-1 text-xs font-medium ${st.meal.ready ? "bg-mint" : "bg-peach"}`}>{st.meal.readyText}</span>
+            </>
+          )}
+          {st.kind === "prep" && (
+            <>
+              <h2 className="m-0 text-[28px] font-medium tracking-[-0.02em]">Prep ahead</h2>
+              <ul className="pointer-events-auto m-0 flex w-full max-w-xs list-none flex-col gap-2 p-0 text-left">
+                {st.tasks.map((t) => (
+                  <li key={t.id}>
+                    <button type="button" aria-pressed={t.done} onClick={() => { if (!t.done) s.track(st.id, "mark-eaten", index); t.toggle(); }} className={`touch flex w-full items-center gap-3 rounded-2xl border-0 px-4 py-3 text-left text-onp ${t.done ? "bg-mint" : "bg-white/60"}`}>
+                      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] border-current ${t.done ? "bg-ink text-bg" : ""}`} aria-hidden="true">
+                        {t.done && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>}
+                      </span>
+                      <span className="flex min-w-0 flex-col">
+                        <span className="text-[15px] font-medium">{t.action}</span>
+                        <span className="text-sm">{t.sub}</span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </>
           )}
           {st.kind === "chore" && (
@@ -164,10 +183,16 @@ export function StoryViewer({ s, index, setIndex, onClose }: { s: HomeModel["sto
         <div className="relative z-20 flex flex-wrap items-center justify-center gap-2.5 px-6 pb-8">
           {st.kind === "meal" && (
             <>
-              <Link href={`/recipes/${st.meal.id}`} onClick={() => s.track(st.id, "open", index)} className={`${btn} flex items-center bg-ink text-bg`}>Open recipe</Link>
-              <button type="button" onClick={() => { if (st.meal.state !== "eaten") s.track(st.id, "mark-eaten", index); st.meal.toggle(); }} className={`${btn} border border-black/20 bg-white/70`}>
-                {st.meal.state === "eaten" ? "Undo eaten" : "Mark eaten"}
-              </button>
+              {st.meal.ready ? (
+                <Link href={`/cook/${st.meal.id}`} onClick={() => s.track(st.id, "open", index)} className={`${btn} flex items-center bg-ink text-bg`}>Start cooking</Link>
+              ) : (
+                <button type="button" disabled={st.meal.actionDone} onClick={() => { s.track(st.id, "add-to-list", index); void st.meal.addMissing(); }} className={`${btn} ${st.meal.actionDone ? "bg-mint" : "bg-ink text-bg"}`}>
+                  {st.meal.actionText}
+                </button>
+              )}
+              {st.meal.toggle && (
+                <button type="button" onClick={() => { s.track(st.id, "mark-eaten", index); st.meal.toggle?.(); }} className={`${btn} border border-black/20 bg-white/70`}>Mark eaten</button>
+              )}
             </>
           )}
           {st.kind === "chore" && (st.chore.done ? (

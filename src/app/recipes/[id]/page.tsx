@@ -11,6 +11,7 @@ export function generateStaticParams() {
 
 export default async function RecipePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!RECIPE_IDS.includes(id)) notFound();
+  // ai-...: written for this person, stored in my_recipes; the screen reads it from the recipe list.
+  if (!RECIPE_IDS.includes(id) && !/^ai-[\w-]{1,60}$/.test(id)) notFound();
   return <RecipeDetailScreen id={id} />;
 }

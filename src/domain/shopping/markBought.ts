@@ -1,3 +1,4 @@
+import { DEFAULT_AMOUNT } from "../pantry/types";
 import type { PantryRepository, ShoppingListRepository } from "../pantry/ports";
 import type { Amount } from "../pantry/types";
 import { pantryUnitFor } from "./units";
@@ -13,7 +14,7 @@ interface Deps {
  * makes sure the item is not low. Upgrade when the pantry learns grams.
  */
 export async function markBought(deps: Deps, itemId: string): Promise<Amount> {
-  const amount = (await deps.list.amounts())[itemId] ?? { qty: 1, unit: "pcs" };
+  const amount = (await deps.list.amounts())[itemId] ?? DEFAULT_AMOUNT;
   const item = (await deps.pantry.list()).find((i) => i.id === itemId);
   if (item) {
     const qty = pantryUnitFor(amount.unit) === item.unit && amount.unit === item.unit ? item.qty + amount.qty : Math.max(item.qty, item.lowAt + 1);

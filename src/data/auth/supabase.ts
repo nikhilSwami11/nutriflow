@@ -1,5 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { AuthMessage, type AuthRepository, type AuthUser, type SignUpResult } from "@/domain/auth";
+import { AuthMessage, type AuthRepository, type AuthUser, type ConsentLookup, type SignUpResult } from "@/domain/auth";
 
 /** Supabase errors in plain words; anything else stays hidden behind the generic message. */
 const friendly = (e: { message?: string; code?: string }): never => {
@@ -68,6 +68,23 @@ export class SupabaseAuthRepository implements AuthRepository {
   async signOut() {
     const { error } = await this.db.auth.signOut();
     if (error) throw error;
+  }
+
+  // Supabase Auth's OAuth 2.1 server (beta) sends the browser to /oauth/consent?authorization_id=...
+  async consentRequest(id: string): Promise<ConsentLookup> {
+    const { data, error } = await this.db.auth.oauth.getAuthorizationDetails(id);
+    if (error || !data) throw error ?? new Error("No authorization request");
+    if (!("authorization_id" in data)) return { kind: "done", redirectTo: data.redirect_url };
+    return { kind: "ask", request: { id: data.authorization_id, appName: data.client.name || "An app" } };
+  }
+
+  async decideConsent(id: string, allow: boolean) {
+    const opts = { skipBrowserRedirect: true };
+    const { data, error } = allow
+      ? await this.db.auth.oauth.approveAuthorization(id, opts)
+      : await this.db.auth.oauth.denyAuthorization(id, opts);
+    if (error || !data) throw error ?? new Error("No redirect");
+    return data.redirect_url;
   }
 
   async continueAsGuest() {

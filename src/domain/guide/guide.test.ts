@@ -28,9 +28,9 @@ describe("stepGuide", () => {
 
 describe("prepList", () => {
   it("derives one line per ingredient, scaled to the servings", () => {
-    expect(prepList(recipe, 4).map((p) => p.text)).toEqual(["1 cup toor dal", "4 cloves garlic", "2 tbsp ghee", "2 onions"]);
-    expect(prepList(recipe, 8)[0].text).toBe("2 cup toor dal");
-    expect(prepList(recipe, 2)[0].text).toBe("½ cup toor dal");
+    expect(prepList(recipe, 4).map((p) => p.text)).toEqual(["1 cup toor dal · ≈ 200 g dry", "4 cloves garlic", "2 tbsp ghee · ≈ 28 g", "2 onions · ≈ 220 g"]);
+    expect(prepList(recipe, 8)[0].text).toBe("2 cup toor dal · ≈ 400 g dry");
+    expect(prepList(recipe, 2)[0].text).toBe("½ cup toor dal · ≈ 100 g dry");
   });
   it("uses the authored list when there is one", () => {
     expect(prepList({ ...recipe, prep: ["Soak the dal for 20 minutes"] }, 4)).toEqual([{ id: "p0", text: "Soak the dal for 20 minutes" }]);

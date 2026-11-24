@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { MealName, Recipe } from "../recipes/types";
 import { dayBalance, weekBalance } from "./balance";
+import { eatNext, eatNextIndex } from "./eatNext";
 import { planWeek } from "./planWeek";
+import { prepTasks } from "./prep";
 
-const r = (id: string, meal: MealName, kcal: number, protein: number): Recipe => ({ id, name: id, meal, kcal, protein }) as Recipe;
+const r = (id: string, meal: MealName, kcal: number, protein: number): Recipe => ({ id, name: id, meal, kcal, protein, ingredients: [] }) as unknown as Recipe;
 const recipes = [
   r("oats", "Breakfast", 400, 14), r("eggs", "Breakfast", 330, 28),
   r("dal", "Lunch", 600, 24), r("rajma", "Lunch", 650, 30), r("khichdi", "Lunch", 480, 18),
@@ -42,7 +44,13 @@ describe("planWeek", () => {
     const p = planWeek({ recipes: twins, goals, history: { b: 4 }, dates: ["d1"], focus: "balanced" });
     expect(p[0].meals[0].recipeId).toBe("b");
   });
-  it("copes with a meal type that has no recipes", () => {
+  it("prefers what the pantry can already cook when otherwise equal", () => {
+    const withIng = (x: Recipe, name: string) => ({ ...x, ingredients: [{ name, qty: 1, unit: "pcs" }] }) as Recipe;
+    const twins = [withIng(r("a", "Breakfast", 400, 20), "Bagel"), withIng(r("b", "Breakfast", 400, 20), "Paneer"), ...recipes.filter((x) => x.meal !== "Breakfast")];
+    const pantry = [{ id: "1", name: "Paneer", group: "Dairy" as const, qty: 1, unit: "pcs" as const, lowAt: 0 }];
+    expect(planWeek({ recipes: twins, goals, history: {}, dates: ["d1"], focus: "balanced", pantry })[0].meals[0].recipeId).toBe("b");
+  });
+    it("copes with a meal type that has no recipes", () => {
     const p = planWeek({ recipes: recipes.filter((x) => x.meal !== "Snack"), goals, history: {}, dates: ["d1"], focus: "balanced" });
     expect(p[0].meals.map((m) => m.meal)).toEqual(["Breakfast", "Lunch", "Dinner"]);
   });
@@ -63,5 +71,50 @@ describe("balance", () => {
     expect(w.notes).toEqual(["Monday is 73 g short on protein.", "Monday is 1,020 kcal under your goal."]);
     const ok = weekBalance(planWeek({ recipes, goals, history: {}, dates: ["d1"], focus: "protein" }), recipes, goals, (x) => x);
     expect(ok.notes.length).toBeGreaterThan(0);
+  });
+});
+
+describe("eatNextIndex", () => {
+  const day = ["Breakfast", "Lunch", "Snack", "Dinner"] as MealName[];
+  it("is the first uneaten meal whose time has not passed", () => {
+    expect(eatNextIndex(day, [], 8)).toBe(0);
+    expect(eatNextIndex(day, ["Breakfast"], 9)).toBe(1);
+    expect(eatNextIndex(day, [], 13)).toBe(1); // a skipped breakfast is not offered at lunch time
+    expect(eatNextIndex(day, ["Lunch"], 13)).toBe(2);
+  });
+  it("is -1 when nothing is left today", () => {
+    expect(eatNextIndex(day, ["Dinner"], 20)).toBe(-1);
+  });
+});
+
+describe("eatNext", () => {
+  const dm = (meal: MealName, id: string) => ({ meal, recipe: { id, name: id, ingredients: [{ name: "Rice", qty: 1, unit: "cup" }] } as unknown as Recipe });
+  const today = [dm("Breakfast", "oats"), dm("Lunch", "dal"), dm("Dinner", "palak")];
+  const tomorrow = [dm("Breakfast", "eggs")];
+  it("picks the next meal by the clock, with the rest of today and what blocks it", () => {
+    const n = eatNext({ today, tomorrow, eaten: [], hour: 13, pantry: [] })!;
+    expect(n.recipe.id).toBe("dal");
+    expect(n.tomorrow).toBe(false);
+    expect(n.then.map((m) => m.meal)).toEqual(["Dinner"]);
+    expect(n.cook.needed.map((i) => i.name)).toEqual(["Rice"]);
+    expect(eatNext({ today, tomorrow, eaten: [], hour: 13, pantry: [{ name: "rice", qty: 2 } as never] })!.cook.canCook).toBe(true);
+  });
+  it("is tomorrow's first meal when today is done, and null with no plan", () => {
+    expect(eatNext({ today, tomorrow, eaten: ["Dinner"], hour: 21, pantry: [] })).toMatchObject({ meal: "Breakfast", tomorrow: true, then: [] });
+    expect(eatNext({ today: [], tomorrow: [], eaten: [], hour: 9, pantry: [] })).toBeNull();
+  });
+});
+
+describe("prepTasks", () => {
+  const dish = (id: string, name: string, ingredients: [string, string][]) => ({ id, name, ingredients: ingredients.map(([n, unit]) => ({ name: n, qty: 1, unit })) }) as Recipe;
+  const rajma = dish("rajma", "Rajma chawal", [["Rajma", "cup"], ["Rice", "cups"]]);
+  const canned = dish("chole", "Chole", [["Chickpeas", "cans"]]);
+  const tikka = dish("tikka", "Chicken tikka", [["Chicken", "lb"], ["Greek yogurt", "cup"]]);
+  const oats = dish("oats", "Overnight oats", [["Oats", "cups"]]);
+  it("soaks and sets the night before tomorrow's meals; short jobs for tomorrow wait", () => {
+    expect(prepTasks("d", [], [rajma, tikka, oats, canned]).map((t) => `${t.due}:${t.action}`)).toEqual(["tonight:Soak the rajma", "tonight:Set the overnight oats"]);
+  });
+  it("anything for a meal still ahead today is due now", () => {
+    expect(prepTasks("d", [tikka], [])).toEqual([{ id: "d:today:tikka:marinate", action: "Marinate the chicken", dish: "Chicken tikka", recipeId: "tikka", due: "now", forDay: "today" }]);
   });
 });

@@ -1,9 +1,9 @@
 "use client";
-import Link from "next/link";
 import { usePantryScreen } from "@/view-models/pantry/usePantryScreen";
 import { AppShell } from "../shell/AppShell";
 import { tint } from "../shared/tint";
 import { Orb } from "./Orb";
+import { Skeleton } from "../shared/Skeleton";
 
 
 export function PantryScreen() {
@@ -25,12 +25,9 @@ export function PantryScreen() {
           <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">Pantry</h1>
           <p className="mt-1 text-sm text-muted tabular-nums">{s.countText}</p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/shopping" className="touch inline-flex items-center rounded-full border border-line2 px-4 text-sm font-medium">Shopping list</Link>
-          <button type="button" className="touch rounded-full border border-line2 bg-transparent px-4 text-sm font-medium">
+        <button type="button" className="touch rounded-full border border-line2 bg-transparent px-4 text-sm font-medium">
             Add manually
           </button>
-        </div>
       </header>
 
       <div className="rail flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4 pt-1 lg:max-w-3xl">
@@ -109,6 +106,13 @@ export function PantryScreen() {
           ))}
         </div>
 
+        {s.isLoading && <Skeleton />}
+        {!s.isLoading && s.filterCounts.all === 0 && (
+          <div className="flex flex-col gap-1 pt-2">
+            <p className="m-0 text-[15px] font-medium">Your pantry is empty</p>
+            <p className="m-0 max-w-[40ch] text-sm text-ink2">Tell me what you have, and meals, shopping and plans start from it.</p>
+          </div>
+        )}
         {s.groups.map((g) => (
           <section key={g.name} aria-label={g.name} className="flex flex-col">
             <h2 className="mb-1 mt-0 text-sm font-medium text-muted">{g.name}</h2>

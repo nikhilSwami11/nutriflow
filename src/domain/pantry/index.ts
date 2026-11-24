@@ -8,3 +8,4 @@ export * from "./toggleShoppingList";
 export * from "./quantity";
 export * from "./addNamesToList";
 export * from "./adviseNeeds";
+export * from "./foodKey";

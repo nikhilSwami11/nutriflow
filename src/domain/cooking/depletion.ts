@@ -1,8 +1,7 @@
+import { foodKey as norm } from "../pantry/foodKey";
 import type { PantryItem, RecipeIngredient } from "../pantry/types";
 import type { Recipe } from "../recipes/types";
 
-// Same plural fold the pantry uses. shortcut: English only.
-const norm = (s: string) => s.trim().toLowerCase().replace(/(es|s)$/, "");
 
 /**
  * Recipe amounts come in cups, tablespoons and pieces; the pantry counts pieces, cloves, cups, packs and jars.

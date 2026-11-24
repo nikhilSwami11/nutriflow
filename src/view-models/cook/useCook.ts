@@ -12,6 +12,7 @@ import { useNutritionDeps } from "../nutrition/NutritionDeps";
 import { usePantryDeps } from "../pantry/PantryDeps";
 import { usePantry } from "../pantry/usePantry";
 import { useRecipeRepo } from "../recipes/RecipeDeps";
+import { useMyRecipes } from "../recipes/useMyRecipes";
 import { useCookDeps } from "./CookDeps";
 import { speak, useVoiceCommands } from "./useVoiceCommands";
 import { useWakeLock } from "./useWakeLock";
@@ -35,6 +36,7 @@ export function useCook(id: string, servingsMade?: number) {
   const { habits, pendingLogs } = useCookDeps();
   const qc = useQueryClient();
   const pantryView = usePantry();
+  const my = useMyRecipes();
 
   const recipes = useQuery({ queryKey: ["recipes"], queryFn: () => repo.list() });
   const habit = useQuery({ queryKey: ["habit", id], queryFn: () => habits.get(id), staleTime: Infinity });
@@ -130,6 +132,8 @@ export function useCook(id: string, servingsMade?: number) {
       await Promise.all([qc.invalidateQueries({ queryKey: ["meal-logs"] }), qc.invalidateQueries({ queryKey: ["pantry"] }), qc.invalidateQueries({ queryKey: ["habit", id] })]);
       setResult(r);
       setPhase("done");
+      // Cooked it: it belongs in Recipes now. A failure here never undoes the logged meal.
+      void my.save(recipe, true).catch(() => undefined);
     } catch {
       setError("That could not be saved. Try again.");
     } finally {

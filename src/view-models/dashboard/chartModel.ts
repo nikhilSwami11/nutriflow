@@ -22,27 +22,36 @@ export function buildChartModel(days: DayNutrition[], range: Range) {
     points: days.map((d, i) => {
       const isToday = i === n - 1;
       const [p, c, f] = macroShares(d.macros);
-      const top = Math.min(d.eaten, CHART_MAX);
+      const title = isToday ? "Today" : fmtDate(d.date);
+      const axis = range === "7d" ? fmtDow(d.date) : fmtDate(d.date);
+      // An unlogged past day is a gap in the chart, never zero. Today always counts, even at 0.
+      const eaten = isToday ? (d.eaten ?? 0) : d.eaten;
+      if (eaten === null) {
+        return { axis, title, eaten: null, planned: d.planned, bands: [null, null, null] as [null, null, null], lines: ["Not logged"], footer: `Planned ${num(d.planned)} kcal`, summary: `${title}, not logged` };
+      }
+      const top = Math.min(eaten, CHART_MAX);
       return {
-        axis: range === "7d" ? fmtDow(d.date) : fmtDate(d.date),
-        title: isToday ? "Today" : fmtDate(d.date),
-        eaten: d.eaten,
+        axis,
+        title,
+        eaten,
         planned: d.planned,
         bands: [top * p, top * c, top * f] as [number, number, number],
         lines: [
-          `Eaten ${num(d.eaten)} kcal`,
+          `Eaten ${num(eaten)} kcal`,
           `Planned ${num(d.planned)} kcal`,
           `Protein ${d.macros.protein} g`,
           `Carbs ${d.macros.carbs} g`,
           `Fats ${d.macros.fat} g`,
         ],
         footer: isToday
-          ? `${num(leftKcal(d.planned, d.eaten))} kcal left today`
-          : `${d.eaten - d.planned >= 0 ? "+" : "-"}${num(Math.abs(d.eaten - d.planned))} kcal vs plan`,
-        summary: `${isToday ? "Today" : fmtDate(d.date)}, eaten ${num(d.eaten)} kcal, planned ${num(d.planned)} kcal`,
+          ? `${num(leftKcal(d.planned, eaten))} kcal left today`
+          : `${eaten - d.planned >= 0 ? "+" : "-"}${num(Math.abs(eaten - d.planned))} kcal vs plan`,
+        summary: `${title}, eaten ${num(eaten)} kcal, planned ${num(d.planned)} kcal`,
       };
     }),
-    aria: `Calories and macros for the ${range === "7d" ? "last 7" : "last 30"} days. Average eaten ${num(stats.avgEaten)} kcal against ${num(stats.avgPlanned)} planned.`,
+    aria: `Calories and macros for the ${range === "7d" ? "last 7" : "last 30"} days. ${stats.pastDays ? `Average eaten ${num(stats.avgEaten)} kcal against ${num(stats.avgPlanned)} planned.` : "No earlier days logged yet."}`,
+    /** False for a new account: nothing logged before today, so the chart shows a first-day note instead of a history. */
+    hasHistory: stats.pastDays > 0,
   };
 }
 export type ChartModel = ReturnType<typeof buildChartModel>;

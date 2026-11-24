@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
 import { useEat, WANTS } from "@/view-models/eat/useEat";
+import { RecipeArt } from "../recipes/RecipeArt";
 import { AppShell } from "../shell/AppShell";
+
+const btn = "touch inline-flex items-center rounded-full px-5 text-[15px] font-medium";
 
 export function EatScreen() {
   const e = useEat();
-  const [text, setText] = useState("");
-  const [top, ...rest] = e.picks;
+  const b = e.best;
 
   return (
     <AppShell current="eat">
@@ -16,60 +17,83 @@ export function EatScreen() {
       </header>
 
       <div className="rail flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4 pt-1 lg:max-w-3xl">
-        <form
-          className="flex shrink-0 flex-col gap-3"
-          onSubmit={async (ev) => {
-            ev.preventDefault();
-            const said = text;
-            setText("");
-            await e.ask(said);
-          }}
-        >
-          <label htmlFor="eat-ask" className="sr-only">Tell me what you feel like</label>
-          <div className="flex gap-2">
-            <input id="eat-ask" value={text} onChange={(ev) => setText(ev.target.value)} placeholder="I need to eat something" maxLength={120} className="touch min-w-0 flex-1 rounded-2xl border border-line2 bg-bg px-4 text-[15px]" />
-            <button type="submit" disabled={e.searching} className="touch shrink-0 rounded-full border-0 bg-ink px-5 text-[15px] font-medium text-bg disabled:bg-track disabled:text-muted">{e.searching ? "Finding" : "Find"}</button>
-          </div>
-          <div role="group" aria-label="What you feel like" className="flex flex-wrap gap-2">
-            {WANTS.map((w) => (
-              <button key={w.id} type="button" aria-pressed={e.wants.includes(w.id)} onClick={() => e.toggle(w.id)} className={`touch rounded-full border px-4 text-sm ${e.wants.includes(w.id) ? "border-transparent bg-mint text-onp" : "border-line2 bg-bg"}`}>
-                {w.label}
-              </button>
-            ))}
-          </div>
-        </form>
+        <div role="group" aria-label="What you feel like" className="flex shrink-0 flex-wrap gap-2">
+          {WANTS.map((w) => (
+            <button key={w.id} type="button" aria-pressed={e.wants.includes(w.id)} onClick={() => e.toggle(w.id)} disabled={e.isLoading} className={`touch rounded-full border px-4 text-sm ${e.wants.includes(w.id) ? "border-transparent bg-mint text-onp" : "border-line2 bg-bg"}`}>
+              {w.label}
+            </button>
+          ))}
+        </div>
 
-        {top && (
-          <article aria-label="Best pick" className="flex shrink-0 flex-col gap-3 rounded-[20px] border border-line bg-bg p-4">
-            <div>
-              <div className="text-xs font-medium text-muted">Best pick</div>
-              <h2 className="m-0 mt-1 text-xl font-medium tracking-[-0.01em]">{top.name}</h2>
-              <p className="m-0 mt-1 text-sm text-ink2">{top.why}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link href={`/cook/${top.id}`} className="touch inline-flex items-center rounded-full bg-ink px-5 text-[15px] font-medium text-bg">Start cooking</Link>
-              <Link href={`/recipes/${top.id}`} className="touch inline-flex items-center rounded-full border border-line2 px-4 text-sm font-medium">Recipe</Link>
+        {e.isLoading && (
+          <div role="status" aria-label="Writing a meal for you" className="flex shrink-0 flex-col gap-3 rounded-[20px] border border-line p-4">
+            <div className="aspect-[2/1] w-full rounded-2xl bg-track lg:aspect-auto lg:h-44" />
+            <p className="m-0 text-[15px] font-medium">Writing a meal for you</p>
+            <p className="m-0 text-sm text-ink2">From your pantry, what is left today and your diet.</p>
+          </div>
+        )}
+
+        {!e.isLoading && b && (
+          <article aria-label="Best pick" className="flex shrink-0 flex-col gap-4 rounded-[20px] border border-line bg-bg p-4 lg:flex-row lg:items-center">
+            <Link href={`/recipes/${b.id}`} aria-label={`Open ${b.name}`} className="flex aspect-[2/1] w-full shrink-0 items-center justify-center rounded-2xl lg:aspect-square lg:w-44" style={{ background: b.tint }}>
+              <RecipeArt image={b.image} size={150} eager />
+            </Link>
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
+              <div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="text-xs font-medium text-ink2">{b.written ? "Written for you" : "Best pick"}</div>
+                  <button type="button" onClick={e.toggleSave} aria-pressed={e.saved} aria-label={e.saved ? `Saved ${b.name}` : `Save ${b.name}`} className="touch -mr-2 -mt-3 flex w-11 shrink-0 items-center justify-center border-0 bg-transparent p-0 text-ink">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill={e.saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z" /></svg>
+                  </button>
+                </div>
+                <h2 className="m-0 text-xl font-medium tracking-[-0.01em]">{b.name}</h2>
+                {b.blurb && <p className="m-0 mt-1 text-sm text-ink2">{b.blurb}</p>}
+                <p className="m-0 mt-1 text-sm text-ink2">{b.status}</p>
+                <p className="m-0 text-sm text-ink2 tabular-nums">{b.facts}{b.written ? " · estimate" : ""}</p>
+              </div>
+              {/* One main action, the same rule as Home: cook when nothing blocks, else shop for what is missing. */}
+              <div className="flex flex-wrap items-center gap-2">
+                {b.ready ? (
+                  <Link href={`/cook/${b.id}`} className={`${btn} bg-ink text-bg`}>Start cooking</Link>
+                ) : (
+                  <>
+                    <button type="button" onClick={e.addMissing} disabled={e.listed} className={`${btn} border-0 ${e.listed ? "bg-mint text-onp" : "bg-ink text-bg"}`}>
+                      {e.listed ? `${b.missing} on your shopping list` : `Add ${b.missing} to shopping`}
+                    </button>
+                    <Link href={`/cook/${b.id}`} className={`${btn} border border-line2`}>Cook anyway</Link>
+                  </>
+                )}
+              </div>
             </div>
           </article>
         )}
 
-        {rest.length > 0 && (
-          <section aria-label="Other picks" className="flex flex-col gap-1">
+        {!e.isLoading && e.ideas.length > 0 && (
+          <section aria-label="Other ideas" className="flex flex-col gap-1">
             <h2 className="m-0 text-base font-medium">Or</h2>
             <ul className="m-0 list-none border-t border-line p-0">
-              {rest.map((r) => (
-                <li key={r.id} className="border-b border-line">
-                  <Link href={`/recipes/${r.id}`} className="touch flex flex-col justify-center py-2">
-                    <span className="text-[15px]">{r.name}</span>
-                    <span className="text-sm text-muted">{r.why}</span>
-                  </Link>
-                </li>
-              ))}
+              {e.ideas.map((i) => {
+                const body = (
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-[15px]">{i.name}</span>
+                    {i.blurb && <span className="text-sm text-ink2">{i.blurb}</span>}
+                  </span>
+                );
+                return (
+                  <li key={i.name} className="border-b border-line">
+                    {i.recipeId ? (
+                      <Link href={`/recipes/${i.recipeId}`} className="touch flex items-center py-2">{body}</Link>
+                    ) : (
+                      <button type="button" onClick={() => e.writeIdea(i.name)} className="touch flex w-full items-center border-0 bg-transparent py-2 text-left text-ink">{body}</button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}
 
-        {!e.isLoading && e.picks.length === 0 && <p className="m-0 text-sm text-ink2">Nothing matches your diet and dislikes. Loosen them in your profile.</p>}
+        {e.error && <p role="alert" className="m-0 text-sm text-ink2">{e.error} Loosen them in your profile.</p>}
 
         {e.needsProfile && (
           <p className="m-0 text-sm text-ink2">

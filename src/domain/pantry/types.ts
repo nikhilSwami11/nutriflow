@@ -12,6 +12,9 @@ export interface Amount {
   unit: ShopUnit;
 }
 
+/** What a shopping-list item counts as when no amount was set. */
+export const DEFAULT_AMOUNT: Amount = { qty: 1, unit: "pcs" };
+
 /** Something to put on the list by name, with an amount when the caller knows it. */
 export interface Need {
   name: string;

@@ -1,13 +1,15 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { boostFromSearch, parseWants, suggestMeals, type Want } from "@/domain/eat";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { whatToEat, type Idea, type Want } from "@/domain/eat";
+import { cookability } from "@/domain/guide";
 import { DEFAULT_RANGE, toDateKey } from "@/domain/nutrition";
-import { useRecipeSearch } from "./EatDeps";
-import { usePantryDeps } from "../pantry/PantryDeps";
+import { shopUnitFor } from "@/domain/shopping";
+import { useEatDeps } from "./EatDeps";
+import { usePantry } from "../pantry/usePantry";
 import { useNutritionDeps } from "../nutrition/NutritionDeps";
 import { PROFILE } from "../profile/useProfile";
-import { useRecipeRepo } from "../recipes/RecipeDeps";
+import { useMyRecipes } from "../recipes/useMyRecipes";
 
 export type { Want };
 export const WANTS: { id: Want; label: string }[] = [
@@ -17,63 +19,79 @@ export const WANTS: { id: Want; label: string }[] = [
   { id: "pantry", label: "Use what I have" },
 ];
 
-export interface EatPick {
-  id: string;
-  name: string;
-  /** "Ready to cook · 20 min · 420 kcal fits what is left today" */
-  why: string;
-  ready: boolean;
-  minutes: number;
-}
-
+/** "What should I eat?": a meal written for you now (or a built-in when the AI cannot), its one main action, two ideas. */
 export function useEat() {
-  const recipesRepo = useRecipeRepo();
-  const { pantry } = usePantryDeps();
+  const deps = useEatDeps();
+  const pantry = usePantry();
+  const my = useMyRecipes();
+  const qc = useQueryClient();
   const { profile, logs } = useNutritionDeps();
-  const search = useRecipeSearch();
   const [wants, setWants] = useState<Want[]>([]);
-  const [boost, setBoost] = useState<Record<string, number>>({});
-  const [searching, setSearching] = useState(false);
+  const [idea, setIdea] = useState<string | null>(null);
+  const [listed, setListed] = useState<string[]>([]);
   // One moment per visit, so the answer holds still while you read it.
   const [now] = useState(() => new Date());
   const today = toDateKey(now);
 
-  const recipes = useQuery({ queryKey: ["recipes"], queryFn: () => recipesRepo.list() });
-  const items = useQuery({ queryKey: ["pantry"], queryFn: () => pantry.list() });
   const prof = useQuery({ queryKey: PROFILE, queryFn: () => profile.get() });
   const todayLogs = useQuery({ queryKey: ["meal-logs", today], queryFn: () => logs.listBetween(today, today) });
+  const items = pantry.isLoading ? null : pantry.view.groups.flatMap((g) => g.items);
+  const ready = !!items && !!todayLogs.data && prof.data !== undefined;
 
-  const picks = useMemo(() => {
-    if (!recipes.data || !items.data || !todayLogs.data || prof.data === undefined) return null;
-    const max = prof.data?.range.max ?? DEFAULT_RANGE.max;
-    const eaten = todayLogs.data.reduce((sum, l) => sum + l.kcal, 0);
-    return suggestMeals({
-      recipes: recipes.data,
-      pantry: items.data,
-      diet: prof.data?.diet,
-      dislikes: prof.data?.dislikes,
-      kcalLeft: eaten > 0 ? Math.max(0, max - eaten) : undefined,
-      hour: now.getHours(),
-      wants,
-      boost,
-    }).map<EatPick>((s) => ({ id: s.recipe.id, name: s.recipe.name, why: s.reasons.slice(0, 3).join(" · "), ready: s.ready, minutes: s.recipe.minutes }));
-  }, [recipes.data, items.data, todayLogs.data, prof.data, wants, boost, now]);
+  const meal = useQuery({
+    queryKey: ["what-to-eat", today, wants, idea],
+    enabled: ready,
+    // Written once per wish: coming back to the tab must not write (and pay for) a new meal.
+    staleTime: Infinity,
+    queryFn: async () => {
+      const dayMax = prof.data?.range.max ?? DEFAULT_RANGE.max;
+      const eaten = todayLogs.data!.reduce((sum, l) => sum + l.kcal, 0);
+      const out = await whatToEat(deps, {
+        builtins: await deps.builtins.list(), pantry: items!, diet: prof.data?.diet, dislikes: prof.data?.dislikes,
+        dayMax, kcalLeft: eaten > 0 ? Math.max(0, dayMax - eaten) : undefined, hour: now.getHours(), wants, idea: idea ?? undefined,
+      });
+      // A written meal now exists by id: the cook and recipe screens read it from the recipe list.
+      if (out.source === "ai") await qc.invalidateQueries({ queryKey: ["recipes"] });
+      return out;
+    },
+  });
+
+  const m = meal.data;
+  const best = m && items ? (() => {
+    const r = m.best;
+    const cook = cookability(r, items);
+    return {
+      id: r.id, name: r.name, blurb: r.blurb, tint: r.tint, image: r.image, recipe: r,
+      written: m.source === "ai",
+      ready: cook.canCook,
+      missing: cook.needed.length,
+      status: cook.canCook ? "Ready to cook" : `Missing ${cook.needed.length}`,
+      facts: `${r.minutes} min · ${r.kcal} kcal · ${r.protein} g protein`,
+      needs: cook.needed.map((x) => ({ name: x.name, qty: x.qty, unit: shopUnitFor(x.unit) })),
+    };
+  })() : null;
 
   return {
-    isLoading: picks === null,
-    picks: picks ?? [],
+    isLoading: !ready || meal.isPending,
+    error: meal.isError ? (meal.error instanceof Error ? meal.error.message : "Could not find a meal.") : null,
+    best,
+    ideas: (m?.ideas ?? []) as Idea[],
     wants,
     /** Nothing saved yet: the answer is a guess, so say how to improve it. */
     needsProfile: prof.data === null,
-    toggle: (w: Want) => setWants((xs) => (xs.includes(w) ? xs.filter((x) => x !== w) : [...xs, w])),
-    searching,
-    /** Words typed or said: their wishes join the chips, and (with Supabase) the meaning of the words is searched. */
-    ask: async (text: string) => {
-      setWants((xs) => [...new Set([...xs, ...parseWants(text)])]);
-      if (!search || !text.trim()) return;
-      setSearching(true);
-      setBoost(await boostFromSearch(search, text));
-      setSearching(false);
+    toggle: (w: Want) => {
+      setIdea(null);
+      setWants((xs) => (xs.includes(w) ? xs.filter((x) => x !== w) : [...xs, w]));
+    },
+    /** Write out one of the ideas as the new best meal. */
+    writeIdea: (name: string) => setIdea(name),
+    saved: best ? my.isSaved(best.id) : false,
+    toggleSave: () => best && void my.save(best.recipe, !my.isSaved(best.id)).catch(() => undefined),
+    listed: best ? listed.includes(best.id) : false,
+    addMissing: async () => {
+      if (!best) return;
+      await pantry.addNames(best.needs);
+      setListed((l) => [...l, best.id]);
     },
   };
 }

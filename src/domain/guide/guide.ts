@@ -1,10 +1,10 @@
+import { foodKey as norm } from "../pantry/foodKey";
 import type { PantryItem } from "../pantry/types";
 import { scaleQty } from "../recipes/pantryMatch";
+import { weightOf } from "../recipes/weight";
 import type { Recipe, Step, Swap } from "../recipes/types";
 import { FALLBACK_GUIDE, GENERIC_FIXES, GENERIC_SWAPS, VERB_GUIDE } from "./generic";
 
-// Same plural fold the pantry uses. shortcut: English only.
-const norm = (s: string) => s.trim().toLowerCase().replace(/(es|s)$/, "");
 
 /** What to look for and a tip for one step: the step's own words, else the verb's. */
 export function stepGuide(step: Step): { look: string; tip: string } {
@@ -26,7 +26,11 @@ export interface PrepItem {
 /** What to set out first. Authored for guided recipes; otherwise every ingredient, scaled to the servings. */
 export function prepList(recipe: Recipe, servings: number): PrepItem[] {
   if (recipe.prep?.length) return recipe.prep.map((text, i) => ({ id: `p${i}`, text }));
-  return recipe.ingredients.map((i, n) => ({ id: `p${n}`, text: `${fmt(scaleQty(i.qty, recipe.servings, servings))}${i.unit ? ` ${i.unit}` : ""} ${i.name.toLowerCase()}`.trim() }));
+  return recipe.ingredients.map((i, n) => {
+    const qty = scaleQty(i.qty, recipe.servings, servings);
+    const w = weightOf(i, qty);
+    return { id: `p${n}`, text: `${fmt(qty)}${i.unit ? ` ${i.unit}` : ""} ${i.name.toLowerCase()}${w ? ` · ≈ ${w}` : ""}`.trim() };
+  });
 }
 
 /** Stand-ins for an ingredient: this recipe's own first, then the common ones. */

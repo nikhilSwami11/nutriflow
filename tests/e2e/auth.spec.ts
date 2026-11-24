@@ -19,3 +19,9 @@ test("sign-in screen offers email", async ({ page }) => {
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByText("Could not sign in. Try again.")).toBeVisible();
 });
+
+test("connector consent: without Supabase it says it could not connect, in plain words", async ({ page }) => {
+  await page.goto("/oauth/consent?authorization_id=abc");
+  await expect(page.getByRole("heading", { name: "Could not connect" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("alert")).toContainText("Start connecting again from the app.");
+});

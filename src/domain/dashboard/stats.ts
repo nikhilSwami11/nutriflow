@@ -11,7 +11,8 @@ export interface ChartStats {
 }
 
 export function chartStats(days: DayNutrition[], tolerance = 0.1): ChartStats {
-  const past = days.slice(0, -1);
+  // Unlogged days are gaps: they do not pull the average down.
+  const past = days.slice(0, -1).filter((d): d is DayNutrition & { eaten: number } => d.eaten !== null);
   if (!past.length) return { avgEaten: 0, avgPlanned: 0, onPlan: 0, pastDays: 0 };
   const avg = (xs: number[]) => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length);
   return {

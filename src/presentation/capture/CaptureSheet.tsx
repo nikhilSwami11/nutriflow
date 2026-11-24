@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useCapture } from "@/view-models/capture/store";
 import { useCaptureSheet, type CamMode } from "@/view-models/capture/useCaptureSheet";
 import { Orb } from "../pantry/Orb";
+import { useSwipeDismiss } from "../shared/useSwipeDismiss";
 
 const MODES: { id: CamMode; label: string; ready: boolean }[] = [
   { id: "meal", label: "Meal", ready: true },
@@ -19,6 +20,7 @@ function Body() {
   const setVideo = useCallback((el: HTMLVideoElement | null) => attach(el), [attach]);
   const file = useRef<HTMLInputElement>(null);
   const { close } = s;
+  const { sheet, handle } = useSwipeDismiss(close);
   // On the document, not the sheet: focus can fall to the page when a focused button disappears (after Add to pantry).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
@@ -29,7 +31,8 @@ function Body() {
   return (
     <div className="fixed inset-0 z-40 flex flex-col justify-end">
       <button type="button" aria-label="Close" onClick={s.close} className="absolute inset-0 bg-black/30" />
-      <div role="dialog" aria-modal="true" aria-label="Camera or voice" className="story-in relative mx-auto flex w-full max-w-[460px] flex-col gap-4 rounded-t-[28px] bg-bg px-5 pb-[max(30px,env(safe-area-inset-bottom))] pt-2.5">
+      <div ref={sheet} role="dialog" aria-modal="true" aria-label="Camera or voice" className="story-in relative mx-auto flex w-full max-w-[460px] flex-col gap-4 rounded-t-[28px] bg-bg px-5 pb-[max(30px,env(safe-area-inset-bottom))] pt-2.5">
+        <div {...handle} className="flex touch-none flex-col gap-4">
         <span className="mx-auto block h-1 w-10 rounded-sm bg-line2" aria-hidden="true" />
         <div className="flex items-center justify-between gap-3">
           <div role="group" aria-label="Mode" className="flex gap-0.5 rounded-full bg-track p-[3px]">
@@ -39,6 +42,7 @@ function Body() {
           <button type="button" autoFocus onClick={s.close} aria-label="Close sheet" className="flex h-11 w-11 items-center justify-center rounded-full bg-track">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
+        </div>
         </div>
 
         {s.tab === "camera" ? (

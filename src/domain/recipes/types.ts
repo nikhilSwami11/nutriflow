@@ -8,7 +8,11 @@ export interface Ingredient {
   unit: string;
   /** Garnish or a finisher: the dish works without it. Guessed from the name when missing. */
   optional?: boolean;
+  /** What state the amount is measured in: it changes the weight (a cup of dry chickpeas is not a cup of soaked ones). */
+  form?: IngredientForm;
 }
+
+export type IngredientForm = "dry" | "soaked" | "cooked" | "canned";
 
 export interface Step {
   text: string;
@@ -54,4 +58,9 @@ export interface Recipe {
   prep?: string[];
   swaps?: Swap[];
   fixes?: Fix[];
+  /** Written by the AI for this person: nutrition is an estimate, and it is not part of the weekly planner. */
+  written?: boolean;
 }
+
+/** The verbs the cook screen animates and the guide has lines for. A written recipe uses only these. */
+export const COOK_VERBS = ["Chop", "Slice", "Grate", "Mix", "Whisk", "Stir", "Toss", "Mash", "Knead", "Roll", "Boil", "Simmer", "Fry", "Sauté", "Sear", "Roast", "Bake", "Toast", "Blend", "Chill", "Assemble", "Top", "Serve"] as const;

@@ -1,9 +1,8 @@
+import { foodKey as norm } from "./foodKey";
 import { adviseNeeds } from "./adviseNeeds";
 import type { BuyAdvisor, PantryRepository, ShoppingListRepository } from "./ports";
 import type { Amount, Need, PantryItem } from "./types";
 
-// Same plural fold as the voice add. shortcut: English only.
-const norm = (s: string) => s.trim().toLowerCase().replace(/(es|s)$/, "");
 
 /**
  * Put things on the shopping list by name, with an amount when known ("what this meal is missing"). A name the pantry already knows

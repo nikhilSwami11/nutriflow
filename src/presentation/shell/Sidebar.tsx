@@ -1,5 +1,7 @@
 import Link from "next/link";
-import type { Page } from "./pages";
+import { GoToButton } from "./CommandMenu";
+import { NAV, PROFILE_ICON } from "./navItems";
+import { SECTION, type Page } from "./pages";
 
 const icon = (d: React.ReactNode) => (
   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -12,37 +14,24 @@ const on = "bg-track font-medium text-ink";
 const off = "font-normal text-ink2";
 
 export function Sidebar({ current }: { current: Page }) {
+  const items = [...NAV, { section: "profile" as const, href: "/profile", label: "Profile", icon: PROFILE_ICON }];
   return (
     <nav aria-label="Main" className="hidden w-[232px] shrink-0 flex-col gap-7 self-start rounded-3xl border border-line bg-bg px-4 py-6 lg:flex">
       <div className="flex items-center gap-2.5 px-3 text-xl font-semibold tracking-[-0.01em]">
         <span className="block h-3 w-3 rounded-full bg-ink" />
         <span>NutriFlow</span>
       </div>
+      <GoToButton />
       <div className="flex flex-col gap-1">
-        <Link href="/" aria-current={current === "home" ? "page" : undefined} className={`${item} ${current === "home" ? on : off}`}>
-          {icon(<path d="M3 11l9-8 9 8M5 10v10h14V10" />)}Today
-        </Link>
-        <Link href="/eat" aria-current={current === "eat" ? "page" : undefined} className={`${item} ${current === "eat" ? on : off}`}>
-          {icon(<><path d="M5 3v8a3 3 0 0 0 3 3v7M8 3v6M11 3v8a3 3 0 0 1-3 3M17 21V3c-2.2 1.5-3 4-3 7v4h3" /></>)}Eat
-        </Link>
-        <Link href="/pantry" aria-current={current === "pantry" ? "page" : undefined} className={`${item} ${current === "pantry" ? on : off}`}>
-          {icon(<><rect x="6" y="8" width="12" height="13" rx="3" /><path d="M8 4h8v4H8z" /></>)}Pantry
-        </Link>
-        <Link href="/shopping" aria-current={current === "shopping" ? "page" : undefined} className={`${item} ${current === "shopping" ? on : off}`}>
-          {icon(<><path d="M5 7h14l-1.4 11a2 2 0 0 1-2 1.8H8.4a2 2 0 0 1-2-1.8z" /><path d="M9 7a3 3 0 0 1 6 0" /></>)}Shopping
-        </Link>
-        <Link href="/recipes" aria-current={current === "recipes" ? "page" : undefined} className={`${item} ${current === "recipes" ? on : off}`}>
-          {icon(<path d="M4 10h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-6zM2 10h20M9 6c0-1.5 1-2 1-3M14 6c0-1.5 1-2 1-3" />)}Recipes
-        </Link>
-        <Link href="/plan" aria-current={current === "plan" ? "page" : undefined} className={`${item} ${current === "plan" ? on : off}`}>
-          {icon(<><rect x="4" y="5" width="16" height="15" rx="3" /><path d="M8 3v4M16 3v4M4 10h16" /></>)}Plan
-        </Link>
-        <Link href="/chores" aria-current={current === "chores" ? "page" : undefined} className={`${item} ${current === "chores" ? on : off}`}>
-          {icon(<><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M8.5 12l2.5 2.5 4.5-5" /></>)}Chores
-        </Link>
-        <Link href="/profile" aria-current={current === "profile" ? "page" : undefined} className={`${item} ${current === "profile" ? on : off}`}>
-          {icon(<><circle cx="12" cy="8" r="4" /><path d="M4 20c1.5-4 4.5-5.5 8-5.5s6.5 1.5 8 5.5" /></>)}Profile
-        </Link>
+        {items.map((n) => {
+          const active = SECTION[current] === n.section;
+          return (
+            <Link key={n.section} href={n.href} aria-current={active ? "page" : undefined} className={`${item} ${active ? on : off}`}>
+              {icon(n.icon)}
+              {n.label}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

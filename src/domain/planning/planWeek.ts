@@ -1,6 +1,8 @@
 import type { MealName, Recipe } from "../recipes/types";
 import { MEALS } from "../recipes/types";
 import type { DateKey } from "../nutrition/types";
+import { cookability } from "../guide/cookability";
+import type { PantryItem } from "../pantry/types";
 import type { DayGoals, Focus, PlanDay } from "./types";
 
 /** Share of the day's calories and protein each meal should carry. */
@@ -13,16 +15,19 @@ export interface PlanInput {
   history: Record<string, number>;
   dates: DateKey[];
   focus: Focus;
+  /** What is at home. Dishes you can cook from it are preferred, so the week uses up the groceries first. */
+  pantry?: PantryItem[];
 }
 
 /**
  * Fill every meal of every day from the recipes, aiming at the calorie and protein goals.
  * Each pick minimises: distance from this meal's calorie target, protein shortfall,
- * and repeats (recently used recipes cost more), minus a bonus for meals eaten before.
+ * and repeats (recently used recipes cost more), minus a bonus for meals eaten before and for dishes the pantry covers.
  * Targets adapt as the day fills: whatever is left is split over the remaining meals.
  * Deterministic: ties break by recipe id.
  */
-export function planWeek({ recipes, goals, history, dates, focus }: PlanInput): PlanDay[] {
+export function planWeek({ recipes, goals, history, dates, focus, pantry }: PlanInput): PlanDay[] {
+  const ready = new Set(pantry ? recipes.filter((r) => cookability(r, pantry).canCook).map((r) => r.id) : []);
   const proteinWeight = focus === "protein" ? 2.5 : 1.2;
   const used: string[][] = []; // recipe ids per planned day, oldest first
 
@@ -45,7 +50,7 @@ export function planWeek({ recipes, goals, history, dates, focus }: PlanInput): 
         const recent = used.slice(-2).filter((d) => d.includes(r.id)).length;
         const earlier = used.slice(0, -2).filter((d) => d.includes(r.id)).length;
         const familiar = Math.min(history[r.id] ?? 0, 4) / 4;
-        return 3 * calGap + proteinWeight * proteinGap + 0.6 * recent + 0.15 * earlier - 0.2 * familiar;
+        return 3 * calGap + proteinWeight * proteinGap + 0.6 * recent + 0.15 * earlier - 0.2 * familiar - (ready.has(r.id) ? 0.4 : 0);
       };
 
       const pick = [...options].sort((a, b) => cost(a) - cost(b) || a.id.localeCompare(b.id))[0];

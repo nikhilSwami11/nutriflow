@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRef } from "react";
 import { usePlan } from "@/view-models/plan/usePlan";
 import { AppShell } from "../shell/AppShell";
+import { Skeleton } from "../shared/Skeleton";
 
 const DOT = { ok: "bg-mint", under: "bg-butter", over: "bg-peach" } as const;
 const WORD = { ok: "on goal", under: "under", over: "over" } as const;
@@ -24,8 +25,9 @@ export function PlanScreen() {
     <AppShell current="plan">
       <header className="shrink-0 px-5 pb-2 pt-4 lg:px-2">
         <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">Plan</h1>
-        {!p.isLoading && <p className="mt-1 text-sm text-muted">Built from the meals you already eat, aiming at {p.goals}.</p>}
+        {!p.isLoading && <p className="mt-1 text-sm text-muted">{p.fromHistory ? "Built from the meals you already eat" : "Picked to fit your diet"}, aiming at {p.goals}.</p>}
       </header>
+      {p.isLoading && <Skeleton />}
       {!p.isLoading && (
         <div className="rail flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-8 pt-1 lg:grid lg:grid-cols-12 lg:content-start lg:px-2">
           <div className="flex flex-col gap-4 lg:col-span-7">

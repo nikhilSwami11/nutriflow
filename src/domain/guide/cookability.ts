@@ -1,10 +1,9 @@
+import { foodKey as norm } from "../pantry/foodKey";
 import type { PantryItem } from "../pantry/types";
 import { ingredientStatus } from "../recipes/pantryMatch";
 import type { Ingredient, Recipe } from "../recipes/types";
 import { swapsFor } from "./guide";
 
-// Same plural fold the pantry uses. shortcut: English only.
-const norm = (s: string) => s.trim().toLowerCase().replace(/(es|s)$/, "");
 
 // Garnish and finishers: the dish works without them. shortcut: name rule, a recipe can override with `optional`.
 const OPTIONAL = /coriander|cilantro|parsley|mint|basil|lemon|cinnamon|honey/i;

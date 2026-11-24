@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { dietOf } from "@/domain/eat";
 import { cookability } from "@/domain/guide";
-import { ingredientStatus, readiness, scaleQty, type Recipe } from "@/domain/recipes";
+import { ingredientStatus, readiness, scaleQty, weightOf, type Recipe } from "@/domain/recipes";
 import { usePantry } from "../pantry/usePantry";
 import { useRecipeRepo } from "./RecipeDeps";
+import { useMyRecipes } from "./useMyRecipes";
+import { savedOnly } from "@/domain/recipes";
 
 export type Filter = "all" | "pantry" | "quick" | "protein";
 const FILTERS: { id: Filter; label: string }[] = [
@@ -23,7 +25,10 @@ function useRecipeData() {
 }
 
 export function useRecipes() {
-  const { recipes, items } = useRecipeData();
+  const { items } = useRecipeData();
+  const my = useMyRecipes();
+  // The Recipes tab is only what this person kept: saved, or cooked. New meals come from "What should I eat?".
+  const recipes = my.isLoading ? undefined : savedOnly(my.list);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   if (!recipes) return { isLoading: true as const };
@@ -35,6 +40,7 @@ export function useRecipes() {
   });
   return {
     isLoading: false as const,
+    empty: recipes.length === 0,
     ready: `${rows.filter((x) => x.rd.missing === 0).length} ready to cook`,
     filters: FILTERS.map((f) => ({ ...f, on: f.id === filter, pick: () => setFilter(f.id) })),
     query,
@@ -51,8 +57,8 @@ const fmtQty = (v: number) => {
 
 export function useRecipe(id: string) {
   const { recipes, items } = useRecipeData();
+  const my = useMyRecipes();
   const [servings, setServings] = useState<number | null>(null);
-  const [saved, setSaved] = useState(false);
   const [listed, setListed] = useState(false);
   if (!recipes) return { isLoading: true as const };
   const r: Recipe | undefined = recipes.find((x) => x.id === id);
@@ -84,6 +90,8 @@ export function useRecipe(id: string) {
     ingredients: status.map((s) => ({
       name: s.ingredient.name,
       amount: fmtQty(scaleQty(s.ingredient.qty, r.servings, sv)) + (s.ingredient.unit ? ` ${s.ingredient.unit}` : ""),
+      /** About how much it weighs, gray on the right: "400 g dry". Null when unknown. */
+      weight: weightOf(s.ingredient, scaleQty(s.ingredient.qty, r.servings, sv)),
       inPantry: s.inPantry,
       tag: s.inPantry ? "In pantry" : swapOf.has(s.ingredient.name) ? "Swap" : cook.skips.includes(s.ingredient.name) ? "Optional" : listed ? "On list" : "Missing",
       /** What to use instead, when you own a stand-in. */
@@ -92,7 +100,7 @@ export function useRecipe(id: string) {
     missing,
     listed,
     toggleList: () => setListed(!listed),
-    saved,
-    toggleSave: () => setSaved(!saved),
+    saved: my.isSaved(r.id),
+    toggleSave: () => void my.save(r, !my.isSaved(r.id)).catch(() => undefined),
   };
 }

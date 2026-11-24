@@ -5,3 +5,4 @@ export * from "./timer";
 export * from "./voice";
 export * from "./session";
 export * from "./finishCooking";
+export * from "./logRecipe";

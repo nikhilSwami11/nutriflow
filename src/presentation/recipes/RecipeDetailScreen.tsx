@@ -3,8 +3,9 @@ import Link from "next/link";
 import { useRecipe } from "@/view-models/recipes/useRecipes";
 import { AppShell } from "../shell/AppShell";
 import { RecipeArt } from "./RecipeArt";
+import { Skeleton } from "../shared/Skeleton";
 
-const VERB: Record<string, string> = { Chop: "#F7C9BB", Simmer: "#9EC8F3", Stir: "#B9A7EE", "Sauté": "#F4E3A1", Serve: "#8FD3C0", Mix: "#CFC8F0" };
+import { verbColor } from "../shared/verbColor";
 
 export function RecipeDetailScreen({ id }: { id: string }) {
   const r = useRecipe(id);
@@ -23,11 +24,12 @@ export function RecipeDetailScreen({ id }: { id: string }) {
           )}
         </header>
 
+        {r.isLoading && <Skeleton />}
         {!r.isLoading && r.notFound && <p className="px-5 text-sm text-muted">That recipe does not exist.</p>}
         {!r.isLoading && !r.notFound && (
           <>
             <div className="rail flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto px-5 pb-28">
-              <div role="img" aria-label={`Picture of ${r.recipe.name}`} className="rise flex h-[170px] shrink-0 items-center justify-center rounded-3xl" style={{ background: r.recipe.tint }}><RecipeArt image={r.recipe.image} size={150} /></div>
+              <div role="img" aria-label={`Picture of ${r.recipe.name}`} className="rise flex h-[170px] shrink-0 items-center justify-center rounded-3xl" style={{ background: r.recipe.tint }}><RecipeArt image={r.recipe.image} size={150} eager /></div>
               <div>
                 <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">{r.recipe.name}</h1>
                 {r.recipe.blurb && <p className="mt-1.5 text-sm leading-normal text-ink2">{r.recipe.blurb}</p>}
@@ -58,7 +60,10 @@ export function RecipeDetailScreen({ id }: { id: string }) {
                       {i.name}
                       {i.note && <span className="block text-sm text-ink2">{i.note}</span>}
                     </span>
-                    <span className="text-sm tabular-nums text-ink2">{i.amount}</span>
+                    <span className="text-right text-sm tabular-nums text-ink2">
+                      {i.amount}
+                      {i.weight && <span className="block text-xs text-muted">≈ {i.weight}</span>}
+                    </span>
                     <span className={`rounded-full px-2.5 py-[3px] text-xs font-medium text-onp ${i.inPantry || i.tag === "Swap" || i.tag === "Optional" ? "bg-mint" : r.listed ? "bg-sky" : "bg-peach"}`}>{i.tag}</span>
                   </div>
                 ))}
@@ -75,7 +80,7 @@ export function RecipeDetailScreen({ id }: { id: string }) {
                   <div key={i} className="flex items-center gap-3 border-t border-line py-[11px]">
                     <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-panel text-xs tabular-nums">{i + 1}</span>
                     <span className="flex-1 text-sm leading-[1.35]">{s.text}</span>
-                    <span className="rounded-full px-2.5 py-[3px] text-xs font-medium text-onp" style={{ background: VERB[s.verb] ?? "#CFC8F0" }}>{s.verb}</span>
+                    <span className="rounded-full px-2.5 py-[3px] text-xs font-medium text-onp" style={{ background: verbColor(s.verb) }}>{s.verb}</span>
                   </div>
                 ))}
               </section>

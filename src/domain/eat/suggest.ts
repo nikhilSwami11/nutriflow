@@ -1,3 +1,4 @@
+import { foodKey as norm } from "../pantry/foodKey";
 import type { PantryItem } from "../pantry/types";
 import type { Diet } from "../nutrition/types";
 import { readiness } from "../recipes/pantryMatch";
@@ -25,7 +26,12 @@ export interface Suggestion {
   score: number;
 }
 
-const norm = (s: string) => s.trim().toLowerCase().replace(/(es|s)$/, "");
+/** Drops what the diet or a disliked food rules out. */
+export function fitsPrefs(recipes: Recipe[], diet?: Diet, dislikes: string[] = []): Recipe[] {
+  const no = dislikes.map(norm).filter(Boolean);
+  const hated = (r: Recipe) => r.ingredients.some((i) => no.some((d) => norm(i.name).includes(d) || d.includes(norm(i.name))));
+  return recipes.filter((r) => dietAllows(diet, r) && !hated(r));
+}
 
 /** The meal most likely wanted at this hour. */
 export function mealForHour(hour: number): MealName {
@@ -54,12 +60,9 @@ export function suggestMeals(input: {
   limit?: number;
 }): Suggestion[] {
   const wants = input.wants ?? [];
-  const dislikes = (input.dislikes ?? []).map(norm).filter(Boolean);
-  const hated = (r: Recipe) => r.ingredients.some((i) => dislikes.some((d) => norm(i.name).includes(d) || d.includes(norm(i.name))));
   const meal = mealForHour(input.hour);
 
-  return input.recipes
-    .filter((r) => dietAllows(input.diet, r) && !hated(r))
+  return fitsPrefs(input.recipes, input.diet, input.dislikes)
     .map<Suggestion>((r) => {
       const rd = readiness(r, input.pantry);
       const ready = rd.missing === 0;

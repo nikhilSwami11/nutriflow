@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/view-models/auth/useAuth";
 import { DIET_LABEL, DIETS, useProfile, type Diet } from "@/view-models/profile/useProfile";
 import { AppShell } from "../shell/AppShell";
+import { Skeleton } from "../shared/Skeleton";
 
 const field = "touch w-full rounded-2xl border border-line2 bg-bg px-4 text-[15px]";
 
@@ -88,6 +89,7 @@ export function ProfileScreen() {
           )}
         </section>
 
+        {p.isLoading && <Skeleton rows={2} />}
         {!p.isLoading && <Form p={p} />}
       </div>
     </AppShell>

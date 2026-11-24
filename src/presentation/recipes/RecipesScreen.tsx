@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRecipes } from "@/view-models/recipes/useRecipes";
 import { AppShell } from "../shell/AppShell";
 import { RecipeArt } from "./RecipeArt";
+import { Skeleton } from "../shared/Skeleton";
 
 export function RecipesScreen() {
   const r = useRecipes();
@@ -10,9 +11,17 @@ export function RecipesScreen() {
     <AppShell current="recipes">
       <header className="shrink-0 px-5 pb-2 pt-4 lg:px-2">
         <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">Recipes</h1>
-        {!r.isLoading && <p className="mt-1 text-sm text-muted">{r.ready}</p>}
+        {!r.isLoading && !r.empty && <p className="mt-1 text-sm text-muted">{r.ready}</p>}
       </header>
-      {!r.isLoading && (
+      {r.isLoading && <Skeleton />}
+      {!r.isLoading && r.empty && (
+        <div className="flex flex-col items-start gap-3 px-5 pt-4 lg:px-2">
+          <p className="m-0 text-[15px] font-medium">Your saved recipes live here</p>
+          <p className="m-0 max-w-[40ch] text-sm text-ink2">Save a meal from What to eat, or cook one, and it shows up here.</p>
+          <Link href="/eat" className="touch inline-flex items-center rounded-full bg-ink px-5 text-[15px] font-medium text-bg">What should I eat?</Link>
+        </div>
+      )}
+      {!r.isLoading && !r.empty && (
         <>
           <div className="flex shrink-0 flex-col gap-2.5 px-5 pb-2.5 pt-1 lg:px-2">
             <label className="relative block lg:max-w-md">

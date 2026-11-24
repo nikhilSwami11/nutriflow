@@ -7,8 +7,10 @@ export interface FeedContext {
   date: DateKey;
   now: number;
   nextMeal: { meal: MealName; recipeId: string } | null;
-  /** Every meal planned for today, in day order, eaten or not. Becomes the meal stories. */
-  meals: { meal: MealName; recipeId: string }[];
+  /** The one meal to eat next by the clock: later today, else tomorrow's first. Becomes the single meal story. */
+  eatNext: { meal: MealName; recipeId: string; tomorrow: boolean } | null;
+  /** Jobs to do ahead (soak, marinate) for the next meals. */
+  prep: number;
   /** Chores for today: still to do, or done today (so a ticked chore stays in the row). Fixed order. */
   chores: { id: string }[];
   /** Running-low pantry items. */
@@ -46,9 +48,15 @@ export function buildFeed(ctx: FeedContext): Feed {
   return { schemaVersion: 1, generatedAt: ctx.now, items, stories: buildStories(ctx) };
 }
 
-/** One story per planned meal, then chores, then pantry and plan when they apply. Order is fixed: the row should not jump around. */
+/**
+ * Eat next (one story, not one per meal), prep for the next meals, then chores, then pantry and plan when they apply.
+ * Order is fixed: the row should not jump around. The meal story id carries the recipe, so it is new again once you
+ * have eaten and the next meal takes its place.
+ */
 export function buildStories(ctx: FeedContext): Story[] {
-  const stories: Story[] = ctx.meals.map((m) => ({ id: `story:meal:${m.meal}:${ctx.date}`, kind: "meal", meal: m.meal, recipeId: m.recipeId }));
+  const stories: Story[] = [];
+  if (ctx.eatNext) stories.push({ id: `story:meal:${ctx.date}:${ctx.eatNext.recipeId}`, kind: "meal", ...ctx.eatNext });
+  if (ctx.prep > 0) stories.push({ id: `story:prep:${ctx.date}`, kind: "prep" });
   stories.push(...ctx.chores.map((c): Story => ({ id: `story:chore:${c.id}:${ctx.date}`, kind: "chore", choreId: c.id })));
   if (ctx.lowItems > 0) stories.push({ id: `story:pantry:${ctx.date}`, kind: "pantry" });
   if (ctx.planNotes.length) stories.push({ id: `story:plan:${ctx.date}`, kind: "plan", notes: ctx.planNotes.slice(0, 2) });

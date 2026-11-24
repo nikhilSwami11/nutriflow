@@ -658,8 +658,9 @@ const BY_VERB: Record<string, (p: { tint: string; image?: string }) => JSX.Eleme
   Top, Assemble, Toss, Slice, Sear, Roast,
 };
 
-export function CookMotion({ verb, tint = BUTTER, image }: { verb: string; tint?: string; image?: string }) {
+export function CookMotion({ verb, tint = BUTTER, image, small }: { verb: string; tint?: string; image?: string; small?: boolean }) {
   const Loop = BY_VERB[verb];
+  if (small) return <div className="cook-motion rounded-2xl bg-panel p-1.5" aria-hidden="true">{Loop ? <Loop tint={tint} image={image} /> : <Bowl size={60} />}</div>;
   return (
     <div className="cook-motion rounded-2xl bg-panel px-7 pb-2 pt-[18px]">
       {Loop ? <Loop tint={tint} image={image} /> : <div className="flex h-[200px] items-center justify-center"><Bowl size={110} /></div>}

@@ -1,7 +1,9 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import { isZip, STORES, useShopping, type ShoppingRow, type StoreId } from "@/view-models/shopping/useShopping";
 import { AppShell } from "../shell/AppShell";
+import { Skeleton } from "../shared/Skeleton";
 
 const HOLD = 350; // ms: a ticked row stays green this long...
 const SLIDE = 300; // ...then folds away this long, before it counts as shopped
@@ -149,6 +151,7 @@ export function ShoppingScreen() {
           </Fold>
         </section>
 
+        {s.isLoading && s.rows.length === 0 && <Skeleton />}
         {s.rows.length > 0 && (
           <section aria-label="To buy">
             <ul className="m-0 list-none border-t border-line p-0">
@@ -159,7 +162,14 @@ export function ShoppingScreen() {
           </section>
         )}
 
-        {!s.isLoading && s.rows.length === 0 && n === 0 && (
+        {!s.isLoading && s.rows.length === 0 && n === 0 && s.pantryEmpty && (
+          <div className="flex flex-col items-start gap-3 px-5">
+            <p className="m-0 text-[15px] font-medium">Start with your pantry</p>
+            <p className="m-0 max-w-[40ch] text-sm text-ink2">Once I know what you have, what your meals need lands here by itself.</p>
+            <Link href="/pantry" className="touch inline-flex items-center rounded-full bg-ink px-5 text-[15px] font-medium text-bg">Open pantry</Link>
+          </div>
+        )}
+        {!s.isLoading && s.rows.length === 0 && n === 0 && !s.pantryEmpty && (
           <p className="m-0 px-5 text-sm text-ink2">Nothing needed for your next few days. What you are missing or running low on lands here by itself.</p>
         )}
       </div>

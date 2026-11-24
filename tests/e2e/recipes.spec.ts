@@ -1,17 +1,21 @@
 import { expect, test } from "@playwright/test";
 
-test("recipes list filters and searches", async ({ page }) => {
+test("Recipes holds only saved recipes: empty at first, then what you save, with filters and search", async ({ page }) => {
   await page.goto("/recipes");
   await expect(page.getByRole("heading", { name: "Recipes", level: 1 })).toBeVisible();
-  await expect(page.getByText(/\d+ ready to cook/)).toBeVisible();
-  const all = await page.locator('a[href^="/recipes/"]').count();
-  await page.getByRole("button", { name: "Under 30 min" }).click();
-  const quick = await page.locator('a[href^="/recipes/"]').count();
-  expect(quick).toBeGreaterThan(0);
-  expect(quick).toBeLessThan(all);
-  await page.getByRole("button", { name: "All" }).click();
-  await page.getByRole("textbox", { name: "Search recipes" }).fill("dal tadka");
+  await expect(page.getByText("Your saved recipes live here")).toBeVisible();
+  await expect(page.getByRole("link", { name: "What should I eat?" })).toHaveAttribute("href", "/eat");
+
+  // save one (client navigation keeps the in-memory data)
+  await page.goto("/recipes/dal-tadka");
+  await page.getByRole("button", { name: "Save recipe" }).click();
+  await expect(page.getByRole("button", { name: "Save recipe" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("navigation", { name: "Food" }).getByRole("link", { name: "Recipes" }).click();
   await expect(page.getByRole("link", { name: "Dal tadka" })).toBeVisible();
+  await expect(page.getByText(/\d+ ready to cook/)).toBeVisible();
+  await page.getByRole("textbox", { name: "Search recipes" }).fill("omelette");
+  await expect(page.getByText("No recipes match.")).toBeVisible();
+  await page.getByRole("textbox", { name: "Search recipes" }).fill("dal");
   await expect(page.locator('a[href^="/recipes/"]')).toHaveCount(1);
 });
 

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { suggestedServings, updateHabit, type ServingHabit } from "@/domain/cooking";
 import { toDateKey, type MealSlot } from "@/domain/nutrition";
+import { hasFood } from "@/domain/pantry";
 import { changeAmount, dayImpact, estimateMeal, EXTRA_FOODS, logPhotoMeal, scaleForHabit, undoLog, type DetectedItem } from "@/domain/photo";
 import { useCookDeps } from "../cook/CookDeps";
 import { useHome } from "../home/useHome";
@@ -55,7 +56,7 @@ export function usePhotoFlow() {
   const impact = dayImpact(home.today.eatenValue, home.today.goalValue, est.kcal);
 
   const pantryItems = pantry.view.groups.flatMap((g) => g.items);
-  const has = (name: string) => pantryItems.some((p) => p.qty > 0 && p.name.toLowerCase().replace(/s$/, "") === name.toLowerCase().replace(/s$/, ""));
+  const has = (name: string) => hasFood(pantryItems, name);
   const matched = kept.filter((i) => has(i.pantryName)).map((i) => i.pantryName.toLowerCase());
 
   const toggle = (id: string) => setOff((o) => (o.includes(id) ? o.filter((x) => x !== id) : [...o, id]));
@@ -65,10 +66,10 @@ export function usePhotoFlow() {
   };
 
   const reasons: { color: string; text: string }[] = [];
-  if (det.source !== "vision") reasons.push({ color: "#F4E3A1", text: "Photo recognition is not connected yet, so these items are an example, not read from your photo." });
-  if (usual !== 1) reasons.push({ color: "#9EC8F3", text: `Your servings run about ${Math.round(Math.abs(usual - 1) * 100)}% ${usual > 1 ? "above" : "below"} standard, so I scaled the portions ${usual > 1 ? "up" : "down"}.` });
-  if (matched.length) reasons.push({ color: "#8FD3C0", text: `Matched with your pantry: ${matched.join(", ")}.` });
-  for (const i of kept.filter((k) => k.confidence < 70 && k.reason)) reasons.push({ color: "#F2A3A9", text: `${i.reason}.` });
+  if (det.source !== "vision") reasons.push({ color: "var(--butter)", text: "Photo recognition is not connected yet, so these items are an example, not read from your photo." });
+  if (usual !== 1) reasons.push({ color: "var(--sky)", text: `Your servings run about ${Math.round(Math.abs(usual - 1) * 100)}% ${usual > 1 ? "above" : "below"} standard, so I scaled the portions ${usual > 1 ? "up" : "down"}.` });
+  if (matched.length) reasons.push({ color: "var(--mint)", text: `Matched with your pantry: ${matched.join(", ")}.` });
+  for (const i of kept.filter((k) => k.confidence < 70 && k.reason)) reasons.push({ color: "var(--rose)", text: `${i.reason}.` });
 
   const log = async () => {
     setError(null);
@@ -118,14 +119,14 @@ export function usePhotoFlow() {
     canEstimate: kept.length > 0,
     toEstimate: () => setPhase("estimate"),
     toDetect: () => setPhase("detect"),
-    menu: { open: menu, toggle: () => setMenu((m) => !m), foods: EXTRA_FOODS.filter((f) => !extras.some((e) => e.name === f.name)).map((f) => ({ name: f.name, add: () => { setExtras((e) => [...e, { ...f, id: `extra-${f.name}`, confidence: 100, color: "#CFC8F0", box: { x: 0.35, y: 0.45, w: 0.3, h: 0.2 }, reason: "You added this" }]); setMenu(false); } })) },
+    menu: { open: menu, toggle: () => setMenu((m) => !m), foods: EXTRA_FOODS.filter((f) => !extras.some((e) => e.name === f.name)).map((f) => ({ name: f.name, add: () => { setExtras((e) => [...e, { ...f, id: `extra-${f.name}`, confidence: 100, color: "var(--lavender-soft)", box: { x: 0.35, y: 0.45, w: 0.3, h: 0.2 }, reason: "You added this" }]); setMenu(false); } })) },
     estimate: {
       kcal: num(est.kcal), low: num(est.low), high: num(est.high),
       dayText: impact.left >= 0 ? `Your day would be at ${num(impact.after)} of ${num(impact.goal)} kcal, with ${num(impact.left)} left.` : `Your day would be at ${num(impact.after)} of ${num(impact.goal)} kcal, ${num(-impact.left)} over your goal.`,
       macros: [
-        { label: "Protein", val: `${est.protein} g`, pct: Math.min(100, (est.protein / home.today.macros[0].goal) * 100), color: "#F2A3A9" },
-        { label: "Carbs", val: `${est.carbs} g`, pct: Math.min(100, (est.carbs / home.today.macros[1].goal) * 100), color: "#9EC8F3" },
-        { label: "Fat", val: `${est.fat} g`, pct: Math.min(100, (est.fat / home.today.macros[2].goal) * 100), color: "#B9A7EE" },
+        { label: "Protein", val: `${est.protein} g`, pct: Math.min(100, (est.protein / home.today.macros[0].goal) * 100), color: "var(--rose)" },
+        { label: "Carbs", val: `${est.carbs} g`, pct: Math.min(100, (est.carbs / home.today.macros[1].goal) * 100), color: "var(--sky)" },
+        { label: "Fat", val: `${est.fat} g`, pct: Math.min(100, (est.fat / home.today.macros[2].goal) * 100), color: "var(--lavender)" },
       ],
       items: kept.map((i) => ({ id: i.id, name: i.name, color: i.color, amount: `${i.amount} ${i.unit}`, minus: () => set(i.id, -1), plus: () => set(i.id, 1) })),
       why, toggleWhy: () => setWhy((w) => !w), reasons,

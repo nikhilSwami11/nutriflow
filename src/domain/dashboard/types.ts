@@ -11,7 +11,8 @@ export interface Macros {
 export interface DayNutrition {
   date: DateKey;
   planned: number;
-  eaten: number;
+  /** null when nothing was logged that day: a gap in charts, never zero. */
+  eaten: number | null;
   macros: Macros;
 }
 

@@ -4,11 +4,15 @@ import { useEffect, useState } from "react";
 import { InMemoryPantryRepository, InMemoryShoppingListRepository, LocalUtteranceParser } from "@/data/pantry/inMemory";
 import { LocalBoughtRepository } from "@/data/shopping/boughtLocal";
 import { LocalShoppingPrefsRepository } from "@/data/shopping/local";
+import { SupabaseBoughtRepository, SupabaseShoppingPrefsRepository } from "@/data/shopping/supabase";
+import type { BoughtRepository, ShoppingPrefsRepository } from "@/domain/shopping";
 import { InMemoryChoreRepository, SEED_CHORES } from "@/data/chores/inMemory";
 import { SupabaseChoreRepository } from "@/data/chores/supabase";
 import { InMemoryAuthRepository } from "@/data/auth/inMemory";
 import { SupabaseAuthRepository } from "@/data/auth/supabase";
-import { LocalServingHabitRepository } from "@/data/cooking/habits";
+import { LocalServingHabitRepository, SupabaseServingHabitRepository } from "@/data/cooking/habits";
+import { LocalPrepDoneRepository, SupabasePrepDoneRepository } from "@/data/planning/prep";
+import type { ServingHabitRepository } from "@/domain/cooking";
 import { LocalFeedEventRepository } from "@/data/feed/local";
 import { MirroredFeedEventRepository } from "@/data/feed/mirrored";
 import { SupabaseFeedEventRepository } from "@/data/feed/supabase";
@@ -16,6 +20,10 @@ import { QueuedMealLogRepository } from "@/data/nutrition/queued";
 import { DemoMealDetector } from "@/data/photo/demo";
 import { DemoRecipeRepository } from "@/data/recipes/demo";
 import { DemoDashboardRepository } from "@/data/dashboard/demo";
+import { LogDashboardRepository } from "@/data/dashboard/logs";
+import { InMemoryMealPlanRepository } from "@/data/planning/inMemory";
+import { SupabaseMealPlanRepository } from "@/data/planning/supabase";
+import type { MealPlanRepository, PrepDoneRepository } from "@/domain/planning";
 import { InMemoryMealLogRepository, InMemoryProfileRepository } from "@/data/nutrition/inMemory";
 import { seedLogs } from "@/data/nutrition/seed";
 import { SupabaseMealLogRepository, SupabaseProfileRepository } from "@/data/nutrition/supabase";
@@ -33,9 +41,12 @@ import type { FeedEventRepository } from "@/domain/feed";
 import type { MealLogRepository, ProfileRepository } from "@/domain/nutrition";
 import type { RecipeRepository } from "@/domain/recipes";
 import type { AuthRepository } from "@/domain/auth";
-import type { RecipeSearch } from "@/domain/eat";
+import type { RecipeSearch, RecipeWriter } from "@/domain/eat";
+import type { MyRecipeRepository } from "@/domain/recipes";
+import { CombinedRecipeRepository, InMemoryMyRecipeRepository, SupabaseMyRecipeRepository } from "@/data/recipes/mine";
+import { EdgeRecipeWriter } from "@/data/eat/edgeWriter";
 import type { BuyAdvisor } from "@/domain/pantry";
-import { EatDepsProvider } from "@/view-models/eat/EatDeps";
+import { EatDepsProvider, type EatDeps } from "@/view-models/eat/EatDeps";
 import { AuthDepsProvider } from "@/view-models/auth/AuthDeps";
 import { ShoppingDepsProvider, type ShoppingDeps } from "@/view-models/shopping/ShoppingDeps";
 import { ChoreDepsProvider } from "@/view-models/chores/ChoreDeps";
@@ -52,10 +63,10 @@ interface Deps {
   auth: AuthRepository;
   chores: ChoreRepository;
   shopping: ShoppingDeps;
-  recipeSearch?: RecipeSearch;
+  eat: EatDeps;
   pantry: PantryDeps;
   nutrition: NutritionDeps;
-  /** Demo data for the whole dashboard until real logging feeds it. */
+  /** Built from meal logs with Supabase; demo data offline. */
   dashboard: DashboardRepository;
   recipes: RecipeRepository;
   /** Browser storage, mirrored to Supabase when it is set. */
@@ -79,39 +90,61 @@ const storage = () => {
 
 /** Everything that does not depend on which backend is in use. Meal logs always go through the retry queue. */
 const assemble = (
+  /** True for a real account (Supabase) or a fresh offline one: the dashboard comes from its own logs, never the demo. */
+  live: boolean,
   auth: AuthRepository,
   chores: ChoreRepository,
   pantry: PantryDeps,
   primaryLogs: MealLogRepository,
   profile: ProfileRepository,
+  plans: MealPlanRepository,
   remoteFeed?: FeedEventRepository,
   advisor?: BuyAdvisor,
   recipeSearch?: RecipeSearch,
+  mine: MyRecipeRepository = new InMemoryMyRecipeRepository(),
+  writer?: RecipeWriter,
+  // In the account with Supabase; in the browser offline.
+  habits: ServingHabitRepository = new LocalServingHabitRepository(storage()),
+  prep: PrepDoneRepository = new LocalPrepDoneRepository(storage()),
+  shoppingPrefs: ShoppingPrefsRepository = new LocalShoppingPrefsRepository(storage()),
+  bought: BoughtRepository = new LocalBoughtRepository(storage()),
 ): Deps => {
+  const builtins = new DemoRecipeRepository();
   const queue = new QueuedMealLogRepository(primaryLogs, storage());
   return {
     auth,
     chores,
-    recipeSearch,
-    shopping: { prefs: new LocalShoppingPrefsRepository(storage()), bought: new LocalBoughtRepository(storage()), advisor },
+    eat: { writer, mine, builtins, search: recipeSearch, newId },
+    shopping: { prefs: shoppingPrefs, bought, advisor },
     pantry,
-    nutrition: { logs: queue, profile },
-    dashboard: new DemoDashboardRepository(),
-    recipes: new DemoRecipeRepository(),
+    nutrition: { logs: queue, profile, plans, prep },
+    // Only the offline demo shows sample history; a real account sees its own logs, empty at first.
+    dashboard: live ? new LogDashboardRepository(queue, profile) : new DemoDashboardRepository(),
+    recipes: new CombinedRecipeRepository(builtins, mine),
     feedEvents: remoteFeed ? new MirroredFeedEventRepository(new LocalFeedEventRepository(storage()), remoteFeed) : new LocalFeedEventRepository(storage()),
-    cook: { habits: new LocalServingHabitRepository(storage()), pendingLogs: () => queue.pending() },
+    cook: { habits, pendingLogs: () => queue.pending() },
     flushLogs: () => queue.flush(),
   };
 };
 
-const inMemory = (): Deps =>
-  assemble(
+// Offline mode starts as a brand-new account (no pantry, chores, logs or history) when this key is set: e2e uses it.
+const FRESH_KEY = "nutriflow.fresh";
+
+const inMemory = (): Deps => {
+  const fresh = storage().getItem(FRESH_KEY) === "1";
+  const profile = new InMemoryProfileRepository();
+  const logs = new InMemoryMealLogRepository(fresh ? [] : seedLogs(new Date()));
+  // A fresh offline session behaves like a new real account: dashboard from its (empty) logs.
+  return assemble(
+    fresh,
     new InMemoryAuthRepository(),
-    new InMemoryChoreRepository(SEED_CHORES),
-    { pantry: new InMemoryPantryRepository(SEED), list: new InMemoryShoppingListRepository(), parser: new LocalUtteranceParser(), newId },
-    new InMemoryMealLogRepository(seedLogs(new Date())),
-    new InMemoryProfileRepository(),
+    new InMemoryChoreRepository(fresh ? [] : SEED_CHORES),
+    { pantry: new InMemoryPantryRepository(fresh ? [] : SEED), list: new InMemoryShoppingListRepository(), parser: new LocalUtteranceParser(), newId },
+    logs,
+    profile,
+    new InMemoryMealPlanRepository(),
   );
+};
 
 /** Supabase when env vars are set, otherwise in-memory seeded from the design. */
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -129,14 +162,22 @@ export function Providers({ children }: { children: React.ReactNode }) {
     createSupabase(URL, KEY).then((db) =>
       setDeps(
         assemble(
+          true,
           new SupabaseAuthRepository(db, window.location.origin),
           new SupabaseChoreRepository(db),
           { pantry: new SupabasePantryRepository(db), list: new SupabaseShoppingListRepository(db), parser: new EdgeUtteranceParser(db), newId },
           new SupabaseMealLogRepository(db),
           new SupabaseProfileRepository(db),
+          new SupabaseMealPlanRepository(db),
           new SupabaseFeedEventRepository(db),
           new EdgeBuyAdvisor(db),
           new EdgeRecipeSearch(db),
+          new SupabaseMyRecipeRepository(db),
+          new EdgeRecipeWriter(db),
+          new SupabaseServingHabitRepository(db),
+          new SupabasePrepDoneRepository(db),
+          new SupabaseShoppingPrefsRepository(db),
+          new SupabaseBoughtRepository(db),
         ),
       ),
     );
@@ -162,7 +203,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <AuthDepsProvider value={deps.auth}>
       <ChoreDepsProvider value={{ repo: deps.chores, newId }}>
       <ShoppingDepsProvider value={deps.shopping}>
-      <EatDepsProvider value={deps.recipeSearch}>
+      <EatDepsProvider value={deps.eat}>
       <PantryDepsProvider value={deps.pantry}>
         <NutritionDepsProvider value={deps.nutrition}>
           <DashboardDepsProvider value={deps.dashboard}>

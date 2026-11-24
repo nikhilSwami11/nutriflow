@@ -1,11 +1,10 @@
+import { foodKey as norm } from "../pantry/foodKey";
 import type { Need, PantryItem } from "../pantry/types";
 import type { PlanDay } from "../planning/types";
 import { ingredientStatus } from "../recipes/pantryMatch";
 import type { MealName, Recipe } from "../recipes/types";
 import { shopUnitFor } from "./units";
 
-// Same plural fold as the pantry. shortcut: English only.
-const norm = (s: string) => s.trim().toLowerCase().replace(/(es|s)$/, "");
 
 /**
  * What to buy for the next few planned days: every ingredient the pantry has none of, once each, with the

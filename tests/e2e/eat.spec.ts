@@ -1,19 +1,41 @@
 import { expect, test } from "@playwright/test";
 
-test("ask what to eat: a best pick with one tap to cook, wishes as chips, a nudge to set preferences", async ({ page }) => {
+test("what to eat: a best pick with its picture and one main action, wishes as chips, a nudge to set preferences", async ({ page }) => {
   await page.goto("/eat");
   const best = page.getByRole("article", { name: "Best pick" });
   await expect(best).toBeVisible();
-  await expect(best.getByRole("link", { name: "Start cooking" })).toHaveAttribute("href", /^\/cook\//);
+  await expect(page.getByRole("button", { name: "Find" })).toHaveCount(0); // chips only
 
-  // typed words become chips
-  await page.getByLabel("Tell me what you feel like").fill("something quick and light");
-  await page.getByRole("button", { name: "Find" }).click();
+  // same rule as Home: cook when nothing blocks, else shop for what is missing
+  const cook = best.getByRole("link", { name: "Start cooking" });
+  const add = best.getByRole("button", { name: /^Add \d+ to shopping$/ });
+  await expect(cook.or(add)).toBeVisible();
+  if (await add.count()) {
+    await expect(best.getByRole("link", { name: "Cook anyway" })).toHaveAttribute("href", /^\/cook\//);
+    await add.click();
+    await expect(best.getByRole("button", { name: /^\d+ on your shopping list$/ })).toBeDisabled();
+  } else await expect(cook).toHaveAttribute("href", /^\/cook\//);
+
+  await page.getByRole("button", { name: "Quick" }).click();
   await expect(page.getByRole("button", { name: "Quick" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Light" }).click();
-  await expect(page.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("button", { name: "Quick" }).click();
+  await expect(page.getByRole("button", { name: "Quick" })).toHaveAttribute("aria-pressed", "false");
 
-  // no profile saved yet
   await expect(page.getByRole("link", { name: "Set your diet and calories" })).toHaveAttribute("href", "/profile");
+});
+
+test("Food and Kitchen switch between their pages", async ({ page }) => {
+  await page.goto("/eat");
+  const food = page.getByRole("navigation", { name: "Food" });
+  await expect(food.getByRole("link", { name: "What to eat" })).toHaveAttribute("aria-current", "page");
+  await food.getByRole("link", { name: "Recipes" }).click();
+  await expect(page.getByRole("heading", { name: "Recipes", level: 1 })).toBeVisible();
+  await page.getByRole("navigation", { name: "Food" }).getByRole("link", { name: "Plan" }).click();
+  await expect(page.getByRole("heading", { name: "Plan", level: 1 })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Food" })).toHaveAttribute("aria-current", "page");
+
+  await page.goto("/pantry");
+  await page.getByRole("navigation", { name: "Kitchen" }).getByRole("link", { name: "Shopping" }).click();
+  await expect(page).toHaveURL(/\/shopping$/);
+  await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Kitchen" })).toHaveAttribute("aria-current", "page");
 });

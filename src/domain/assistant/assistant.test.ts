@@ -1,0 +1,170 @@
+import { describe, expect, it } from "vitest";
+import type { Chore } from "../chores";
+import type { MealLog, Profile } from "../nutrition";
+import { fakeList, fakePantry, item } from "../pantry/testing";
+import type { Recipe } from "../recipes";
+import type { StoredDay } from "../planning";
+import {
+  addToPantry,
+  addToShopping,
+  boughtItems,
+  choresToday,
+  daySummary,
+  findRecipes,
+  logEaten,
+  newChore,
+  recipeDetails,
+  removeLog,
+  setChoreDone,
+  shoppingList,
+  suggestNow,
+  eatNextNow,
+  prepToday,
+  setPrepDone,
+  weekPlan,
+  type AssistantDeps,
+} from "./assistant";
+
+const recipe = (o: Partial<Recipe> & { id: string }): Recipe => ({
+  name: o.id, blurb: "", minutes: 20, servings: 2, meal: "Dinner", kcal: 500, protein: 20, carbs: 50, fat: 15, tint: "#fff",
+  ingredients: [], steps: [{ text: "Cook it", verb: "stir" }], ...o,
+});
+
+function deps(o: { profile?: Profile; logs?: MealLog[]; chores?: Chore[] } = {}) {
+  let logs = [...(o.logs ?? [])];
+  let chores = [...(o.chores ?? [])];
+  let n = 0;
+  let days: StoredDay[] = [];
+  let ticks: string[] = [];
+  const d: AssistantDeps = {
+    prep: { doneOn: async (date) => ticks.filter((t) => t.startsWith(date)), set: async (id, done) => void (ticks = done ? [...ticks, id] : ticks.filter((t) => t !== id)) },
+    plans: {
+      list: async (a, b) => days.filter((x) => x.date >= a && x.date <= b),
+      add: async (xs) => void (days = [...days, ...xs.filter((x) => !days.some((y) => y.date === x.date))]),
+      clearFrom: async (date) => void (days = days.filter((x) => x.date < date)),
+    },
+    logs: {
+      listBetween: async (a, b) => logs.filter((l) => l.date >= a && l.date <= b),
+      add: async (l) => void logs.push(l),
+      remove: async (id) => void (logs = logs.filter((l) => l.id !== id)),
+    },
+    profile: { get: async () => o.profile ?? null, save: async () => undefined },
+    pantry: fakePantry([item({ id: "p1", name: "Onion", qty: 3 }), item({ id: "p2", name: "Rice", qty: 0, unit: "cups" })]),
+    list: fakeList(),
+    chores: {
+      list: async () => chores,
+      save: async (c) => void (chores = [...chores.filter((x) => x.id !== c.id), c]),
+      remove: async (id) => void (chores = chores.filter((c) => c.id !== id)),
+    },
+    recipes: {
+      list: async () => [
+        recipe({ id: "dal", name: "Dal tadka", blurb: "Yellow lentils", ingredients: [{ name: "Onion", qty: 1, unit: "pcs" }, { name: "Rice", qty: 1, unit: "cups" }] }),
+        recipe({ id: "oats", name: "Oats", meal: "Breakfast", kcal: 300, minutes: 10 }),
+      ],
+    },
+    newId: () => `id${++n}`,
+  };
+  return { d, logs: () => logs };
+}
+
+const D = "2026-11-23";
+
+describe("assistant", () => {
+  it("logs a recipe meal from its per-serving numbers, as chat, and the day adds it up", async () => {
+    const { d } = deps();
+    const log = await logEaten(d, { date: D, slot: "dinner", recipeId: "dal", servings: 1.5 });
+    expect(log).toMatchObject({ source: "chat", name: "Dal tadka", kcal: 750, protein: 30, servings: 1.5 });
+    const s = await daySummary(d, D);
+    expect(s).toMatchObject({ kcalEaten: 750, kcalLeft: 1350, status: "below", macros: { protein: 30 } });
+  });
+
+  it("logs a free meal by name and kcal, and asks for kcal when missing", async () => {
+    const { d } = deps();
+    await expect(logEaten(d, { date: D, slot: "lunch", name: "Pizza slice" })).rejects.toThrow(/kcal/);
+    await expect(logEaten(d, { date: D, slot: "lunch", recipeId: "nope" })).rejects.toThrow(/find_recipes/);
+    const log = await logEaten(d, { date: D, slot: "lunch", name: " Pizza slice ", kcal: 284.6 });
+    expect(log).toMatchObject({ name: "Pizza slice", kcal: 285, source: "chat" });
+  });
+
+  it("each person logs their own: undo removes only that log", async () => {
+    const { d, logs } = deps();
+    const a = await logEaten(d, { date: D, slot: "dinner", recipeId: "dal" });
+    await logEaten(d, { date: D, slot: "snack", name: "Apple", kcal: 95 });
+    await removeLog(d, a.id);
+    expect(logs().map((l) => l.name)).toEqual(["Apple"]);
+  });
+
+  it("a day with nothing logged says so instead of a zero status", async () => {
+    const { d } = deps({ profile: { range: { min: 1500, max: 1800 } } });
+    expect(await daySummary(d, D)).toMatchObject({ kcalEaten: 0, kcalLeft: 1800, status: "nothing logged", meals: [] });
+  });
+
+  it("finds recipes by words and meal, with what the pantry lacks; details list ingredients and steps", async () => {
+    const { d } = deps();
+    expect((await findRecipes(d, "lentils")).map((r) => r.id)).toEqual(["dal"]);
+    expect((await findRecipes(d, undefined, "Breakfast")).map((r) => r.id)).toEqual(["oats"]);
+    expect((await findRecipes(d, "dal"))[0].missingFromPantry).toBe(1); // rice is at 0
+    const r = await recipeDetails(d, "dal");
+    expect(r.ingredients).toEqual([
+      { name: "Onion", qty: 1, unit: "pcs", inPantry: true },
+      { name: "Rice", qty: 1, unit: "cups", inPantry: false },
+    ]);
+    expect(r.steps).toEqual(["Cook it"]);
+  });
+
+  it("suggests with the app's own ranking: a breakfast in the morning", async () => {
+    const { d } = deps();
+    const s = await suggestNow(d, { date: D, hour: 8, wish: "something quick" });
+    expect(s[0]).toMatchObject({ id: "oats" });
+  });
+
+  it("pantry adds merge by name; shopping adds, lists and buys by name", async () => {
+    const { d } = deps();
+    expect(await addToPantry(d, [{ name: "onions", qty: 2 }])).toEqual([{ name: "Onion", qty: 5, unit: "pcs" }]);
+    expect(await addToShopping(d, [{ name: "Rice", qty: 1, unit: "kg" }, { name: "Milk" }])).toBe(2);
+    expect(await shoppingList(d)).toEqual([{ name: "Rice", qty: 1, unit: "kg" }, { name: "Milk", qty: 1, unit: "pcs" }]);
+    expect(await boughtItems(d, ["milk", "Bread"])).toEqual({ bought: ["Milk"], notOnList: ["Bread"] });
+    expect((await shoppingList(d)).map((x) => x.name)).toEqual(["Rice"]);
+  });
+
+  it("chores: today's list, tick and untick, and a new weekly chore repeats on today's weekday", async () => {
+    const { d } = deps({ chores: [{ id: "c1", title: "Dishes", repeat: "daily", lastDone: null }] });
+    expect(await choresToday(d, D)).toEqual([{ id: "c1", title: "Dishes", repeat: "daily", done: false }]);
+    await setChoreDone(d, "c1", D, true);
+    expect((await choresToday(d, D))[0].done).toBe(true);
+    await setChoreDone(d, "c1", D, false);
+    expect((await choresToday(d, D))[0].done).toBe(false);
+    await expect(setChoreDone(d, "x", D, true)).rejects.toThrow(/chores_today/);
+    expect(await newChore(d, "Bins", "weekly", D)).toMatchObject({ title: "Bins", day: 1 }); // 2026-11-23 is a Monday
+    await expect(newChore(d, "  ", "daily", D)).rejects.toThrow();
+  });
+});
+
+describe("week plan and eat next (the chat's view of the app's plan)", () => {
+  it("plans and stores 7 days once, then reads the same week", async () => {
+    const { d } = deps();
+    const first = await weekPlan(d, "2026-11-23");
+    expect(first).toHaveLength(7);
+    expect(first[0].meals.length).toBeGreaterThan(0);
+    expect(await weekPlan(d, "2026-11-23")).toEqual(first);
+  });
+
+  it("eat next goes by the clock and lists what to buy", async () => {
+    const { d } = deps();
+    const morning = await eatNextNow(d, { date: "2026-11-23", hour: 8 });
+    expect(morning.next).toMatchObject({ meal: "Breakfast", name: "Oats", tomorrow: false });
+    const night = await eatNextNow(d, { date: "2026-11-23", hour: 19 });
+    expect(night.next).toMatchObject({ meal: "Dinner", name: "Dal tadka" });
+    expect(night.toBuy).toEqual(["Rice"]); // rice is at 0 in the pantry
+  });
+});
+
+describe("prep (shared with the app's Prep story)", () => {
+  it("ticks only real prep ids and reads them back for the day", async () => {
+    const { d } = deps();
+    await expect(setPrepDone(d, "soak", true)).rejects.toThrow("prep_today");
+    await setPrepDone(d, "2026-11-23:today:rajma:soak", true);
+    expect(await d.prep.doneOn("2026-11-23")).toEqual(["2026-11-23:today:rajma:soak"]);
+    expect(Array.isArray(await prepToday(d, { date: "2026-11-23", hour: 9 }))).toBe(true);
+  });
+});

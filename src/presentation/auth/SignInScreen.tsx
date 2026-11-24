@@ -3,10 +3,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/view-models/auth/useAuth";
 import { LoopAnimation } from "./LoopAnimation";
+import { takeReturnTo } from "./returnTo";
 
 export function SignInScreen() {
   const a = useAuth();
   const router = useRouter();
+  const go = () => router.replace(takeReturnTo() ?? "/");
   const [emailOpen, setEmailOpen] = useState(false);
   const [mode, setMode] = useState<"up" | "in">("up");
   const [email, setEmail] = useState("");
@@ -17,11 +19,11 @@ export function SignInScreen() {
     e.preventDefault();
     setSent(false);
     if (mode === "in") {
-      if (await a.signInWithEmail(email, password)) router.replace("/");
+      if (await a.signInWithEmail(email, password)) go();
       return;
     }
     const r = await a.signUpWithEmail(email, password);
-    if (r === "done") router.replace("/");
+    if (r === "done") go();
     if (r === "confirm") setSent(true);
   };
 
@@ -49,7 +51,7 @@ export function SignInScreen() {
         <section className="flex flex-col gap-3 lg:col-start-2 lg:w-full lg:max-w-[400px] lg:self-start">
           <button
             type="button"
-            onClick={async () => (await a.continueAsGuest()) && router.replace("/")}
+            onClick={async () => (await a.continueAsGuest()) && go()}
             disabled={a.busy}
             className="touch min-h-12 rounded-full border-0 bg-ink px-5 text-[15px] font-medium text-bg disabled:opacity-60"
           >

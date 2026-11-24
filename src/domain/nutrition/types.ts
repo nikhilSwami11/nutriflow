@@ -18,12 +18,13 @@ export interface Profile {
   dislikes?: string[];
 }
 
-/** Only real logged intake: a cook session or a photo estimate. Never a guessed "usual day". */
+/** Only real logged intake: a cook session, a photo estimate, or what the person told an assistant they ate. Never a guessed "usual day". */
 export interface MealLog {
   id: string;
   date: DateKey;
   slot: MealSlot;
-  source: "cook" | "photo";
+  // chat: told to an assistant (ChatGPT, Claude) through the MCP connector.
+  source: "cook" | "photo" | "chat";
   name: string;
   kcal: number;
   /** Set when the meal came from a recipe, so the day's macros and the serving-size learner have what they need. */

@@ -7,11 +7,12 @@ import { StoryViewer } from "./StoryViewer";
 const ICON = {
   chore: <><path d="M5 12.5l4.5 4.5L19 7.5" /></>,
   pantry: <><rect x="6" y="8" width="12" height="13" rx="3" /><path d="M8 4h8v4H8z" /></>,
+  prep: <><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5M9 2h6" /></>,
   plan: <><rect x="4" y="5" width="16" height="15" rx="3" /><path d="M8 3v4M16 3v4M4 10h16" /></>,
 };
 
 type Item = HomeModel["stories"]["items"][number];
-const isDone = (s: Item) => (s.kind === "meal" && s.meal.state === "eaten") || (s.kind === "chore" && s.chore.done);
+const isDone = (s: Item) => (s.kind === "prep" && s.tasks.every((t) => t.done)) || (s.kind === "chore" && s.chore.done);
 const stateWord = (s: Item) => (isDone(s) ? "done" : s.seen ? "seen" : "new");
 
 /** The row of circles above the feed. Which ones exist comes from the server-driven feed. */
@@ -32,7 +33,7 @@ export function Stories({ s }: { s: HomeModel["stories"] }) {
                 aria-label={`${st.label} story, ${stateWord(st)}`}
                 onClick={(e) => { opener.current = e.currentTarget; setAt(i); }}
                 className="relative flex h-[68px] w-[68px] items-center justify-center rounded-full p-[3px]"
-                style={{ background: st.seen || eaten ? "var(--line2)" : "conic-gradient(from 200deg, #8FD3C0, #B9A7EE, #F2A3A9, #8FD3C0)" }}
+                style={{ background: st.seen || eaten ? "var(--line2)" : "conic-gradient(from 200deg, var(--mint), var(--lavender), var(--rose), var(--mint))" }}
               >
                 <span className="flex h-full w-full items-center justify-center rounded-full border-[3px] border-bg" style={{ background: st.tint }}>
                   {st.kind === "meal" ? <RecipeArt image={st.meal.image} size={st.meal.image ? 46 : 50} /> : (

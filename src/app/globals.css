@@ -20,6 +20,12 @@
   --lavender: #b9a7ee;
   --butter: #f4e3a1;
   --peach: #f7c9bb;
+
+  /* Softer tints of the palette: post icons and story rings. */
+  --mint-soft: #bfe5d2;
+  --sky-soft: #bcd8f0;
+  --lavender-soft: #cfc8f0;
+  --butter-soft: #fbe3a6;
 }
 
 @theme inline {
@@ -66,8 +72,15 @@ input:focus-visible {
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    /* No movement, but state changes still read: colours and fades keep a short transition. */
+    transition-property: color, background-color, border-color, opacity !important;
+    transition-duration: 120ms !important;
     scroll-behavior: auto !important;
+  }
+  /* Press feedback without scaling: the button dims a little instead. */
+  button:not(:disabled):not([data-nopress]):active {
+    transform: none;
+    opacity: 0.7;
   }
 }
 
@@ -274,3 +287,49 @@ button:not(:disabled):not([data-nopress]):active {
     animation: none;
   }
 }
+
+/* Polish: loading shapes pulse their fill (they hold no text). */
+@keyframes skeleton {
+  50% {
+    opacity: 0.55;
+  }
+}
+.skeleton {
+  animation: skeleton 1.4s ease-in-out infinite;
+}
+
+/* Polish: headlines never strand one word on the last line. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+/* Polish: smooth continuous corners on cards and sheets where the browser supports it; plain radius elsewhere. */
+@supports (corner-shape: squircle) {
+  .rounded-\[20px\],
+  .rounded-t-\[28px\] {
+    corner-shape: squircle;
+  }
+}
+
+/* Page changes crossfade (React ViewTransition); none under reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Chat launcher and panel (Home): anchored bottom right, above the phone nav; right edge follows the 430px phone column. */
+.chat-anchor { position: fixed; z-index: 30; right: max(16px, calc(50vw - 215px + 16px)); bottom: 92px; }
+@media (min-width: 1024px) { .chat-anchor { right: 32px; bottom: 32px; } }
+@keyframes chat-spin { to { transform: rotate(360deg); } }
+.chat-orb { position: relative; display: inline-block; border-radius: 9999px; background: var(--ink); }
+.chat-orb::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: conic-gradient(from 0deg, var(--mint), var(--sky), var(--lavender), var(--rose), var(--butter), var(--mint)); animation: chat-spin 6s linear infinite; }
+.chat-orb::after { content: ""; position: absolute; inset: 3px; border-radius: inherit; background: var(--bg); }
+.chat-orb > * { position: relative; z-index: 1; }
+.chat-orb[data-live="true"]::before { animation-duration: 1.4s; }
+@keyframes chat-dot { 0%, 80%, 100% { translate: 0 0; } 40% { translate: 0 -4px; } }
+.chat-dot { display: inline-block; width: 6px; height: 6px; border-radius: 9999px; background: var(--ink2); animation: chat-dot 1s ease-in-out infinite; }

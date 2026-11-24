@@ -1,7 +1,7 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { addNamesToShoppingList, type Amount } from "@/domain/pantry";
+import { addNamesToShoppingList, DEFAULT_AMOUNT, type Amount } from "@/domain/pantry";
 import { toDateKey } from "@/domain/nutrition";
 import {
   clampAmount,
@@ -34,7 +34,6 @@ const LIST = ["shopping-list"];
 const PREFS = ["shopping-prefs"];
 const AMOUNTS = ["shopping-amounts"];
 const BOUGHT = ["shopping-bought"];
-const DEFAULT: Amount = { qty: 1, unit: "pcs" };
 
 export interface ShoppingRow {
   id: string;
@@ -58,7 +57,7 @@ export function useShopping() {
   const { pantry, list, newId } = usePantryDeps();
   const { logs } = useNutritionDeps();
   const { prefs: prefsRepo, bought: boughtRepo, advisor } = useShoppingDeps();
-  const plan = usePlanData("balanced");
+  const plan = usePlanData();
   const qc = useQueryClient();
 
   const items = useQuery({ queryKey: PANTRY, queryFn: () => pantry.list() });
@@ -74,6 +73,8 @@ export function useShopping() {
   const todayLogs = useQuery({ queryKey: ["meal-logs", today], queryFn: () => logs.listBetween(today, today) });
   const needed = useMemo(() => {
     if (!plan || !items.data || !todayLogs.data) return null;
+    // An empty pantry is unknown, not bare: do not fill the list with every ingredient of the week.
+    if (!items.data.length) return [];
     const eatenToday = [...new Set([...plan.dashboard.eatenToday, ...todayLogs.data.map((l) => MEAL_OF_SLOT[l.slot])])];
     return neededForPlan({ plan: plan.plan, recipes: plan.recipes, pantry: items.data, today, eatenToday });
   }, [plan, items.data, todayLogs.data, today]);
@@ -92,7 +93,8 @@ export function useShopping() {
     mutationFn: async (id: string) => {
       const prevQty = items.data?.find((i) => i.id === id)?.qty ?? 0;
       const amount = await markBought({ pantry, list }, id);
-      await boughtRepo.save(withBought(await boughtRepo.list(), { id, prevQty, amount, at: Date.now() }));
+      // The purchase is done; only the Undo history can be lost if this save fails.
+      await boughtRepo.save(withBought(await boughtRepo.list(), { id, prevQty, amount, at: Date.now() })).catch(() => undefined);
     },
     onSuccess: refresh,
   });
@@ -138,7 +140,7 @@ export function useShopping() {
     canLess: amount.qty > stepOf(amount.unit),
   });
   const byId = new Map((items.data ?? []).map((i) => [i.id, i]));
-  const rows = (items.data ?? []).filter((i) => onList.has(i.id)).map((i) => row(i, amounts.data?.[i.id] ?? DEFAULT));
+  const rows = (items.data ?? []).filter((i) => onList.has(i.id)).map((i) => row(i, amounts.data?.[i.id] ?? DEFAULT_AMOUNT));
   const boughtRows = recentlyBought(history.data ?? [], now)
     .filter((r) => byId.has(r.id) && !onList.has(r.id))
     .map((r) => row(byId.get(r.id)!, r.amount));
@@ -147,6 +149,8 @@ export function useShopping() {
     isLoading: items.isLoading || ids.isLoading || prefs.isLoading || amounts.isLoading || history.isLoading || !synced,
     rows,
     boughtRows,
+    /** Nothing in the pantry yet, so the list cannot know what is missing. */
+    pantryEmpty: items.data?.length === 0,
     countText: rows.length ? `${rows.length} to buy` : boughtRows.length ? "All bought" : "Nothing to buy",
     prefs: p,
     storeName: store?.name ?? null,
@@ -154,7 +158,7 @@ export function useShopping() {
     undo: (id: string) => unbought.mutate(id),
     /** Change how much to buy. The unit is not the user's to pick: it comes from the recipe. */
     setQty: (id: string, qty: number) => {
-      const unit = amounts.data?.[id]?.unit ?? DEFAULT.unit;
+      const unit = amounts.data?.[id]?.unit ?? DEFAULT_AMOUNT.unit;
       setAmount.mutate({ id, amount: clampAmount({ qty, unit }) });
     },
     savePrefs: (zip: string, storeId: StoreId) => save.mutate({ zip: zip.trim(), store: storeId }),

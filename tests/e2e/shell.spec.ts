@@ -4,12 +4,10 @@ test("sidebar on desktop, bottom nav on mobile", async ({ page, isMobile }) => {
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "Main" });
   await expect(nav).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Today" })).toHaveCount(isMobile ? 0 : 1);
-  await expect(nav.getByRole("link", { name: "Home" })).toHaveCount(isMobile ? 1 : 0);
+  for (const name of ["Today", "Food", "Kitchen", "Chores"]) await expect(nav.getByRole("link", { name })).toHaveCount(1);
+  await expect(nav.getByRole("link", { name: "Profile" })).toHaveCount(isMobile ? 0 : 1); // the phone has it in the Home header
   if (!isMobile) {
     await expect(page.getByRole("heading", { name: "What are we cooking tonight?" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Plan" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Recipes" })).toBeVisible();
   }
 });
 
@@ -37,6 +35,6 @@ for (const width of [320, 360, 412]) {
     // all five nav items fit side by side
     const navBox = (await page.getByRole("navigation", { name: "Main" }).boundingBox())!;
     expect(navBox.width).toBeLessThanOrEqual(width);
-    for (const name of ["Home", "Recipes", "Pantry", "Chores"]) await expect(page.getByRole("navigation", { name: "Main" }).getByLabel(name)).toBeVisible();
+    for (const name of ["Today", "Food", "Kitchen", "Chores"]) await expect(page.getByRole("navigation", { name: "Main" }).getByLabel(name)).toBeVisible();
   });
 }

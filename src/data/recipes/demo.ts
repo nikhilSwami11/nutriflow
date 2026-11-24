@@ -1,7 +1,7 @@
-import type { Fix, Ingredient, MealName, Recipe, RecipeRepository, Step, Swap } from "@/domain/recipes";
+import type { Fix, Ingredient, IngredientForm, MealName, Recipe, RecipeRepository, Step, Swap } from "@/domain/recipes";
 
 /** FAKE DATA. Demo recipes so the planner, recipe pages and dashboard have something real-looking to work with. */
-const ing = (name: string, qty: number, unit = ""): Ingredient => ({ name, qty, unit });
+const ing = (name: string, qty: number, unit = "", form?: IngredientForm): Ingredient => ({ name, qty, unit, ...(form ? { form } : {}) });
 // Simmering steps are timed; the cook screen shows a countdown for them.
 const st = (text: string, verb: string, minutes = verb === "Simmer" ? 10 : undefined): Step => ({ text, verb, ...(minutes ? { minutes } : {}) });
 
@@ -82,7 +82,7 @@ const RECIPES: Recipe[] = [
     ingredients: [ing("Greek yogurt", 2, "cups"), ing("Bananas", 2), ing("Honey", 1, "tsp")],
     steps: [st("Slice the bananas", "Slice"), st("Spoon the yogurt into bowls", "Mix"), st("Top with banana and honey", "Top")] }),
   r({ id: "chana", name: "Roasted chana", meal: "Snack", minutes: 10, kcal: 180, protein: 9, carbs: 27, fat: 4, tint: "#F4E3A1", blurb: "Crunchy chickpeas tossed with cumin and lemon.",
-    ingredients: [ing("Chickpeas", 2, "cups"), ing("Cumin seeds", 1, "tsp"), ing("Lemons", 1)],
+    ingredients: [ing("Chickpeas", 2, "cups", "soaked"), ing("Cumin seeds", 1, "tsp"), ing("Lemons", 1)],
     steps: [st("Dry the chickpeas", "Mix"), st("Roast with cumin", "Sauté"), st("Squeeze over the lemon and serve", "Serve")] }),
   r({ id: "dal-tadka", name: "Dal tadka", meal: "Dinner", minutes: 35, kcal: 480, protein: 22, carbs: 62, fat: 15, tint: "#F4E3A1", blurb: "Creamy lentils finished with a sizzling cumin and garlic tadka.",
     ingredients: [ing("Toor dal", 1, "cup"), ing("Onions", 2), ing("Tomatoes", 2), ing("Garlic", 4, "cloves"), ing("Ghee", 2, "tbsp"), ing("Cumin seeds", 1, "tsp"), ing("Fresh coriander", 1, "bunch")],

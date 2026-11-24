@@ -61,7 +61,7 @@ test.describe("the camera and voice sheet (mobile)", () => {
     await sheet(page).getByRole("button", { name: "Add to pantry" }).click();
     await expect(sheet(page).getByRole("status")).toHaveText("Pantry updated.");
     await page.keyboard.press("Escape");
-    await page.getByRole("link", { name: "Pantry" }).click();
+    await page.getByRole("link", { name: "Kitchen" }).click();
     await expect(page.getByText("4 pcs").first()).toBeVisible(); // onions 1 + 3
   });
 
@@ -80,6 +80,10 @@ test.describe("the camera and voice sheet (mobile)", () => {
 
 test.describe("the meal photo flow", () => {
   test.beforeEach(async ({ page }) => {
+    // Home's Up next goes by the clock: pin noon so lunch is the meal ahead.
+    const noon = new Date();
+    noon.setHours(12, 0, 0, 0);
+    await page.clock.setSystemTime(noon);
     await page.goto("/photo");
     await expect(page.getByRole("heading", { name: "What I can see" })).toBeVisible();
   });
@@ -128,7 +132,7 @@ test.describe("the meal photo flow", () => {
     await expect(page.getByText("Logged for lunch.")).toBeVisible(); // the next planned meal is lunch
     await expect(page.getByText("I will remember these portions")).toBeVisible();
     await page.getByRole("link", { name: "Back to home" }).click();
-    await expect(page.getByRole("button", { name: "Lunch story, eaten" })).toBeVisible();
+    await expect(page.getByRole("article", { name: "Up next" })).toContainText("Up next · Snack"); // lunch is eaten
   });
 
   test("Undo takes the meal back off Home, and it can be logged again", async ({ page }) => {
@@ -138,9 +142,7 @@ test.describe("the meal photo flow", () => {
     await expect(page.getByLabel(/kilocalories/)).toBeVisible(); // back on the estimate
     await page.getByRole("button", { name: "Back" }).click();
     await page.getByRole("link", { name: "Close" }).click();
-    await expect(page.getByRole("button", { name: "Lunch story, new" })).toBeVisible(); // not eaten any more
-    await page.getByRole("button", { name: "Lunch story, new" }).click();
-    await page.keyboard.press("Escape");
+    await expect(page.getByRole("article", { name: "Up next" })).toContainText("Up next · Lunch"); // not eaten any more
   });
 });
 

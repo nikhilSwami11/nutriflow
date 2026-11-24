@@ -7,8 +7,8 @@ import { PantryNudge } from "../Nudges";
 import { TodayLine } from "../TodayLine";
 import { Tracked } from "./Tracked";
 
-/** Wide kinds take the larger share of the row; the rest sit beside them. The feed's order decides who comes first. */
-const SPAN: Record<string, string> = { "day-chart": "col-span-7 row-span-2", default: "col-span-5" };
+/** The meal and the chart stack in the wide column (chart right under the meal); the rest sit beside them. The feed's order decides who comes first. */
+const SPAN: Record<string, string> = { "next-meal": "col-span-7", "day-chart": "col-span-7", default: "col-span-5" };
 
 /**
  * Desktop Home: the same feed as mobile, drawn as dashboard cards instead of posts.

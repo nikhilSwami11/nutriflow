@@ -6,7 +6,7 @@ import { CookMotion, ServedDish } from "./CookMotion";
 import { GuideCards } from "./GuideCards";
 import { Prep } from "./Prep";
 
-const VERB: Record<string, string> = { Chop: "#F7C9BB", Simmer: "#9EC8F3", Stir: "#B9A7EE", "Sauté": "#F4E3A1", Serve: "#8FD3C0", Mix: "#CFC8F0" };
+import { verbColor } from "../shared/verbColor";
 const pill = "touch rounded-full px-6 text-[15px] font-medium";
 
 function Shell({ title, children, close }: { title: string; children: React.ReactNode; close?: boolean }) {
@@ -36,27 +36,26 @@ function Steps({ c }: { c: CookModel }) {
         ))}
       </div>
 
-      <div key={s.number} className="story-in flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4">
-        <div className="relative">
-          <CookMotion verb={s.verb} tint={c.recipe.tint} image={c.recipe.image} />
+      <div key={s.number} className="story-in flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pb-4">
+        <div className="flex flex-1 flex-col justify-center gap-5 py-2">
+          <div className="flex items-center gap-3">
+            <div className="w-[84px] shrink-0"><CookMotion verb={s.verb} tint={c.recipe.tint} image={c.recipe.image} small /></div>
+            <div className="flex flex-col items-start gap-1.5">
+              <span className="rounded-full px-3 py-1 text-xs font-medium text-onp" style={{ background: verbColor(s.verb) }}>{s.verb}</span>
+              <span className="text-sm text-muted tabular-nums">Step {s.number} of {s.count}</span>
+            </div>
+          </div>
+          <p aria-live="polite" className="m-0 text-[32px] font-medium leading-[1.15] tracking-[-0.02em]">{s.text}</p>
           {c.timer && (
-            <div aria-label="Timer" role="group" className="absolute right-2 top-2 flex items-center gap-2 rounded-2xl border border-line bg-bg py-1 pl-3 pr-1">
-              <div>
-                <div className="text-xs leading-none text-muted">Timer</div>
-                <div role="timer" aria-live="off" className="mt-1 text-xl font-medium leading-none tabular-nums">{c.timer.done ? "0:00" : c.timer.label}</div>
-              </div>
+            <div aria-label="Timer" role="group" className="flex items-center justify-between gap-3 rounded-[20px] bg-panel py-3 pl-5 pr-3">
+              <div role="timer" aria-live="off" className="text-[56px] font-medium leading-none tracking-[-0.02em] tabular-nums">{c.timer.done ? "0:00" : c.timer.label}</div>
               {c.timer.done ? (
-                <span className="rounded-full bg-mint px-3 py-2 text-sm font-medium text-onp">Time&apos;s up</span>
+                <span className="rounded-full bg-mint px-4 py-3 text-sm font-medium text-onp">Time&apos;s up</span>
               ) : (
-                <button type="button" onClick={c.timer.toggle} aria-pressed={c.timer.running} className="touch rounded-full border border-line2 px-4 text-sm font-medium">{c.timer.running ? "Pause" : c.timer.started ? "Resume" : "Start"}</button>
+                <button type="button" onClick={c.timer.toggle} aria-pressed={c.timer.running} className="touch rounded-full bg-ink px-5 text-[15px] font-medium text-bg">{c.timer.running ? "Pause" : c.timer.started ? "Resume" : "Start"}</button>
               )}
             </div>
           )}
-        </div>
-        <div className="flex flex-col items-center gap-2 text-center">
-          <span className="rounded-full px-3 py-1 text-xs font-medium text-onp" style={{ background: VERB[s.verb] ?? "#CFC8F0" }}>{s.verb}</span>
-          <p aria-live="polite" className="m-0 text-[26px] font-medium leading-tight tracking-[-0.02em]">{s.text}</p>
-          <p className="m-0 text-xs text-muted tabular-nums">Step {s.number} of {s.count}</p>
         </div>
         <GuideCards look={s.look} tip={s.tip} />
         <button type="button" onClick={() => c.ask.setOpen(true)} className="hoverable touch flex items-center justify-center gap-2 rounded-full border border-line2 px-5 text-[15px] font-medium">

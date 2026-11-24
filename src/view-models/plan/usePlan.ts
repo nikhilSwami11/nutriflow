@@ -6,9 +6,8 @@ import { fmtDate, fmtDowLong, num } from "../dashboard/chartModel";
 import { usePlanData } from "./usePlanData";
 
 export function usePlan() {
-  const [focus, setFocus] = useState<Focus>("balanced");
   const [selected, setSelected] = useState(0); // 0 is today
-  const data = usePlanData(focus);
+  const data = usePlanData();
 
   if (!data) return { isLoading: true as const };
   const { recipes, dashboard, plan, balance } = data;
@@ -17,11 +16,13 @@ export function usePlan() {
 
   return {
     isLoading: false as const,
-    focus,
-    setFocus,
+    focus: data.focus,
+    setFocus: (f: Focus) => void data.setFocus(f),
     selected: Math.min(selected, plan.length - 1),
     select: setSelected,
     goals: `${num(goals.calories)} kcal and ${goals.protein} g protein a day`,
+    /** False for a new account: no meals logged yet to learn from. */
+    fromHistory: Object.keys(dashboard.history).length > 0,
     summary: [
       { label: "Average calories", value: `${num(balance.avgKcal)} kcal`, goal: `goal ${num(goals.calories)}` },
       { label: "Average protein", value: `${balance.avgProtein} g`, goal: `goal ${goals.protein} g` },

@@ -1,3 +1,4 @@
+import { foodKey as norm } from "./foodKey";
 import type { PantryRepository, UtteranceParser } from "./ports";
 import { clampQty } from "./quantity";
 import type { ParsedItem, PantryItem } from "./types";
@@ -8,8 +9,6 @@ export interface AddDeps {
   newId: () => string;
 }
 
-// Naive plural fold ("onions" == "onion"). shortcut: English only, upgrade with an alias table.
-const norm = (s: string) => s.trim().toLowerCase().replace(/(es|s)$/, "");
 
 /** Step 1 of voice add: what did I hear? Nothing is saved. */
 export const hearUtterance = (parser: UtteranceParser, text: string): Promise<ParsedItem[]> => parser.parse(text);

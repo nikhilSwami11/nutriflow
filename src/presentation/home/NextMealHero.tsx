@@ -21,7 +21,7 @@ export function NextMealHero({ next, then, onOpen, onEaten }: { next: HomeModel[
           <span className="mt-1.5 block text-sm text-ink2 tabular-nums">{next.readyText} · {next.minutes} min</span>
         </span>
         <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[20px] transition-transform duration-300 group-hover:scale-[1.04] lg:h-28 lg:w-28" style={{ background: next.tint }} aria-hidden="true">
-          <RecipeArt image={next.image} size={84} />
+          <RecipeArt image={next.image} size={84} eager />
         </span>
       </Link>
       <div className="flex items-center justify-between gap-2">

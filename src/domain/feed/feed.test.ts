@@ -8,7 +8,7 @@ const ev = (kind: FeedKind, action: FeedEvent["action"], ts = NOW, dwellMs?: num
 const base: FeedContext = {
   date: "2026-11-21", now: NOW, nextMeal: { meal: "Lunch", recipeId: "dal-rice" },
   chores: [{ id: "dishes" }],
-  meals: [{ meal: "Breakfast", recipeId: "oats" }, { meal: "Lunch", recipeId: "dal-rice" }, { meal: "Dinner", recipeId: "dal-tadka" }], lowItems: 3, planNotes: ["Tuesday is 16 g short on protein."],
+  eatNext: { meal: "Lunch", recipeId: "dal-rice", tomorrow: false }, prep: 1, lowItems: 3, planNotes: ["Tuesday is 16 g short on protein."],
   stats: summarizeEvents([], NOW),
 };
 const order = (c: Partial<FeedContext>) => buildFeed({ ...base, ...c }).items.map((i) => i.kind);
@@ -77,12 +77,16 @@ describe("usableItems", () => {
 });
 
 describe("stories", () => {
-  const kinds = (c: Partial<FeedContext>) => (buildFeed({ ...base, ...c }).stories ?? []).map((s) => s.id.split(":")[1] + (s.kind === "meal" ? `:${s.id.split(":")[2]}` : ""));
-  it("one per planned meal in day order, then chores, pantry and plan", () => {
-    expect(kinds({})).toEqual(["meal:Breakfast", "meal:Lunch", "meal:Dinner", "chore", "pantry", "plan"]);
+  const kinds = (c: Partial<FeedContext>) => (buildFeed({ ...base, ...c }).stories ?? []).map((s) => s.kind);
+  it("one eat-next story (not one per meal), then prep, chores, pantry and plan", () => {
+    expect(kinds({})).toEqual(["meal", "prep", "chore", "pantry", "plan"]);
   });
-  it("drops pantry and plan stories when they do not apply", () => {
-    expect(kinds({ lowItems: 0, planNotes: [] })).toEqual(["meal:Breakfast", "meal:Lunch", "meal:Dinner", "chore"]);
+  it("drops the stories that do not apply", () => {
+    expect(kinds({ eatNext: null, prep: 0, lowItems: 0, planNotes: [] })).toEqual(["chore"]);
+  });
+  it("the meal story is new again when the next meal changes", () => {
+    const a = buildFeed(base).stories![0].id;
+    expect(buildFeed({ ...base, eatNext: { meal: "Dinner", recipeId: "dal-tadka", tomorrow: false } }).stories![0].id).not.toBe(a);
   });
   it("ids are per day, so a seen story stays seen all day and resets tomorrow", () => {
     const a = buildFeed(base).stories!.map((s) => s.id);

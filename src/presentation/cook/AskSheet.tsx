@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { CookModel } from "@/view-models/cook/useCook";
+import { useSwipeDismiss } from "../shared/useSwipeDismiss";
 
 /**
  * Ask a question about the current step. Answers come from the written guide for this recipe, so it only says
@@ -10,6 +11,7 @@ export function AskSheet({ ask }: { ask: CookModel["ask"] }) {
   const [text, setText] = useState("");
   const end = useRef<HTMLDivElement>(null);
   const { setOpen } = ask;
+  const { sheet, handle } = useSwipeDismiss(() => setOpen(false));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -28,13 +30,15 @@ export function AskSheet({ ask }: { ask: CookModel["ask"] }) {
   return (
     <div className="fixed inset-0 z-40 flex flex-col justify-end">
       <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="absolute inset-0 bg-black/30" />
-      <div role="dialog" aria-modal="true" aria-label="Ask about this step" className="story-in relative mx-auto flex max-h-[85dvh] w-full max-w-[460px] flex-col rounded-t-[28px] bg-bg pb-[max(20px,env(safe-area-inset-bottom))] pt-2.5">
+      <div ref={sheet} role="dialog" aria-modal="true" aria-label="Ask about this step" className="story-in relative mx-auto flex max-h-[85dvh] w-full max-w-[460px] flex-col rounded-t-[28px] bg-bg pb-[max(20px,env(safe-area-inset-bottom))] pt-2.5">
+        <div {...handle} className="touch-none">
         <span className="mx-auto block h-1 w-10 rounded-sm bg-line2" aria-hidden="true" />
         <div className="flex items-center justify-between px-5 pb-2 pt-2">
           <h2 className="m-0 text-base font-medium">Ask about this step</h2>
           <button type="button" autoFocus onClick={() => setOpen(false)} aria-label="Close sheet" className="flex h-11 w-11 items-center justify-center rounded-full bg-track">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
+        </div>
         </div>
 
         <div role="log" aria-label="Questions and answers" aria-live="polite" className="rail flex min-h-[120px] flex-1 flex-col gap-3 overflow-y-auto px-5 py-2">

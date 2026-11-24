@@ -21,4 +21,10 @@ export class InMemoryAuthRepository implements AuthRepository {
   async continueAsGuest() {
     return this.guest;
   }
+  async consentRequest(): Promise<never> {
+    throw new Error("Connecting an app needs Supabase");
+  }
+  async decideConsent(): Promise<never> {
+    throw new Error("Connecting an app needs Supabase");
+  }
 }

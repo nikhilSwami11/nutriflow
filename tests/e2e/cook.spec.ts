@@ -72,9 +72,9 @@ test.describe("a whole cook", () => {
 
     await page.getByRole("link", { name: "Back to home" }).click();
     await expect(page).toHaveURL("/");
-    // the dinner is now really logged: its story shows eaten and today's number includes it
-    await expect(page.getByRole("button", { name: "Dinner story, eaten" })).toBeVisible();
-    await expect(page.getByRole("group", { name: "Today", exact: true })).toContainText("1,140"); // 420 breakfast + 720
+    // the dinner is now really logged: it leaves Up next and today's number includes it
+    await expect(page.getByRole("article", { name: "Up next" }).getByText(/Dinner/)).toHaveCount(0);
+    await expect(page.getByRole("group", { name: "Today", exact: true })).toContainText("1,170"); // 450 breakfast + 720
   });
 
   test("the next cook starts from your usual serving size", async ({ page }) => {
@@ -94,7 +94,7 @@ test.describe("a whole cook", () => {
     await page.getByRole("button", { name: "Log it" }).click();
     await expect(page.getByRole("heading", { name: /Logged/ })).toBeVisible();
     await page.getByRole("link", { name: "Back to home" }).click();
-    await page.getByRole("link", { name: "Pantry" }).first().click();
+    await page.getByRole("link", { name: "Kitchen" }).first().click();
     await expect(page.getByText("2 cups")).toBeVisible(); // toor dal 3 -> 2
   });
 });

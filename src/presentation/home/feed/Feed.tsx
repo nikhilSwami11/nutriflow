@@ -30,10 +30,10 @@ export function Feed({ h }: { h: HomeModel }) {
         if (!n) return null;
         return (
           <Post
-            label="Up next" color="#BFE5D2" icon={BOWL} title={`Up next · ${n.meal}`} sub={`${n.minutes} min`} onToggle={toggle}
+            label="Up next" color="var(--mint-soft)" icon={BOWL} title={`Up next · ${n.meal}`} sub={`${n.minutes} min`} onToggle={toggle}
             media={
               <Link href={`/recipes/${n.id}`} onClick={open} aria-label={`Open ${n.name}`} className="flex h-[210px] items-center justify-center" style={{ background: n.tint }}>
-                <RecipeArt image={n.image} size={176} />
+                <RecipeArt image={n.image} size={176} eager />
               </Link>
             }
             caption={
@@ -60,10 +60,10 @@ export function Feed({ h }: { h: HomeModel }) {
         );
       }
       case "all-done":
-        return <Post label="Up next" color="#BFE5D2" icon={BOWL} title="Up next" sub="All done" onToggle={toggle} media={<div className="flex h-[120px] items-center justify-center bg-mint text-sm font-medium text-onp">All meals eaten for today</div>} />;
+        return <Post label="Up next" color="var(--mint-soft)" icon={BOWL} title="Up next" sub="All done" onToggle={toggle} media={<div className="flex h-[120px] items-center justify-center bg-mint text-sm font-medium text-onp">All meals eaten for today</div>} />;
       case "day-chart":
         return (
-          <Post label="Your day" color="#BCD8F0" icon={BARS} title="Your day" sub="Today, 7 days, 30 days" onToggle={toggle}
+          <Post label="Your day" color="var(--sky-soft)" icon={BARS} title="Your day" sub="Today, 7 days, 30 days" onToggle={toggle}
             media={<div className="px-2 pb-1"><MacroChart bare c={h.chart} above={<TodayLine t={h.today} />} /></div>}
           />
         );
@@ -71,7 +71,7 @@ export function Feed({ h }: { h: HomeModel }) {
         const p = h.pantry;
         if (!p) return null;
         return (
-          <Post label="Pantry alert" color="#F7C9BB" icon={PANTRY} title="Pantry alert" sub={`${p.count} running low`} onToggle={toggle}
+          <Post label="Pantry alert" color="var(--peach)" icon={PANTRY} title="Pantry alert" sub={`${p.count} running low`} onToggle={toggle}
             media={
               <div className="mx-5 flex flex-col gap-4 rounded-[20px] bg-panel p-[18px]">
                 <div className="text-[15px] font-medium">Running low</div>
@@ -93,7 +93,7 @@ export function Feed({ h }: { h: HomeModel }) {
       }
       case "plan-nudge":
         return (
-          <Post label="Plan" color="#CFC8F0" icon={CALENDAR} title="Plan" sub={item.reason ?? "This week"} onToggle={toggle}
+          <Post label="Plan" color="var(--lavender-soft)" icon={CALENDAR} title="Plan" sub={item.reason ?? "This week"} onToggle={toggle}
             media={
               <ul className="mx-5 m-0 flex list-none flex-col gap-2 rounded-[20px] bg-panel p-[18px] text-sm">
                 {item.notes.map((n) => <li key={n}>{n}</li>)}

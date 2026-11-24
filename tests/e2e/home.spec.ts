@@ -3,6 +3,10 @@ import { expect, test } from "@playwright/test";
 const todayLine = (page: import("@playwright/test").Page) => page.getByRole("group", { name: "Today", exact: true });
 
 test.beforeEach(async ({ page }) => {
+  // Up next goes by the clock: pin noon so breakfast (eaten in the demo) has passed and lunch is next.
+  const noon = new Date();
+  noon.setHours(12, 0, 0, 0);
+  await page.clock.setSystemTime(noon);
   await page.goto("/");
 });
 
@@ -81,8 +85,9 @@ test("tapping the chart on touch jumps to that day", async ({ page, isMobile }) 
   await expect(page.getByRole("status")).toContainText("Today");
 });
 
-test("plan is one tap away", async ({ page, isMobile }) => {
-  await page.getByRole("link", { name: isMobile ? /Open plan/ : "Plan", exact: false }).first().click();
+test("plan is in Food: nav, then the Plan switch", async ({ page }) => {
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Food" }).click();
+  await page.getByRole("navigation", { name: "Food" }).getByRole("link", { name: "Plan" }).click();
   await expect(page.getByRole("heading", { name: "Plan", level: 1 })).toBeVisible();
 });
 
@@ -93,8 +98,8 @@ test("pantry nudge adds running-low items to the list", async ({ page }) => {
   await expect(btn).toContainText("On the list");
 });
 
-test("nav reaches pantry", async ({ page }) => {
-  await page.getByRole("link", { name: "Pantry" }).click();
+test("nav reaches the kitchen (pantry first)", async ({ page }) => {
+  await page.getByRole("link", { name: "Kitchen" }).click();
   await expect(page.getByRole("heading", { name: "Pantry" })).toBeVisible();
 });
 
@@ -161,7 +166,8 @@ test("desktop dashboard records the same events and follows the same feed", asyn
 });
 
 test("Up next says what is missing and puts it on the shopping list in one tap", async ({ page }) => {
-  await page.goto("/");
+  // Lunch is planned from what the pantry has, so it is ready; the snack after it is not.
+  await page.getByRole("article", { name: "Up next" }).getByRole("button", { name: "Mark eaten" }).click();
   const add = page.getByRole("button", { name: /^Add \d+ to shopping$/ });
   await expect(add).toBeVisible();
   const n = (await add.textContent())!.match(/\d+/)![0];
