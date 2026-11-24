@@ -30,6 +30,8 @@ describe("MCP connector", () => {
     const res = (await json(await call(mcp, { jsonrpc: "2.0", id: 6, method: "resources/read", params: { uri: "ui://nutriflow/eat-next" } }))).result;
     expect(res.contents[0]).toMatchObject({ uri: "ui://nutriflow/eat-next", mimeType: "text/html;profile=mcp-app" });
     expect(res.contents[0].text).toContain("ui/notifications/tool-result");
+    const script = res.contents[0].text.match(/<script>([\s\S]*)<\/script>/)[1];
+    expect(() => new Function(script)).not.toThrow(); // the card's own code must at least parse
   });
 
   it("a tool call without a token is a tool error, not a crash", async () => {

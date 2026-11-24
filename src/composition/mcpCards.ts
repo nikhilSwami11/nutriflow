@@ -41,7 +41,7 @@ function draw(result) {
   const then = (d.thenToday || []).map((t) => '<span class="pill">' + esc(t.meal) + " · " + esc(t.name) + "</span>").join("");
   root.innerHTML = '<div class="card"><div class="tile"><span class="k">' + (n.tomorrow ? "Tomorrow · " : "") + esc(n.meal) + '</span><span class="n">' + esc(n.name) + '</span><span class="m">' + n.minutes + " min · " + n.kcalPerServing + ' kcal per serving</span></div>'
     + '<p><span class="pill ' + (d.canCook ? "ok" : "warn") + '">' + status + "</span></p>"
-    + (ORIGIN ? '<div class="row"><button class="btn" id="go">" + (d.canCook ? "Start cooking" : "Cook anyway") + "</button></div>' : "")
+    + (ORIGIN ? '<div class="row"><button class="btn" id="go">' + (d.canCook ? "Start cooking" : "Cook anyway") + '</button></div>' : "")
     + (then ? '<div class="row"><span class="m" style="color:var(--ink2)">Then</span>' + then + "</div>" : "") + "</div>";
   const go = document.getElementById("go");
   if (go) go.onclick = () => ask("ui/open-link", { url: ORIGIN + "/cook/" + n.recipeId });
