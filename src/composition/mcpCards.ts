@@ -68,11 +68,20 @@ function wireMissing(names, act) {
 `;
 
 const PARSE = `
-function draw(result) {
+// Hosts wrap the tool result differently: look for it at the top, under result / toolResult, or as the text itself.
+function unwrap(x) {
+  for (let i = 0; x && i < 3; i++) {
+    if (x.structuredContent || Array.isArray(x.content)) return x;
+    x = x.result || x.toolResult || x.params || null;
+  }
+  return x || {};
+}
+function draw(raw) {
+  const result = unwrap(raw);
   let d = result.structuredContent || null;
   if (!d) try { const t = (result.content || []).find((c) => c.type === "text").text; d = JSON.parse(t.slice(t.search(/[\\[{]/))); } catch (e) {}
   if (d && d.items && Array.isArray(d.items) && !d.day && !("toAdd" in d)) d = d.items;
-  if (!d) { root.innerHTML = '<div class="card"><p>Nothing to show yet.</p></div>'; return fit(); }
+  if (!d) { root.innerHTML = '<div class="card"><p>Nothing to show yet.</p><p class="k" style="color:var(--ink2)">Got: ' + esc(JSON.stringify(raw).slice(0, 160)) + "</p></div>"; return fit(); }
   render(d);
   fit();
 }
