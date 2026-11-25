@@ -9,6 +9,7 @@ export const WEEK_PLAN_URI = "ui://nutriflow/week-plan";
 export const SHOPPING_URI = "ui://nutriflow/shopping";
 export const TODAY_URI = "ui://nutriflow/today";
 export const WEEK_SHOP_URI = "ui://nutriflow/week-shopping";
+export const MEALS_URI = "ui://nutriflow/meal-stories";
 
 /** Lets a card load the app's own pictures (MCP Apps CSP); the host blocks every other origin. */
 export const cardMeta = () => (appOrigin() ? { ui: { csp: { resourceDomains: [appOrigin()] } } } : undefined);
@@ -30,6 +31,10 @@ const STYLE = `
 .day{display:flex;flex-direction:column;gap:6px}.bar{height:6px;border-radius:999px;background:var(--panel);overflow:hidden}.bar i{display:block;height:100%;background:var(--mint)}
 .pic{width:120px;height:120px;object-fit:contain;align-self:center;margin:-4px 0 4px}
 .pick{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:0;border-top:1px solid var(--line);font:inherit;color:inherit;text-align:left;cursor:pointer;min-height:44px}.pick.off span:first-child{text-decoration:line-through;color:var(--ink2)}
+.stories{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -16px;padding:0 16px}.stories::-webkit-scrollbar{display:none}
+.story{flex:0 0 86%;scroll-snap-align:center;background:var(--lav);color:var(--onp);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.pic.big{width:160px;height:160px}.pic.blank{border-radius:50%;background:var(--bg);opacity:.5;align-self:center}
+.dots{display:flex;gap:6px;justify-content:center}.dots i{width:6px;height:6px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--ink)}
 .chip{border:0;background:var(--bg);color:var(--onp);border-radius:999px;padding:4px 10px;margin:2px 0;font:inherit;font-size:14px;cursor:pointer;min-height:32px}
 .ok{background:var(--mint);color:var(--onp)}.warn{background:var(--peach);color:var(--onp)}
 p{margin:0}
@@ -47,7 +52,7 @@ const day = () => { const t = new Date(); return t.getFullYear() + "-" + String(
 const call = (name, args) => ask("tools/call", { name, arguments: args });
 // What is missing for a meal, with the action right there: add all to shopping, say you have them all, or tap one you have.
 // The app's own dish picture on the meal's tint; nothing when the dish has none (never a photo from elsewhere).
-const pic = (image) => (image && ORIGIN ? '<img class="pic" alt="" src="' + esc(ORIGIN + image) + '">' : "");
+const pic = (image) => (image && ORIGIN ? '<img class="pic" alt="" onerror="this.hidden=true" src="' + esc(ORIGIN + image) + '">' : "");
 function missing(names) {
   if (!names || !names.length) return "";
   const n = names.length;
@@ -197,6 +202,56 @@ function render(d) {
   };
 }
 `;
+// Meal ideas as stories: swipe through the best pick and the other ideas, each with its picture and one main action.
+// Calling what_to_eat again would write a different meal, so answers here update the card in place instead of reloading.
+const MEALS_RENDER = `
+let saved = false;
+async function act(name, args) {
+  root.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  await call(name, args).catch(() => null);
+  const gone = name === "add_to_pantry" || name === "add_to_shopping_list" ? args.items.map((x) => x.name) : [];
+  state.best.toCheck = (state.best.toCheck || []).filter((x) => !gone.includes(x));
+  if (name === "keep_recipe") saved = true;
+  render(state); fit();
+}
+let state = null;
+let at = 0;
+function slide(x, i) {
+  const art = x.image && ORIGIN ? '<img class="pic big" alt="" onerror="this.hidden=true" src="' + esc(ORIGIN + x.image) + '">' : '<div class="pic big blank"></div>';
+  const head = '<span class="k">' + (i === 0 ? "Best pick" : "Or") + "</span>";
+  if (i === 0) {
+    const meta = x.minutes + " min · " + x.kcalPerServing + " kcal · " + x.protein + " g protein" + (x.written ? " · estimate" : "");
+    const gaps = x.toCheck || [];
+    return '<div class="story">' + art + head + '<span class="n">' + esc(x.name) + '</span><span class="m">' + esc(x.blurb || "") + '</span><span class="m" style="opacity:.8">' + meta + "</span>"
+      + (gaps.length ? missing(gaps) : "")
+      + '<div class="row">' + (ORIGIN ? '<button class="' + (gaps.length ? "pill" : "btn") + '" id="cook">' + (gaps.length ? "Cook anyway" : "Cook this") + "</button>" : "")
+      + (x.written ? '<button class="pill" id="save"' + (saved ? " disabled" : "") + ">" + (saved ? "Saved" : "Save") + "</button>" : "") + "</div></div>";
+  }
+  return '<div class="story">' + art + head + '<span class="n">' + esc(x.name) + '</span><span class="m">' + esc(x.blurb || "") + "</span>"
+    + '<div class="row"><button class="btn" data-idea="' + i + '">' + (x.id ? "See recipe" : "Make this") + "</button></div></div>";
+}
+function render(d) {
+  state = d;
+  const all = [d.best].concat(d.ideas || []);
+  root.innerHTML = '<div class="card"><div class="stories" id="rail">' + all.map(slide).join("") + "</div>"
+    + '<div class="dots">' + all.map((_, i) => '<i class="' + (i === at ? "on" : "") + '"></i>').join("") + "</div></div>";
+  const rail = document.getElementById("rail");
+  rail.scrollLeft = at * rail.clientWidth * 0.86;
+  rail.onscroll = () => {
+    const i = Math.round(rail.scrollLeft / (rail.scrollWidth / all.length));
+    if (i !== at) { at = i; root.querySelectorAll(".dots i").forEach((dot, j) => (dot.className = j === at ? "on" : "")); }
+  };
+  wireMissing(d.best.toCheck || [], act);
+  const $ = (id) => document.getElementById(id);
+  if ($("cook")) $("cook").onclick = () => ask("ui/open-link", { url: ORIGIN + "/cook/" + d.best.id });
+  if ($("save")) $("save").onclick = () => act("keep_recipe", { id: d.best.id, keep: true });
+  root.querySelectorAll("[data-idea]").forEach((b) => (b.onclick = () => {
+    const x = all[Number(b.dataset.idea)];
+    if (x.id && ORIGIN) ask("ui/open-link", { url: ORIGIN + "/recipes/" + x.id });
+    else ask("ui/message", { role: "user", content: [{ type: "text", text: "Write the recipe for " + x.name }] });
+  }));
+}
+`;
 const TAIL = `
 function fit() { send({ method: "ui/notifications/size-changed", params: { height: document.documentElement.scrollHeight } }); }
 addEventListener("message", (e) => {
@@ -216,3 +271,4 @@ export const weekPlanHtml = () => page("week-plan", "Week plan", WEEK_RENDER);
 export const shoppingHtml = () => page("shopping", "Shopping list", SHOPPING_RENDER);
 export const todayHtml = () => page("today", "Today", TODAY_RENDER);
 export const weekShoppingHtml = () => page("week-shopping", "For your week", WEEK_SHOP_RENDER);
+export const mealStoriesHtml = () => page("meal-stories", "Meal ideas", MEALS_RENDER);

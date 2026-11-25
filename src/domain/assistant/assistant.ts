@@ -1,4 +1,5 @@
 import { foodKey as norm } from "../pantry/foodKey";
+import { cookability } from "../guide";
 import { addChore, isDue, markChore, type Chore, type ChoreRepository, type Repeat } from "../chores";
 import { finishCooking, suggestedServings, type ServingHabitRepository } from "../cooking";
 import { logRecipeEaten } from "../cooking/logRecipe";
@@ -362,8 +363,16 @@ export async function whatToEatNow(deps: AssistantDeps, input: { date: DateKey; 
   const r = meal.best;
   return {
     source: meal.source === "ai" ? "written for you now (nutrition is an estimate)" : "picked from the app's recipes",
-    best: { id: r.id, name: r.name, blurb: r.blurb, minutes: r.minutes, kcalPerServing: r.kcal, protein: r.protein, missingFromPantry: readiness(r, pantry).missing },
-    ideas: meal.ideas.map((i) => ({ name: i.name, blurb: i.blurb, ...(i.recipeId ? { id: i.recipeId } : {}) })),
+    best: {
+      id: r.id, name: r.name, blurb: r.blurb, minutes: r.minutes, kcalPerServing: r.kcal, protein: r.protein, missingFromPantry: readiness(r, pantry).missing,
+      image: r.image, written: !!r.written,
+      // Named, for the card to ask about; kitchen basics (salt, oil, spices) are assumed at home, the same as Home.
+      toCheck: ((c) => [...c.needed, ...c.unknown].map((i) => i.name))(cookability(r, pantry)),
+    },
+    ideas: meal.ideas.map((i) => {
+      const known = i.recipeId ? all.find((x) => x.id === i.recipeId) : undefined;
+      return { name: i.name, blurb: i.blurb, ...(i.recipeId ? { id: i.recipeId } : {}), ...(known?.image ? { image: known.image } : {}) };
+    }),
   };
 }
 

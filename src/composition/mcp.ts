@@ -1,6 +1,6 @@
 import { createMcpHandler, getPublicOrigin, metadataCorsOptionsRequestHandler, protectedResourceHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
-import { CARD_MIME, EAT_NEXT_URI, SHOPPING_URI, TODAY_URI, WEEK_PLAN_URI, WEEK_SHOP_URI, cardMeta, eatNextHtml, shoppingHtml, todayHtml, weekPlanHtml, weekShoppingHtml } from "./mcpCards";
+import { CARD_MIME, EAT_NEXT_URI, SHOPPING_URI, TODAY_URI, WEEK_PLAN_URI, WEEK_SHOP_URI, MEALS_URI, mealStoriesHtml, cardMeta, eatNextHtml, shoppingHtml, todayHtml, weekPlanHtml, weekShoppingHtml } from "./mcpCards";
 import { clientForToken, verifyAccessToken } from "@/data/auth/token";
 import { SupabaseChoreRepository } from "@/data/chores/supabase";
 import { SupabaseMealPlanRepository } from "@/data/planning/supabase";
@@ -121,16 +121,17 @@ export const mcp = createMcpHandler(
       inputSchema: z.object({ id: z.string() }), annotations: { ...write, destructiveHint: true },
     }, run(async (d, i) => (await A.removeLog(d, i.id), { removed: i.id })));
 
+    server.registerResource("meal-stories-card", MEALS_URI, { title: "Meal ideas", mimeType: CARD_MIME }, async (uri) => ({
+      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: mealStoriesHtml(), _meta: cardMeta() }],
+    }));
+
     server.registerTool("what_to_eat", {
       title: "What should I eat?",
-      description: "One meal for right now, written for this person (diet, dislikes, pantry, calories left, time of day, an optional wish: quick, light, high protein, use what I have), plus two ideas. Same answer as the app's Eat screen. If it was written for them its id opens in the app; offer to cook it or to log it.",
-      inputSchema: z.object({ date, hour: z.number().int().min(0).max(23).describe("Local hour, 0-23"), wish: z.string().max(200).optional() }),
+      _meta: { ui: { resourceUri: MEALS_URI }, "ui/resourceUri": MEALS_URI },
+      description: "Use for what to eat, what can I cook, or recipe ideas. One meal for right now written for this person (diet, dislikes, pantry, calories left, time of day) plus two ideas, the same answer as the app's Eat screen. For 'what can I cook now', 'with what I have' or 'from my pantry' ALWAYS pass wish 'use what I have' so it uses only the pantry. Its card shows the options as stories with pictures, what is missing and Cook this / Save.",
+      inputSchema: z.object({ date, hour: z.number().int().min(0).max(23).describe("Local hour, 0-23"), wish: z.string().max(200).optional().describe("quick, light, high protein, use what I have; or the person's own words") }),
       annotations: write,
-    }, run(async (d, i) => {
-      const out = await A.whatToEatNow(d, { date: dayOf(i.date), hour: i.hour, wish: i.wish });
-      const origin = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
-      return { ...out, ...(origin ? { link: `${origin}/recipes/${out.best.id}` } : {}) };
-    }));
+    }, run((d, i) => A.whatToEatNow(d, { date: dayOf(i.date), hour: i.hour, wish: i.wish }), true));
 
     server.registerTool("cooked", {
       title: "I cooked it",
