@@ -333,7 +333,7 @@ Make it complete. A dish with parts (chicken tikka masala = marinade + masala gr
 );
 
 /** The MCP endpoint: every request needs a valid Supabase access token; a 401 points clients at the metadata to sign in. */
-export const mcpHandler = withMcpAuth(
+const authed = withMcpAuth(
   mcp,
   async (_req, token) => {
     if (!token || !URL) return undefined;
@@ -342,6 +342,15 @@ export const mcpHandler = withMcpAuth(
   },
   { required: true },
 );
+
+/** The MCP endpoint, timed: `vercel logs` shows each call's method, tool and milliseconds on our side (sign-in check included, the chat's own thinking not). */
+export const mcpHandler = async (req: Request) => {
+  const started = Date.now();
+  const body = req.method === "POST" ? await req.clone().json().catch(() => null) : null;
+  const res = await authed(req);
+  if (body?.method) console.log(JSON.stringify({ mcp: body.method, tool: body.params?.name, status: res.status, ms: Date.now() - started }));
+  return res;
+};
 
 /** RFC 9728 metadata: tells MCP clients to sign in with Supabase Auth. */
 export const resourceMetadata = (req: Request) =>

@@ -200,6 +200,8 @@ export async function newChore(deps: AssistantDeps, title: string, repeat: Repea
 const noon = (date: DateKey) => new Date(`${date}T12:00:00`);
 
 /** The stored week from this date, planned now for any day missing: the same week the app shows. */
+type Week = Awaited<ReturnType<typeof storedWeek>>;
+
 async function storedWeek(deps: AssistantDeps, date: DateKey) {
   const past = lastNDays(30, noon(date));
   const [recipes, profile, pantry, logs] = await Promise.all([deps.recipes.list(), deps.profile.get(), deps.pantry.list(), deps.logs.listBetween(past[0], date)]);
@@ -247,8 +249,8 @@ const mealsOf = (plan: { meals: { meal: MealName; recipeId: string }[] }[], reci
 };
 
 /** The one meal to eat next by the clock, and what to buy, swap or skip to cook it. Same rule as the app's Home. */
-export async function eatNextNow(deps: AssistantDeps, input: { date: DateKey; hour: number }) {
-  const { plan, recipes, pantry, eatenToday } = await storedWeek(deps, input.date);
+export async function eatNextNow(deps: AssistantDeps, input: { date: DateKey; hour: number }, week?: Week) {
+  const { plan, recipes, pantry, eatenToday } = week ?? (await storedWeek(deps, input.date));
   const day = mealsOf(plan, recipes);
   const n = eatNext({ today: day(0), tomorrow: day(1), eaten: eatenToday, hour: input.hour, pantry });
   if (!n) return { next: null };
@@ -265,8 +267,8 @@ export async function eatNextNow(deps: AssistantDeps, input: { date: DateKey; ho
 }
 
 /** Prep to do now or tonight for the meals still ahead (soak, marinate, overnight oats), with what is ticked done. */
-export async function prepToday(deps: AssistantDeps, input: { date: DateKey; hour: number }) {
-  const { plan, recipes, eatenToday } = await storedWeek(deps, input.date);
+export async function prepToday(deps: AssistantDeps, input: { date: DateKey; hour: number }, week?: Week) {
+  const { plan, recipes, eatenToday } = week ?? (await storedWeek(deps, input.date));
   const day = mealsOf(plan, recipes);
   const open = upcomingMeals(day(0), eatenToday, input.hour).map((m) => m.recipe);
   const [tasks, done] = await Promise.all([Promise.resolve(prepTasks(input.date, open, day(1).map((m) => m.recipe))), deps.prep.doneOn(input.date)]);
@@ -419,8 +421,11 @@ const MAX_ITEMS = 4;
  * chores due, the shopping list. Empty parts are left out, never mentioned. Same rules as the app's Home.
  */
 export async function todayNext(deps: AssistantDeps, input: { date: DateKey; hour: number }) {
+  // The week is read once and shared; everything else runs side by side.
+  const week = storedWeek(deps, input.date);
   const [profile, next, prep, chores, list, summary] = await Promise.all([
-    deps.profile.get(), eatNextNow(deps, input), prepToday(deps, input), choresToday(deps, input.date), shoppingList(deps), daySummary(deps, input.date),
+    deps.profile.get(), week.then((w) => eatNextNow(deps, input, w)), week.then((w) => prepToday(deps, input, w)),
+    choresToday(deps, input.date), shoppingList(deps), daySummary(deps, input.date),
   ]);
   // The day in one line: calories against the range, macros only once something is logged.
   const day = { kcalEaten: summary.kcalEaten, range: summary.range, logged: summary.meals.length > 0, ...(summary.meals.length ? { macros: summary.macros } : {}) };
