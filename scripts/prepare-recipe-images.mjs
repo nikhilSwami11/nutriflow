@@ -1,10 +1,12 @@
 // Turns art-src/recipes/<slug>.jpeg|png (plain white or green-screen background) into public/recipes/<slug>.webp:
 // white background cut out (flood fill from the edges, stops at the dish's outline), cropped, 512px, compressed.
-// Run: node scripts/prepare-recipe-images.mjs   (add --force to redo existing files)
+// Run: node scripts/prepare-recipe-images.mjs [ingredients]   (add --force to redo existing files)
 import sharp from "sharp";
 import { mkdirSync, readdirSync, existsSync } from "node:fs";
 
-const SRC = "art-src/recipes", OUT = "public/recipes", SIZE = 512, PAD = 24, TOL = 28;
+// Pass "ingredients" to prepare pantry pictures instead: art-src/ingredients -> public/ingredients.
+const KIND = process.argv.find((a) => a === "ingredients") ?? "recipes";
+const SRC = `art-src/${KIND}`, OUT = `public/${KIND}`, SIZE = KIND === "ingredients" ? 256 : 512, PAD = 24, TOL = 28;
 mkdirSync(OUT, { recursive: true });
 const force = process.argv.includes("--force");
 

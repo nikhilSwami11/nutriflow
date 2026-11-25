@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { isLow, type ParsedItem } from "@/domain/pantry";
+import { isLow, pictureFor, type ParsedItem } from "@/domain/pantry";
 import { joinList } from "../format";
 import { usePantry } from "./usePantry";
 import { useSpeech } from "./useSpeech";
@@ -24,7 +24,7 @@ export function usePantryScreen() {
 
   const groups = p.view.groups.map((g) => ({
     name: g.name,
-    rows: g.items.map((i) => ({ id: i.id, name: i.name, qtyText: `${i.qty} ${i.unit}`, low: isLow(i) })),
+    rows: g.items.map((i) => ({ id: i.id, name: i.name, image: pictureFor(i.name), qtyText: `${i.qty} ${i.unit}`, low: isLow(i) })),
   }));
 
   return {

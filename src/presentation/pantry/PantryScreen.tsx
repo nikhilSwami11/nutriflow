@@ -1,13 +1,17 @@
 "use client";
+import Image from "next/image";
+import { useState } from "react";
 import { usePantryScreen } from "@/view-models/pantry/usePantryScreen";
 import { AppShell } from "../shell/AppShell";
 import { tint } from "../shared/tint";
+import { AddItemsSheet } from "./AddItemsSheet";
 import { Orb } from "./Orb";
 import { Skeleton } from "../shared/Skeleton";
 
 
 export function PantryScreen() {
   const s = usePantryScreen();
+  const [adding, setAdding] = useState(false);
   const v = s.voice;
   const listening = v.mode === "listening";
 
@@ -25,7 +29,7 @@ export function PantryScreen() {
           <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">Pantry</h1>
           <p className="mt-1 text-sm text-muted tabular-nums">{s.countText}</p>
         </div>
-        <button type="button" className="touch rounded-full border border-line2 bg-transparent px-4 text-sm font-medium">
+        <button type="button" onClick={() => setAdding(true)} className="touch rounded-full border border-line2 bg-transparent px-4 text-sm font-medium">
             Add manually
           </button>
       </header>
@@ -113,28 +117,28 @@ export function PantryScreen() {
             <p className="m-0 max-w-[40ch] text-sm text-ink2">Tell me what you have, and meals, shopping and plans start from it.</p>
           </div>
         )}
-        {s.groups.map((g) => (
-          <section key={g.name} aria-label={g.name} className="flex flex-col">
-            <h2 className="mb-1 mt-0 text-sm font-medium text-muted">{g.name}</h2>
-            {g.rows.map((r) => (
-              <div key={r.id} className="flex min-h-16 items-center gap-3 border-b border-line py-2">
-                <div role="img" aria-label={r.name} className={`h-12 w-12 shrink-0 rounded-2xl ${tint(r.name)}`} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[15px]">{r.name}</span>
-                    {r.low && <span className="rounded-full bg-peach px-[9px] py-0.5 text-xs font-medium text-onp">Low</span>}
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center">
-                  <button type="button" onClick={() => s.adjust(r.id, -1)} aria-label={`Less ${r.name}`} className="h-11 w-11 bg-transparent p-0 text-xl text-ink">&minus;</button>
-                  <span className="min-w-[52px] text-center text-sm tabular-nums">{r.qtyText}</span>
-                  <button type="button" onClick={() => s.adjust(r.id, 1)} aria-label={`More ${r.name}`} className="h-11 w-11 bg-transparent p-0 text-xl text-ink">+</button>
+        <ul aria-label="Pantry items" className="m-0 flex list-none flex-col p-0">
+          {s.groups.flatMap((g) => g.rows).map((r) => (
+            <li key={r.id} className="flex min-h-16 items-center gap-3 border-b border-line py-2">
+              <div role="img" aria-label={r.name} className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl ${r.image ? "bg-panel" : tint(r.name)}`}>
+                {r.image && <Image src={r.image} alt="" width={44} height={44} className="object-contain" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px]">{r.name}</span>
+                  {r.low && <span className="rounded-full bg-peach px-[9px] py-0.5 text-xs font-medium text-onp">Low</span>}
                 </div>
               </div>
-            ))}
-          </section>
-        ))}
+              <div className="flex shrink-0 items-center">
+                <button type="button" onClick={() => s.adjust(r.id, -1)} aria-label={`Less ${r.name}`} className="h-11 w-11 bg-transparent p-0 text-xl text-ink">&minus;</button>
+                <span className="min-w-[52px] text-center text-sm tabular-nums">{r.qtyText}</span>
+                <button type="button" onClick={() => s.adjust(r.id, 1)} aria-label={`More ${r.name}`} className="h-11 w-11 bg-transparent p-0 text-xl text-ink">+</button>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
+      {adding && <AddItemsSheet onClose={() => setAdding(false)} />}
     </AppShell>
   );
 }
