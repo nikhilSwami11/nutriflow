@@ -36,6 +36,11 @@ const STYLE = `
 .story{flex:0 0 86%;scroll-snap-align:center;background:var(--lav);color:var(--onp);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:6px}
 .pic.big{width:160px;height:160px}.pic.blank{border-radius:50%;background:var(--bg);opacity:.5;align-self:center}
 .dots{display:flex;gap:6px;justify-content:center}.dots i{width:6px;height:6px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--ink)}
+.sk{border-radius:16px;background:linear-gradient(90deg,var(--panel) 25%,var(--line) 50%,var(--panel) 75%);background-size:200% 100%;animation:sh 1.2s linear infinite}
+@keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+#root{position:relative}.busy>.card{opacity:.55;pointer-events:none;transition:opacity .12s}
+.busy::after{content:"";position:absolute;inset:0;border-radius:20px;pointer-events:none;background:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--mint) 40%,transparent) 50%,transparent 70%);background-size:200% 100%;animation:sh 1.1s linear infinite}
+@media (prefers-reduced-motion:reduce){.sk,.busy::after{animation:none}}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:0;background:rgba(255,255,255,.75);color:var(--onp);border-radius:999px;padding:4px 10px;margin:2px 0;font:inherit;font-size:14px;cursor:pointer;min-height:32px}
 .ok{background:var(--mint);color:var(--onp)}.warn{background:var(--peach);color:var(--onp)}
@@ -51,7 +56,12 @@ const ask = (method, params) => new Promise((res) => { const id = ++seq; waiting
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const root = document.getElementById("root");
 const day = () => { const t = new Date(); return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0"); };
-const call = (name, args) => ask("tools/call", { name, arguments: args });
+// Every tool call from a card shows the card working: dimmed, a shimmer sweeping across, taps blocked until it is done.
+let pending = 0;
+const call = (name, args) => {
+  pending++; root.classList.add("busy");
+  return ask("tools/call", { name, arguments: args }).finally(() => { if (--pending === 0) root.classList.remove("busy"); });
+};
 // What is missing for a meal, with the action right there: add all to shopping, say you have them all, or tap one you have.
 // The app's own dish picture on the meal's tint; nothing when the dish has none (never a photo from elsewhere).
 const pic = (image) => (image && ORIGIN ? '<img class="pic" alt="" onerror="this.hidden=true" src="' + esc(ORIGIN + image) + '">' : "");
@@ -299,11 +309,14 @@ addEventListener("message", (e) => {
   if (m.method === "ui/notifications/tool-result") draw(m.params);
 });
 ask("ui/initialize", { appInfo: { name: "nutriflow-__NAME__", version: "1.0.0" }, appCapabilities: {}, protocolVersion: "2025-06-18" })
-  .then(() => send({ method: "ui/notifications/initialized", params: {} }));
+  .then(() => { send({ method: "ui/notifications/initialized", params: {} }); fit(); });
 `;
 
+// Shown until the tool's result arrives, so the card never sits blank.
+const SKELETON = `<div class="card" aria-busy="true" aria-label="Loading"><div class="sk" style="height:140px"></div><div class="sk" style="height:22px;width:62%"></div><div class="sk" style="height:14px;width:40%"></div><div class="sk" style="height:44px;width:48%;border-radius:999px"></div></div>`;
+
 const page = (name: string, title: string, render: string) =>
-  `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>${STYLE}</style></head><body><div id="root"></div><script>${(HEAD + PARSE + render + TAIL).replace("__ORIGIN__", appOrigin()).replace("__NAME__", name)}</script></body></html>`;
+  `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>${STYLE}</style></head><body><div id="root">${SKELETON}</div><script>${(HEAD + PARSE + render + TAIL).replace("__ORIGIN__", appOrigin()).replace("__NAME__", name)}</script></body></html>`;
 
 export const eatNextHtml = () => page("eat-next", "Eat next", EAT_NEXT_RENDER);
 export const weekPlanHtml = () => page("week-plan", "Week plan", WEEK_RENDER);
