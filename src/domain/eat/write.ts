@@ -2,6 +2,7 @@ import { foodKey as norm } from "../pantry/foodKey";
 import type { Diet } from "../nutrition/types";
 import type { PantryItem } from "../pantry/types";
 import type { MyRecipeRepository } from "../recipes/mine";
+import { DISH_PICTURES } from "../recipes/pictures";
 import { COOK_VERBS, type MealName, type Recipe } from "../recipes/types";
 import { dietAllows } from "./diet";
 import { mealForHour, suggestMeals, type Want } from "./suggest";
@@ -113,19 +114,20 @@ const words = (n: string) => n.toLowerCase().split(/[^a-z]+/).filter((w) => w &&
  * The built-in dish whose picture fits this name: the same name, or one whose words are almost all inside it
  * ("Dal tadka with jeera rice" -> Dal tadka). A name that only shares a word ("Chicken salad" vs "Chicken curry") does not match.
  */
-export function matchPicture(name: string, builtins: Recipe[]): Recipe | undefined {
+export function matchPicture(name: string, builtins: Recipe[]): { image: string; tint?: string } | undefined {
   const a = new Set(words(name));
-  let best: { r: Recipe; score: number } | undefined;
-  for (const r of builtins) {
+  let best: { image: string; tint?: string; score: number } | undefined;
+  const candidates = [...builtins.map((r) => ({ name: r.name, image: r.image, tint: r.tint })), ...DISH_PICTURES.map((p) => ({ ...p, tint: undefined as string | undefined }))];
+  for (const r of candidates) {
     if (!r.image) continue;
     const b = new Set(words(r.name));
     const common = [...a].filter((w) => b.has(w)).length;
     const small = Math.min(a.size, b.size);
     if (!small || common / small < 0.8 || (common < 2 && small > 1)) continue;
     const score = common / Math.max(a.size, b.size);
-    if (!best || score > best.score) best = { r, score };
+    if (!best || score > best.score) best = { image: r.image, tint: r.tint, score };
   }
-  return best?.r;
+  return best && { image: best.image, tint: best.tint };
 }
 
 export interface WhatToEatDeps {

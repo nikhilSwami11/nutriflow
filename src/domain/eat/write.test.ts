@@ -96,9 +96,13 @@ describe("matchPicture", () => {
     expect(matchPicture("Dal Tadka with jeera rice", builtins)?.image).toBe("/recipes/dal-tadka.webp");
     expect(matchPicture("Tikka masala chicken", builtins)?.image).toBe("/recipes/ctm.webp");
     expect(matchPicture("Poha", builtins)?.image).toBe("/recipes/poha.webp");
+    // a dish with a picture but no built-in recipe
+    expect(matchPicture("Thai green curry with chicken", [])?.image).toBe("/recipes/thai-green-curry.webp");
+    expect(matchPicture("Korean fried chicken", builtins)?.image).toBe("/recipes/korean-fried-chicken.webp");
   });
   it("does not borrow a picture for a different dish that shares a word, or from a recipe without one", () => {
     expect(matchPicture("Chicken salad", builtins)).toBeUndefined();
     expect(matchPicture("Greek salad", builtins)).toBeUndefined();
+    expect(matchPicture("Thai fish soup", [])).toBeUndefined();
   });
 });
