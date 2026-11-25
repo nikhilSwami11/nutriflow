@@ -243,6 +243,8 @@ export async function eatNextNow(deps: AssistantDeps, input: { date: DateKey; ho
     next: { meal: n.meal, recipeId: n.recipe.id, name: n.recipe.name, minutes: n.recipe.minutes, kcalPerServing: n.recipe.kcal, tomorrow: n.tomorrow },
     canCook: n.cook.canCook,
     toBuy: n.cook.needed.map((i) => i.name),
+    // The pantry is not set up, so these are not known to be missing: ask.
+    unknown: n.cook.unknown.map((i) => i.name),
     swaps: n.cook.swaps,
     canSkip: n.cook.skips,
     thenToday: n.then.map((m) => ({ meal: m.meal, name: m.recipe.name })),
@@ -372,4 +374,39 @@ export async function cooked(deps: AssistantDeps, input: { date: DateKey; recipe
     notEnoughInPantry: out.shortfalls,
     warnings: out.warnings,
   };
+}
+
+export type NextItem =
+  | { kind: "profile" }
+  | {
+      kind: "meal"; meal: MealName; recipeId: string; name: string; minutes: number; kcalPerServing: number; tomorrow: boolean;
+      canCook: boolean;
+      /** Ask "Do you have it?" for these: the pantry does not know them, or records them as out. */
+      ask: string[];
+    }
+  | { kind: "prep"; id: string; action: string; dish: string; due: string }
+  | { kind: "chore"; id: string; title: string }
+  | { kind: "shopping"; count: number; names: string[] };
+
+// A glance, not a report: past this the rest waits for the next look.
+const MAX_ITEMS = 4;
+
+/**
+ * What to do now, the few things that matter, in order: set up the profile (first use only), the next meal, prep due,
+ * chores due, the shopping list. Empty parts are left out, never mentioned. Same rules as the app's Home.
+ */
+export async function todayNext(deps: AssistantDeps, input: { date: DateKey; hour: number }): Promise<{ items: NextItem[] }> {
+  const [profile, next, prep, chores, list] = await Promise.all([
+    deps.profile.get(), eatNextNow(deps, input), prepToday(deps, input), choresToday(deps, input.date), shoppingList(deps),
+  ]);
+  const items: NextItem[] = [];
+  if (!profile) items.push({ kind: "profile" });
+  if (next.next) {
+    const ask = [...next.toBuy, ...next.unknown];
+    items.push({ kind: "meal", ...next.next, canCook: next.canCook, ask });
+  }
+  for (const p of prep.filter((t) => !t.done)) items.push({ kind: "prep", id: p.id, action: p.action, dish: p.dish, due: p.due });
+  for (const c of chores.filter((c) => !c.done)) items.push({ kind: "chore", id: c.id, title: c.title });
+  if (list.length) items.push({ kind: "shopping", count: list.length, names: list.slice(0, 3).map((i) => i.name) });
+  return { items: items.slice(0, MAX_ITEMS) };
 }

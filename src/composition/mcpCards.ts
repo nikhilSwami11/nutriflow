@@ -7,6 +7,7 @@ export const CARD_MIME = "text/html;profile=mcp-app";
 export const EAT_NEXT_URI = "ui://nutriflow/eat-next";
 export const WEEK_PLAN_URI = "ui://nutriflow/week-plan";
 export const SHOPPING_URI = "ui://nutriflow/shopping";
+export const TODAY_URI = "ui://nutriflow/today";
 
 /** The public address of the app, for the card's "Start cooking" link. Without it the card shows no links. */
 const appOrigin = () => (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
@@ -21,6 +22,7 @@ const STYLE = `
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .btn{min-height:44px;padding:0 20px;border-radius:999px;border:0;background:var(--ink);color:var(--bg);font:500 15px inherit;font-family:inherit;cursor:pointer}
 .pill{border-radius:999px;background:var(--panel);padding:8px 14px;font-size:14px;color:var(--ink2)}
+.btn.sm{min-height:44px;padding:0 14px;font-size:14px}.pill{border:0;font-family:inherit;cursor:pointer;min-height:44px}.step{gap:4px}.step span{min-width:24px;text-align:center}button:disabled{opacity:.5}
 .ok{background:var(--mint);color:var(--onp)}.warn{background:var(--peach);color:var(--onp)}
 p{margin:0}
 .line{display:flex;gap:12px;justify-content:space-between;align-items:baseline;padding:10px 0;border-top:1px solid var(--line)}.line b{min-width:36px}.line span:nth-child(2){flex:1}
@@ -37,8 +39,8 @@ const root = document.getElementById("root");
 
 const PARSE = `
 function draw(result) {
-  let d = null;
-  try { d = JSON.parse((result.content || []).find((c) => c.type === "text").text); } catch (e) {}
+  let d = result.structuredContent || null;
+  if (!d) try { d = JSON.parse((result.content || []).find((c) => c.type === "text").text); } catch (e) {}
   if (!d) { root.innerHTML = '<div class="card"><p>Nothing to show yet.</p></div>'; return fit(); }
   render(d);
   fit();
@@ -79,6 +81,56 @@ function render(d) {
   if (go) go.onclick = () => ask("ui/open-link", { url: ORIGIN + "/shopping" });
 }
 `;
+// The today card asks and saves in place: each button calls a tool through the chat, then the card reloads itself.
+const TODAY_RENDER = `
+const day = () => { const t = new Date(); return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0"); };
+const call = (name, args) => ask("tools/call", { name, arguments: args });
+let busy = false;
+async function act(name, args) {
+  if (busy) return; busy = true;
+  root.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  await call(name, args).catch(() => null);
+  const fresh = await call("today_next", { date: day(), hour: new Date().getHours() }).catch(() => null);
+  busy = false;
+  if (fresh) draw(fresh);
+}
+const DIETS = [["anything", "Anything"], ["vegetarian", "Vegetarian"], ["eggetarian", "Eggetarian"], ["vegan", "Vegan"]];
+const tick = (label, id) => '<div class="line"><span>' + label + '</span><button class="pill" data-tick="' + esc(id) + '">Done</button></div>';
+function render(d) {
+  const items = d.items || [];
+  if (!items.length) { root.innerHTML = '<div class="card"><div class="tile"><span class="n">All done for now</span></div></div>'; return; }
+  const parts = items.map((it, i) => {
+    if (it.kind === "profile") return '<div class="tile"><span class="k">First, how do you eat?</span><div class="row">' + DIETS.map(([v, l]) => '<button class="pill" data-diet="' + v + '">' + l + "</button>").join("") + "</div></div>";
+    if (it.kind === "meal") {
+      const q = it.ask[0];
+      return '<div class="tile"><span class="k">' + (it.tomorrow ? "Tomorrow · " : "") + esc(it.meal) + '</span><span class="n">' + esc(it.name) + '</span><span class="m">' + it.minutes + " min · " + it.kcalPerServing + " kcal</span>"
+        + (q ? '<p class="m">Do you have ' + esc(q.toLowerCase()) + '?</p><div class="row"><button class="pill ok" data-have="' + esc(q) + '">I have it</button><button class="pill" data-out="' + esc(q) + '">Don’t have</button></div>'
+          : '<div class="row">' + (ORIGIN ? '<button class="btn" id="cook">Start cooking</button>' : "")
+            + '<span class="row step"><button class="pill" id="less" aria-label="Fewer servings">−</button><span id="sv">1</span><button class="pill" id="more" aria-label="More servings">+</button></span><button class="pill" id="ate">Mark eaten</button></div>')
+        + "</div>";
+    }
+    if (it.kind === "prep") return tick(esc(it.action) + ' <span class="m" style="color:var(--ink2)">' + esc(it.dish) + (it.due === "tonight" ? " · tonight" : "") + "</span>", "p:" + it.id);
+    if (it.kind === "chore") return tick(esc(it.title), "c:" + it.id);
+    if (it.kind === "shopping") return '<div class="line"><span>' + it.count + " to buy" + ' <span class="m" style="color:var(--ink2)">' + it.names.map(esc).join(", ") + "</span></span>" + (ORIGIN ? '<button class="pill" id="shop">Open</button>' : "") + "</div>";
+    return "";
+  });
+  root.innerHTML = '<div class="card">' + parts.join("") + "</div>";
+  const meal = items.find((it) => it.kind === "meal");
+  let sv = 1;
+  const $ = (id) => document.getElementById(id);
+  root.querySelectorAll("[data-diet]").forEach((b) => (b.onclick = () => act("set_profile", { diet: b.dataset.diet })));
+  root.querySelectorAll("[data-have]").forEach((b) => (b.onclick = () => act("add_to_pantry", { items: [{ name: b.dataset.have, qty: 1 }] })));
+  root.querySelectorAll("[data-out]").forEach((b) => (b.onclick = () => act("add_to_shopping_list", { items: [{ name: b.dataset.out }] })));
+  root.querySelectorAll("[data-tick]").forEach((b) => (b.onclick = () => {
+    const [k, id] = [b.dataset.tick.slice(0, 1), b.dataset.tick.slice(2)];
+    act(k === "p" ? "set_prep_done" : "set_chore_done", k === "p" ? { id, done: true } : { id, done: true, date: day() });
+  }));
+  if ($("less")) { $("less").onclick = () => ($("sv").textContent = String((sv = Math.max(0.5, sv - 0.5)))); $("more").onclick = () => ($("sv").textContent = String((sv = Math.min(6, sv + 0.5)))); }
+  if ($("ate")) $("ate").onclick = () => act("log_meal", { date: day(), slot: meal.meal.toLowerCase(), recipe_id: meal.recipeId, servings: sv });
+  if ($("cook")) $("cook").onclick = () => ask("ui/open-link", { url: ORIGIN + "/cook/" + meal.recipeId });
+  if ($("shop")) $("shop").onclick = () => ask("ui/open-link", { url: ORIGIN + "/shopping" });
+}
+`;
 const TAIL = `
 function fit() { send({ method: "ui/notifications/size-changed", params: { height: document.documentElement.scrollHeight } }); }
 addEventListener("message", (e) => {
@@ -96,3 +148,4 @@ const page = (name: string, title: string, render: string) =>
 export const eatNextHtml = () => page("eat-next", "Eat next", EAT_NEXT_RENDER);
 export const weekPlanHtml = () => page("week-plan", "Week plan", WEEK_RENDER);
 export const shoppingHtml = () => page("shopping", "Shopping list", SHOPPING_RENDER);
+export const todayHtml = () => page("today", "Today", TODAY_RENDER);

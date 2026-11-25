@@ -29,6 +29,7 @@ import {
   whatToEatNow,
   profileInfo,
   updateProfile,
+  todayNext,
   type AssistantDeps,
 } from "./assistant";
 
@@ -272,5 +273,23 @@ describe("prep (shared with the app's Prep story)", () => {
     const rules = await whatToEatNow(deps({ writer: { write: async () => { throw new Error("down"); } } }).d, { date: D, hour: 8 });
     expect(rules.source).toMatch(/app's recipes/);
     expect(rules.best.name).toBe("Oats");
+  });
+});
+
+describe("today next (the chat's glance at the day)", () => {
+  it("lists only what matters: profile on first use, the meal with what to ask, open chores, the list; no empty parts", async () => {
+    const { d } = deps({ chores: [{ id: "c1", title: "Dishes", repeat: "daily", lastDone: null }, { id: "c2", title: "Bins", repeat: "daily", lastDone: D }] });
+    await addToShopping(d, [{ name: "Milk" }]);
+    const { items } = await todayNext(d, { date: D, hour: 19 });
+    expect(items.map((i) => i.kind)).toEqual(["profile", "meal", "chore", "shopping"]);
+    expect(items[1]).toMatchObject({ kind: "meal", name: "Dal tadka", ask: ["Rice"] });
+    expect(items[2]).toEqual({ kind: "chore", id: "c1", title: "Dishes" }); // Bins is done today: not shown
+  });
+
+  it("says nothing about chores or shopping when there are none, and caps the glance at four", async () => {
+    const { d } = deps({ profile: { range: { min: 1800, max: 2100 } } as Profile });
+    expect((await todayNext(d, { date: D, hour: 19 })).items.map((i) => i.kind)).toEqual(["meal"]);
+    const many = deps({ chores: Array.from({ length: 6 }, (_, i) => ({ id: `c${i}`, title: `C${i}`, repeat: "daily" as const, lastDone: null })) });
+    expect((await todayNext(many.d, { date: D, hour: 19 })).items).toHaveLength(4);
   });
 });
