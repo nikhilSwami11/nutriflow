@@ -61,3 +61,16 @@ test("a new person is asked three questions once, and the answers are kept", asy
   await page.getByRole("link", { name: "Kitchen" }).first().click();
   await expect(page.getByText("eggs", { exact: false }).first()).toBeVisible();
 });
+
+test("don't have: offers a stand-in first, and shopping only if asked", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Check ingredients" }).first().click();
+  const sheet = page.getByRole("dialog", { name: "Do you have these?" });
+  const nos = sheet.getByRole("button", { name: /^Don't have / });
+  const n = await nos.count();
+  for (let i = 0; i < n; i++) await nos.nth(i).click();
+  await expect(sheet.getByText("Instead:").first()).toBeVisible();
+  const use = sheet.getByRole("button", { name: "I'll use that" });
+  while (await use.count()) await use.first().click();
+  await expect(sheet.getByRole("button", { name: /Done · .*stand-in/ })).toBeVisible();
+});

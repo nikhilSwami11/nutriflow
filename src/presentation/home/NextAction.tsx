@@ -7,26 +7,31 @@ const BTN = "touch inline-flex items-center justify-center rounded-full px-5 tex
 
 /** The one thing to do about the next meal: shop for what is missing, or cook. */
 export function NextAction({ next, onOpen }: { next: NonNullable<HomeModel["next"]>; onOpen?: () => void }) {
-  // The list is copied when the sheet opens: answering moves things out of "unknown" and the rows must stay put.
+  // The sheet lives outside the buttons: answering changes which buttons show, and the sheet must keep its answers.
   const [asking, setAsking] = useState<{ items: typeof next.ask; assumed: string[] } | null>(null);
-  const sheet = asking && <HaveSheet dish={next.name} items={asking.items} assumed={asking.assumed} onClose={() => setAsking(null)} />;
+  return (
+    <>
+      <Buttons next={next} onOpen={onOpen} ask={() => setAsking({ items: next.ask, assumed: next.assumed })} />
+      {asking && <HaveSheet dish={next.name} items={asking.items} assumed={asking.assumed} onClose={() => setAsking(null)} />}
+    </>
+  );
+}
+
+function Buttons({ next, onOpen, ask }: { next: NonNullable<HomeModel["next"]>; onOpen?: () => void; ask: () => void }) {
+  // The list is copied when the sheet opens (in NextAction): answering moves things out of "unknown" and the rows must stay put.
   if (next.state === "check") {
     return (
       <span className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={() => setAsking({ items: next.ask, assumed: next.assumed })} className={`${BTN} border-0 bg-ink text-bg`}>{next.actionText}</button>
+        <button type="button" onClick={ask} className={`${BTN} border-0 bg-ink text-bg`}>{next.actionText}</button>
         <Link href={`/cook/${next.id}`} onClick={onOpen} className={`${BTN} border border-line2 text-ink`}>Cook anyway</Link>
-        {sheet}
       </span>
     );
   }
   if (next.ready) {
     return (
-      <>
-        <Link href={`/cook/${next.id}`} onClick={onOpen} className={`${BTN} bg-ink text-bg`}>
-          {next.actionText}
-        </Link>
-        {sheet}
-      </>
+      <Link href={`/cook/${next.id}`} onClick={onOpen} className={`${BTN} bg-ink text-bg`}>
+        {next.actionText}
+      </Link>
     );
   }
   if (next.actionDone) {
@@ -38,7 +43,6 @@ export function NextAction({ next, onOpen }: { next: NonNullable<HomeModel["next
         <Link href={`/cook/${next.id}`} onClick={onOpen} className={`${BTN} border border-line2 text-ink`}>
           Cook anyway
         </Link>
-        {sheet}
       </span>
     );
   }
@@ -50,8 +54,7 @@ export function NextAction({ next, onOpen }: { next: NonNullable<HomeModel["next
       <Link href={`/cook/${next.id}`} onClick={onOpen} className={`${BTN} border border-line2 text-ink`}>
         Cook anyway
       </Link>
-      <button type="button" onClick={() => setAsking({ items: next.ask, assumed: next.assumed })} className="touch bg-transparent px-2 text-sm text-ink2 underline underline-offset-[3px]">I have some of these</button>
-      {sheet}
+      <button type="button" onClick={ask} className="touch bg-transparent px-2 text-sm text-ink2 underline underline-offset-[3px]">I have some of these</button>
     </span>
   );
 }

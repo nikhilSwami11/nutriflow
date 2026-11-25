@@ -106,3 +106,35 @@ export function processTiles(recipe: Recipe, servings: number): ProcessTile[] {
   }
   return tiles;
 }
+
+export interface RecipeSection {
+  /** "Marinade", "Masala"; "The dish" when the recipe has no parts. */
+  title: string;
+  ingredients: ProcessItem[];
+  /** Steps of this part, numbered as in the whole recipe (1-based). */
+  steps: { number: number; text: string; verb: string; minutes?: number }[];
+}
+
+/**
+ * The whole recipe in one list, split by part (marinade, masala, rice...) when the recipe has parts, else one part.
+ * Ingredients carry the amount for the servings and their weight; steps keep their number in the full order.
+ */
+export function recipeSections(recipe: Recipe, servings: number): RecipeSection[] {
+  const amount = (i: Ingredient): ProcessItem => {
+    const qty = scaleQty(i.qty, recipe.servings, servings);
+    const w = weightOf(i, qty);
+    return { name: i.name, amount: `${fmtQuarters(qty)}${i.unit ? ` ${i.unit}` : ""}${w ? ` · ≈ ${w}` : ""}`.trim() };
+  };
+  const titles: string[] = [];
+  for (const g of [...recipe.ingredients.map((i) => i.group), ...recipe.steps.map((s) => s.group)]) {
+    const t = g?.trim() || "";
+    if (!titles.includes(t)) titles.push(t);
+  }
+  // Ungrouped things sit under the first part when there are parts, so nothing is lost.
+  const main = titles.includes("") ? "" : (titles[0] ?? "");
+  return (titles.length ? titles : [""]).map((t) => ({
+    title: t || (titles.length > 1 ? "The dish" : "The dish"),
+    ingredients: recipe.ingredients.filter((i) => (i.group?.trim() || "") === t).map(amount),
+    steps: recipe.steps.flatMap((s, n) => ((s.group?.trim() || "") === t ? [{ number: n + 1, text: s.text, verb: s.verb, ...(s.minutes ? { minutes: s.minutes } : {}) }] : [])),
+  })).filter((s) => s.ingredients.length || s.steps.length || main === "");
+}

@@ -143,7 +143,8 @@ export const mcp = createMcpHandler(
     server.registerTool("save_recipe", {
       title: "Save a recipe you wrote",
       description: `Save a recipe you wrote for this person; it opens in their NutriFlow app (cook screen, Recipes tab). You write it, this checks it. Respect the person's diet and dislikes (call profile first).
-Write it like a real cook: salt, a cooking fat (oil, ghee or butter), aromatics (onion, garlic, ginger), spices with amounts, and the order things go in the pan (whole spices in hot oil, then aromatics, then ground spices, then tomatoes or liquid). The last step must taste and balance (adjust salt, sourness, heat, sweetness). Ingredient amounts are for the whole recipe; nutrition is per serving and may be a fair estimate. Each step's verb must be one of: ${COOK_VERBS.join(", ")}. Give minutes only for steps that wait (simmering, boiling, baking). Add a short "look" (what it looks, smells or sounds like when right) and a "tip" to each step when you can. If the result lists problems, fix them and call again.`,
+Write it like a real cook: salt, a cooking fat (oil, ghee or butter), aromatics (onion, garlic, ginger), spices with amounts, and the order things go in the pan (whole spices in hot oil, then aromatics, then ground spices, then tomatoes or liquid). The last step must taste and balance (adjust salt, sourness, heat, sweetness). Ingredient amounts are for the whole recipe; nutrition is per serving and may be a fair estimate. Each step's verb must be one of: ${COOK_VERBS.join(", ")}. Give minutes only for steps that wait (simmering, boiling, baking). Add a short "look" (what it looks, smells or sounds like when right) and a "tip" to each step when you can.
+Make it complete. A dish with parts (chicken tikka masala = marinade + masala gravy; biryani = rice + masala) gets every part with its own ingredients and steps, tagged with "group". Pastes and spice mixes are ingredients with amounts (ginger-garlic paste, garam masala, kasuri methi), and "swaps" says what to do without each (grate fresh ginger and garlic, mix your own masala), so "I don't have it" is never a dead end. "fixes" covers too salty, too sour, too thick, watery, bland, burnt. If the result lists problems, fix them and call again.`,
       inputSchema: z.object({
         meal,
         recipe: z.object({
@@ -155,8 +156,11 @@ Write it like a real cook: salt, a cooking fat (oil, ghee or butter), aromatics 
           protein: z.number().min(0).max(300),
           carbs: z.number().min(0).max(500),
           fat: z.number().min(0).max(300),
-          ingredients: z.array(z.object({ name: z.string().max(80).describe("Plain grocery name: Onion, Basmati rice"), qty: z.number().positive(), unit: z.string().max(20).describe("g, ml, pcs, cups, tbsp, tsp, cloves") })).min(2).max(40),
-          steps: z.array(z.object({ text: z.string().max(400), verb: z.string().max(20), minutes: z.number().min(1).max(240).optional(), look: z.string().max(240).optional(), tip: z.string().max(240).optional() })).min(2).max(30),
+          ingredients: z.array(z.object({ name: z.string().max(80).describe("Plain grocery name: Onion, Basmati rice, Ginger-garlic paste"), qty: z.number().positive(), unit: z.string().max(20).describe("g, ml, pcs, cups, tbsp, tsp, cloves"), group: z.string().max(40).optional().describe("The part of the dish: Marinade, Masala, Rice") })).min(2).max(60),
+          steps: z.array(z.object({ text: z.string().max(400), verb: z.string().max(20), minutes: z.number().min(1).max(240).optional(), look: z.string().max(240).optional(), tip: z.string().max(240).optional(), group: z.string().max(40).optional().describe("Same names as the ingredients' groups") })).min(2).max(40),
+          swaps: z.array(z.object({ ingredient: z.string().max(60), use: z.string().max(200), note: z.string().max(240).optional() })).max(20).optional().describe("What to use when the person does not have an ingredient, or how to make it (paste, spice mix). Cover every non-staple ingredient."),
+          fixes: z.array(z.object({ problem: z.string().max(40), fix: z.string().max(240) })).max(20).optional().describe("What can go wrong and how to fix it: too salty, too sour, too thick, watery, bland, burnt."),
+          prep: z.array(z.string().max(160)).max(12).optional().describe("What to set out and prepare before the first step."),
         }),
       }), annotations: write,
     }, run((d, i) => A.saveWrittenRecipe(d, i)));

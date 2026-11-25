@@ -10,6 +10,8 @@ export interface Ingredient {
   optional?: boolean;
   /** What state the amount is measured in: it changes the weight (a cup of dry chickpeas is not a cup of soaked ones). */
   form?: IngredientForm;
+  /** The part of the dish it belongs to ("Marinade", "Masala"). Absent for a simple recipe. */
+  group?: string;
 }
 
 export type IngredientForm = "dry" | "soaked" | "cooked" | "canned";
@@ -19,6 +21,8 @@ export interface Step {
   verb: string;
   /** Timed steps (simmering, boiling). The cook screen shows a countdown. */
   minutes?: number;
+  /** The part of the dish this step belongs to; matches the ingredients' group. */
+  group?: string;
   /** What to look for to know the step is right. Falls back to a line for the verb. */
   look?: string;
   /** One useful tip. Falls back to a line for the verb. */

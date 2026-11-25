@@ -257,3 +257,12 @@ test("Parallel shows what can run while a timed action runs", async ({ page }) =
   await page.getByRole("button", { name: "Parallel" }).click();
   await expect(card.getByLabel("At the same time")).toContainText("Chop");
 });
+
+test("Recipe view: the whole recipe in order, scrollable, every step numbered", async ({ page }) => {
+  await page.goto("/cook/dal-tadka");
+  await page.getByRole("button", { name: "Recipe" }).click();
+  const all = page.getByLabel("The dish");
+  await expect(all).toContainText("Toor dal");
+  await expect(all.getByRole("listitem").filter({ hasText: "Boil the dal until soft" })).toContainText("15 min");
+  await expect(all.getByRole("list").last().getByRole("listitem")).toHaveCount(6);
+});

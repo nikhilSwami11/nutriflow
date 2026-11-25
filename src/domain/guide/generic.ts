@@ -47,6 +47,17 @@ export const GENERIC_FIXES: Fix[] = [
 
 /** Common stand-ins. Matched on the ingredient name (plural-folded). */
 export const GENERIC_SWAPS: Swap[] = [
+  // Specific ones first: "ginger-garlic paste" must not fall through to the plain garlic entry.
+  { ingredient: "ginger-garlic paste", use: "fresh ginger and garlic, grated or crushed together", note: "For 1 tbsp paste use ½ tbsp grated ginger and 3 cloves crushed garlic. To make a jar: blend equal parts ginger and garlic with a little water and a pinch of salt." },
+  { ingredient: "ginger paste", use: "freshly grated ginger", note: "Same amount, or ¼ tsp ground ginger per tsp of paste." },
+  { ingredient: "garam masala", use: "ground cumin, cinnamon and black pepper", note: "For 1 tsp: ½ tsp cumin, ¼ tsp cinnamon, a pinch of black pepper and a pinch of ground cloves." },
+  { ingredient: "tikka masala", use: "garam masala with paprika and a pinch of chilli powder", note: "Per tbsp: 1 tsp garam masala, 1 tsp paprika, ½ tsp cumin, a pinch of chilli powder." },
+  { ingredient: "kasuri methi", use: "leave it out, or a pinch of fenugreek seeds", note: "It adds a slightly bitter, savoury note. Skipping it is fine." },
+  { ingredient: "tomato puree", use: "canned crushed tomatoes simmered until thick", note: "About twice the volume of crushed tomatoes." },
+  { ingredient: "cream", use: "full-fat yogurt or cashew paste", note: "Stir it in off the heat so it does not split." },
+  { ingredient: "tamarind", use: "lemon juice with a pinch of sugar", note: "1 tbsp lemon juice plus ¼ tsp sugar per tbsp of tamarind." },
+  { ingredient: "coconut milk", use: "cashew paste blended with water", note: "2 tbsp cashews blended with ½ cup water per ½ cup." },
+  { ingredient: "chilli", use: "a pinch of cayenne or paprika", note: "Start with less and add more at the end." },
   { ingredient: "butter", use: "ghee or a neutral oil", note: "Same amount." },
   { ingredient: "ghee", use: "butter or a neutral oil", note: "Same amount." },
   { ingredient: "milk", use: "water or any plant milk", note: "Same amount. It will be a little less creamy." },

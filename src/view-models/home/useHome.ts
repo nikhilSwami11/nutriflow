@@ -8,7 +8,7 @@ import { toDateKey } from "@/domain/nutrition";
 import { isLow } from "@/domain/pantry";
 import { eatNext as pickNext, prepTasks, upcomingMeals } from "@/domain/planning";
 import { shopUnitFor } from "@/domain/shopping";
-import { cookability } from "@/domain/guide";
+import { cookability, swapsFor } from "@/domain/guide";
 import type { MealName, Recipe } from "@/domain/recipes";
 import { buildChartModel, num, type Range } from "../dashboard/chartModel";
 import { joinList } from "../format";
@@ -22,6 +22,12 @@ import { usePlanData } from "../plan/usePlanData";
 
 export const MEAL_OF_SLOT = { breakfast: "Breakfast", lunch: "Lunch", snack: "Snack", dinner: "Dinner" } as const;
 const SLOT_OF_MEAL = { Breakfast: "breakfast", Lunch: "lunch", Snack: "snack", Dinner: "dinner" } as const;
+
+/** The first stand-in we know for an ingredient, as one line. */
+export const swapText = (recipe: Parameters<typeof swapsFor>[0], name: string): string | null => {
+  const s = swapsFor(recipe, name)[0];
+  return s ? `${s.use}.${s.note ? ` ${s.note}` : ""}` : null;
+};
 
 export function useHome() {
   const data = usePlanData();
@@ -96,7 +102,7 @@ export function useHome() {
     const easy = [cook.swaps.length ? count(cook.swaps.length, "swap") : "", cook.skips.length ? count(cook.skips.length, "skip") : ""].filter(Boolean);
     const onList = listed.includes(m.recipe.id);
     // Main things we cannot be sure of: ask the person instead of claiming they are missing.
-    const ask = [...cook.unknown, ...cook.needed].map((x) => ({ name: x.name, qty: x.qty, unit: x.unit }));
+    const ask = [...cook.unknown, ...cook.needed].map((x) => ({ name: x.name, qty: x.qty, unit: x.unit, swap: swapText(m.recipe, x.name) }));
     return {
       meal: m.meal,
       id: m.recipe.id,

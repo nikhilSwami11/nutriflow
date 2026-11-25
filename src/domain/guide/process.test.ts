@@ -61,3 +61,26 @@ describe("processTiles", () => {
     expect(tiles[1].tasks).toEqual([{ id: "s:0", text: "Chop the onions and tomatoes", stepIndex: 0 }, { id: "s:4", text: "Chop fresh tomatoes to finish", stepIndex: 4 }]);
   });
 });
+
+import { recipeSections } from "./process";
+describe("recipeSections", () => {
+  it("is one part for a simple recipe, with every step numbered", () => {
+    const s = recipeSections(recipe, 4);
+    expect(s).toHaveLength(1);
+    expect(s[0].ingredients.map((i) => i.name)).toEqual(["Toor dal", "Onions", "Tomatoes", "Ghee"]);
+    expect(s[0].steps.map((x) => x.number)).toEqual([1, 2, 3, 4, 5]);
+  });
+  it("splits a recipe into its parts, keeping the whole-recipe step numbers", () => {
+    const r = { servings: 4, ingredients: [
+      { name: "Chicken", qty: 500, unit: "g", group: "Marinade" }, { name: "Yogurt", qty: 0.5, unit: "cup", group: "Marinade" },
+      { name: "Onion", qty: 2, unit: "", group: "Masala" }, { name: "Ginger-garlic paste", qty: 1, unit: "tbsp", group: "Masala" },
+    ], steps: [
+      { text: "Mix the chicken with the yogurt", verb: "Mix", group: "Marinade" }, { text: "Rest 30 minutes", verb: "Chill", group: "Marinade" },
+      { text: "Fry the onion", verb: "Fry", group: "Masala" }, { text: "Add the paste and cook", verb: "Sauté", group: "Masala" },
+    ] } as unknown as Recipe;
+    const s = recipeSections(r, 4);
+    expect(s.map((x) => x.title)).toEqual(["Marinade", "Masala"]);
+    expect(s[1].ingredients.map((i) => i.name)).toEqual(["Onion", "Ginger-garlic paste"]);
+    expect(s[1].steps.map((x) => x.number)).toEqual([3, 4]);
+  });
+});

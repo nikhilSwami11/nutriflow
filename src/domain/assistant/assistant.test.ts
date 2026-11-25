@@ -186,4 +186,30 @@ describe("prep (shared with the app's Prep story)", () => {
     expect(saved()[0].saved).toBe(true);
     expect(saved()[0].recipe.steps[2]).toMatchObject({ look: "Crisp and golden", tip: "Shake the tray halfway" });
   });
+
+  it("keeps the parts, swaps, fixes and prep of a full recipe, so the guide can answer from them", async () => {
+    const { d, saved } = deps();
+    const tikka = { name: "Chicken tikka masala", blurb: "Smoky, creamy, tangy", minutes: 60, servings: 4, kcal: 520, protein: 38, carbs: 22, fat: 30,
+      ingredients: [
+        { name: "Chicken", qty: 500, unit: "g", group: "Marinade" }, { name: "Yogurt", qty: 0.5, unit: "cup", group: "Marinade" }, { name: "Salt", qty: 1, unit: "tsp", group: "Marinade" },
+        { name: "Ghee", qty: 2, unit: "tbsp", group: "Masala" }, { name: "Onion", qty: 2, unit: "pcs", group: "Masala" }, { name: "Ginger-garlic paste", qty: 1, unit: "tbsp", group: "Masala" },
+        { name: "Garam masala", qty: 1, unit: "tsp", group: "Masala" }, { name: "Lemon", qty: 1, unit: "pcs", group: "Masala" },
+      ],
+      steps: [
+        { text: "Mix the chicken with the yogurt and salt, rest 30 minutes", verb: "Mix", group: "Marinade" },
+        { text: "Roast the chicken until charred at the edges", verb: "Roast", minutes: 15, group: "Marinade" },
+        { text: "Fry the onion in ghee until golden, add the paste and cook until the raw smell goes", verb: "Sauté", group: "Masala" },
+        { text: "Simmer with the chicken, then taste and adjust salt, lemon and heat", verb: "Simmer", minutes: 10, group: "Masala" },
+      ],
+      swaps: [{ ingredient: "Ginger-garlic paste", use: "1/2 tbsp grated ginger and 3 crushed garlic cloves" }],
+      fixes: [{ problem: "Too Sour", fix: "Add a pinch of sugar and a spoon of cream." }],
+      prep: ["Soak nothing: just set the marinade out first"] };
+    await saveWrittenRecipe(d, { meal: "Dinner", recipe: tikka });
+    const r = saved()[0].recipe;
+    expect(r.ingredients.map((i) => i.group)).toEqual(["Marinade", "Marinade", "Marinade", "Masala", "Masala", "Masala", "Masala", "Masala"]);
+    expect(r.steps[2].group).toBe("Masala");
+    expect(r.swaps).toEqual([{ ingredient: "Ginger-garlic paste", use: "1/2 tbsp grated ginger and 3 crushed garlic cloves" }]);
+    expect(r.fixes).toEqual([{ problem: "too sour", fix: "Add a pinch of sugar and a spoon of cream." }]);
+    expect(r.prep).toHaveLength(1);
+  });
 });

@@ -30,8 +30,14 @@ export interface DraftRecipe {
   protein: number;
   carbs: number;
   fat: number;
-  ingredients: { name: string; qty: number; unit: string }[];
-  steps: { text: string; verb: string; minutes?: number; look?: string; tip?: string }[];
+  ingredients: { name: string; qty: number; unit: string; group?: string }[];
+  steps: { text: string; verb: string; minutes?: number; look?: string; tip?: string; group?: string }[];
+  /** What to use when something is missing, written for this dish ("Ginger-garlic paste: grate ginger and garlic"). */
+  swaps?: { ingredient: string; use: string; note?: string }[];
+  /** Fixes for what can go wrong ("too salty"). */
+  fixes?: { problem: string; fix: string }[];
+  /** Things to set out first. */
+  prep?: string[];
 }
 
 /** A one-line meal idea. From the rules it points at a recipe; from the writer it is written out when tapped. */
@@ -74,11 +80,12 @@ export function toRecipe(d: DraftRecipe, id: string, meal: MealName, input: Pick
   if (!name || name.length > 80) return null;
   if (!fin(d.kcal, 30, 2500) || !fin(d.protein, 0, 300) || !fin(d.carbs, 0, 500) || !fin(d.fat, 0, 300)) return null;
   if (!fin(d.minutes, 1, 360) || !fin(d.servings, 1, 12)) return null;
-  const ingredients = (d.ingredients ?? []).filter((i) => i?.name?.trim() && fin(i.qty, 0, 10000)).map((i) => ({ name: i.name.trim(), qty: i.qty, unit: (i.unit ?? "").trim() || "pcs" }));
+  const text = (v: unknown, max: number) => (typeof v === "string" && v.trim() && v.length <= max ? v.trim() : undefined);
+  const ingredients = (d.ingredients ?? []).filter((i) => i?.name?.trim() && fin(i.qty, 0, 10000)).map((i) => ({ name: i.name.trim(), qty: i.qty, unit: (i.unit ?? "").trim() || "pcs", ...(text(i.group, 40) ? { group: text(i.group, 40) } : {}) }));
   const steps = (d.steps ?? []).filter((s) => s?.text?.trim()).map((s) => {
     const verb = COOK_VERBS.find((v) => norm(v) === norm(s.verb ?? "") || (v === "Sauté" && norm(s.verb ?? "") === "saute")) ?? "Stir";
     const note = (v: unknown) => (typeof v === "string" && v.trim() && v.length <= 240 ? v.trim() : undefined);
-    return { text: s.text.trim(), verb, ...(fin(s.minutes, 1, 240) ? { minutes: Math.round(s.minutes!) } : {}), ...(note(s.look) ? { look: note(s.look) } : {}), ...(note(s.tip) ? { tip: note(s.tip) } : {}) };
+    return { text: s.text.trim(), verb, ...(fin(s.minutes, 1, 240) ? { minutes: Math.round(s.minutes!) } : {}), ...(note(s.look) ? { look: note(s.look) } : {}), ...(note(s.tip) ? { tip: note(s.tip) } : {}), ...(text(s.group, 40) ? { group: text(s.group, 40) } : {}) };
   });
   if (ingredients.length < 2 || steps.length < 2) return null;
 
@@ -88,6 +95,12 @@ export function toRecipe(d: DraftRecipe, id: string, meal: MealName, input: Pick
     kcal: Math.round(d.kcal), protein: Math.round(d.protein), carbs: Math.round(d.carbs), fat: Math.round(d.fat),
     tint: twin?.tint ?? MEAL_TINT[meal], image: twin?.image, ingredients, steps, written: true,
   };
+  const swaps = (d.swaps ?? []).flatMap((s) => (text(s?.ingredient, 60) && text(s?.use, 200) ? [{ ingredient: text(s.ingredient, 60)!, use: text(s.use, 200)!, ...(text(s.note, 240) ? { note: text(s.note, 240) } : {}) }] : [])).slice(0, 20);
+  const fixes = (d.fixes ?? []).flatMap((f) => (text(f?.problem, 40) && text(f?.fix, 240) ? [{ problem: text(f.problem, 40)!.toLowerCase(), fix: text(f.fix, 240)! }] : [])).slice(0, 20);
+  const prep = (d.prep ?? []).flatMap((p) => (text(p, 160) ? [text(p, 160)!] : [])).slice(0, 12);
+  if (swaps.length) recipe.swaps = swaps;
+  if (fixes.length) recipe.fixes = fixes;
+  if (prep.length) recipe.prep = prep;
   const dislikes = input.dislikes.map(norm).filter(Boolean);
   const hated = recipe.ingredients.some((i) => dislikes.some((x) => norm(i.name).includes(x) || x.includes(norm(i.name))));
   return hated || !dietAllows(input.diet, recipe) ? null : recipe;

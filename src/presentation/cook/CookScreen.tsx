@@ -5,6 +5,7 @@ import { AskSheet } from "./AskSheet";
 import { ServedDish } from "./CookMotion";
 import { ActionCard, ActionStrip } from "./ActionView";
 import { IngredientsView } from "./IngredientsView";
+import { RecipeView } from "./RecipeView";
 import { useSwipe } from "../shared/useSwipe";
 
 const pill = "touch rounded-full px-6 text-[15px] font-medium";
@@ -32,14 +33,14 @@ function Steps({ c }: { c: CookModel }) {
   return (
     <Shell title={c.recipe.name}>
       <div role="group" aria-label="View" className="mx-5 mb-2 flex shrink-0 gap-0.5 self-start rounded-full bg-track p-[3px]">
-        {(["actions", "ingredients"] as const).map((v) => (
-          <button key={v} type="button" aria-pressed={c.view === v} onClick={() => c.setView(v)} className={`min-h-11 rounded-full px-4 text-sm ${c.view === v ? "bg-bg font-medium text-ink shadow-[0_1px_5px_rgba(0,0,0,0.10)]" : "text-ink2"}`}>{v === "actions" ? "Actions" : "Ingredients"}</button>
+        {(["actions", "ingredients", "recipe"] as const).map((v) => (
+          <button key={v} type="button" aria-pressed={c.view === v} onClick={() => c.setView(v)} className={`min-h-11 rounded-full px-4 text-sm ${c.view === v ? "bg-bg font-medium text-ink shadow-[0_1px_5px_rgba(0,0,0,0.10)]" : "text-ink2"}`}>{v === "actions" ? "Actions" : v === "ingredients" ? "Ingredients" : "Recipe"}</button>
         ))}
       </div>
       <ActionStrip c={c} />
 
-      <div {...swipe} key={c.view === "actions" ? p.number : "ingredients"} className="story-in flex min-h-0 flex-1 touch-pan-y flex-col gap-4 overflow-y-auto px-5 pb-4">
-        {c.view === "actions" ? <ActionCard c={c} /> : <IngredientsView c={c} />}
+      <div {...swipe} key={c.view === "actions" ? p.number : c.view} className="story-in flex min-h-0 flex-1 touch-pan-y flex-col gap-4 overflow-y-auto px-5 pb-4">
+        {c.view === "actions" ? <ActionCard c={c} /> : c.view === "ingredients" ? <IngredientsView c={c} /> : <RecipeView c={c} />}
       </div>
 
       <div className="flex shrink-0 items-center gap-2.5 border-t border-line px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">

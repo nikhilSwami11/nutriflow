@@ -94,3 +94,11 @@ describe("suggestedQuestions", () => {
   });
 });
 void fakePantry;
+
+describe("composite ingredients", () => {
+  it("ginger-garlic paste gets its own stand-in, not the plain garlic one", () => {
+    const r = { swaps: [] } as unknown as Recipe;
+    expect(swapsFor(r, "Ginger-garlic paste")[0].use).toMatch(/fresh ginger and garlic/);
+    expect(swapsFor(r, "Garam masala")[0].note).toMatch(/cinnamon/);
+  });
+});

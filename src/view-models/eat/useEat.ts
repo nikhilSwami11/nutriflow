@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { whatToEat, type Idea, type Want } from "@/domain/eat";
 import { cookability } from "@/domain/guide";
+import { swapText } from "../home/useHome";
 import { DEFAULT_RANGE, toDateKey } from "@/domain/nutrition";
 import { shopUnitFor } from "@/domain/shopping";
 import { useEatDeps } from "./EatDeps";
@@ -68,7 +69,7 @@ export function useEat() {
       state: cook.state,
       missing: cook.needed.length,
       status: cook.canCook ? "Ready to cook" : cook.state === "check" ? "Check what you have" : `Missing ${cook.needed.length}`,
-      ask: [...cook.unknown, ...cook.needed].map((x) => ({ name: x.name, qty: x.qty, unit: x.unit })),
+      ask: [...cook.unknown, ...cook.needed].map((x) => ({ name: x.name, qty: x.qty, unit: x.unit, swap: swapText(r, x.name) })),
       assumed: cook.assumed,
       facts: `${r.minutes} min · ${r.kcal} kcal · ${r.protein} g protein`,
       needs: cook.needed.map((x) => ({ name: x.name, qty: x.qty, unit: shopUnitFor(x.unit) })),

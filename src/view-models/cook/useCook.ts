@@ -5,7 +5,7 @@ import {
   elapsedMs, finishCooking, formatRemaining, habitNote, isDone, isRunning, newTimer, nutritionEaten, pauseTimer,
   remainingMs, startTimer, suggestedServings, type FinishResult, type TimerState, type VoiceCommand,
 } from "@/domain/cooking";
-import { answerQuestion, prepList, processTiles, stepGuide, suggestedQuestions, swapsFor } from "@/domain/guide";
+import { answerQuestion, prepList, processTiles, recipeSections, stepGuide, suggestedQuestions, swapsFor } from "@/domain/guide";
 import { toDateKey } from "@/domain/nutrition";
 import { ingredientStatus } from "@/domain/recipes";
 import { useNutritionDeps } from "../nutrition/NutritionDeps";
@@ -44,7 +44,7 @@ export function useCook(id: string, servingsMade?: number) {
 
   const [cardIdx, setCardIdx] = useState(0);
   const [doneTasks, setDoneTasks] = useState<string[]>([]);
-  const [view, setView] = useState<"actions" | "ingredients">("actions");
+  const [view, setView] = useState<"actions" | "ingredients" | "recipe">("actions");
   const [phase, setPhase] = useState<Phase>("cooking");
   const [checked, setChecked] = useState<string[]>([]);
   const [askOpen, setAskOpen] = useState(false);
@@ -161,6 +161,8 @@ export function useCook(id: string, servingsMade?: number) {
     phase,
     view,
     setView,
+    /** The whole recipe in order, split by part. */
+    full: recipeSections(recipe, made),
     /** The whole cook as a row of actions. Each has tasks to tick; an action is done when all are. */
     cards: tiles.map((t, i) => ({
       verb: t.verb,
