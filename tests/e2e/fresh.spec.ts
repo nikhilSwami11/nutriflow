@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 // A brand-new account: no pantry, chores, logs or history. No demo numbers may show.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("nutriflow.fresh", "1"));
+  // The first-run questions have their own test; the others are about an empty account, not the questions.
+  await page.addInitScript(() => localStorage.setItem("nutriflow.onboarded", "1"));
   await page.clock.setSystemTime(new Date(2026, 10, 23, 12, 0));
 });
 
@@ -38,4 +40,24 @@ test("an empty pantry asks what you have instead of saying everything is missing
   await expect(first).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
+});
+
+test("a new person is asked three questions once, and the answers are kept", async ({ page }) => {
+  await page.addInitScript(() => localStorage.removeItem("nutriflow.onboarded"));
+  await page.goto("/");
+  const sheet = page.getByRole("dialog", { name: "A few questions" });
+  await expect(sheet.getByRole("heading", { name: "How do you eat?" })).toBeVisible();
+  await sheet.getByRole("button", { name: "Vegetarian" }).click();
+  await sheet.getByRole("button", { name: "Next" }).click();
+  await sheet.getByRole("button", { name: /Build muscle/ }).click();
+  await sheet.getByRole("button", { name: "Next" }).click();
+  await sheet.getByRole("button", { name: "Eggs" }).click();
+  await sheet.getByRole("button", { name: "Done" }).click();
+  await expect(sheet).toHaveCount(0);
+  // Client-side navigation: the offline repositories live for one page load.
+  await page.getByRole("link", { name: "Profile" }).first().click();
+  await expect(page.getByRole("button", { name: "Vegetarian" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Calories from")).toHaveValue("2200");
+  await page.getByRole("link", { name: "Kitchen" }).first().click();
+  await expect(page.getByText("eggs", { exact: false }).first()).toBeVisible();
 });
