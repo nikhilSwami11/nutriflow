@@ -64,7 +64,8 @@ function wireMissing(names, act) {
 const PARSE = `
 function draw(result) {
   let d = result.structuredContent || null;
-  if (!d) try { d = JSON.parse((result.content || []).find((c) => c.type === "text").text); } catch (e) {}
+  if (!d) try { const t = (result.content || []).find((c) => c.type === "text").text; d = JSON.parse(t.slice(t.search(/[\\[{]/))); } catch (e) {}
+  if (d && d.items && Array.isArray(d.items) && !d.day && !("toAdd" in d)) d = d.items;
   if (!d) { root.innerHTML = '<div class="card"><p>Nothing to show yet.</p></div>'; return fit(); }
   render(d);
   fit();

@@ -67,15 +67,21 @@ type Ctx = { http?: { authInfo?: { token: string } } };
 type Out = { content: { type: "text"; text: string }[]; structuredContent?: Record<string, unknown>; isError?: boolean };
 
 /** Runs a use case as the caller and returns its result as JSON text; a thrown error becomes a readable tool error. */
-const run = <I>(fn: (deps: A.AssistantDeps, input: I) => Promise<unknown>) =>
+// Said first in the text of every tool with a card: the person already sees the answer, so the chat must not repeat it.
+export const CARD_NOTE = "SHOWN TO THE PERSON IN A CARD. Do not repeat, list, tabulate or summarise it. Reply with one short line at most (or nothing), e.g. an offer of the next step. Data for follow-ups:";
+
+/** Runs a use case as the caller. `card`: the answer is drawn in a card, so the text tells the chat not to repeat it. */
+const run = <I>(fn: (deps: A.AssistantDeps, input: I) => Promise<unknown>, card = false) =>
   async (input: I, ctx: Ctx): Promise<Out> => {
     const token = ctx.http?.authInfo?.token;
     if (!token) return { isError: true, content: [{ type: "text", text: "Not signed in." }] };
     try {
       const result = await fn(depsFor(token), input);
-      // Cards read structuredContent first; it must be an object, so lists stay text only.
-      const structured = result && typeof result === "object" && !Array.isArray(result) ? { structuredContent: result as Record<string, unknown> } : {};
-      return { content: [{ type: "text", text: JSON.stringify(result ?? { ok: true }) }], ...structured };
+      // Cards read structuredContent; it must be an object, so a list goes in as { items }.
+      const data = Array.isArray(result) ? { items: result } : result;
+      const structured = data && typeof data === "object" ? { structuredContent: data as Record<string, unknown> } : {};
+      const text = JSON.stringify(result ?? { ok: true });
+      return { content: [{ type: "text", text: card ? `${CARD_NOTE} ${text}` : text }], ...structured };
     } catch (e) {
       return { isError: true, content: [{ type: "text", text: e instanceof Error ? e.message : "Something went wrong." }] };
     }
@@ -160,28 +166,28 @@ export const mcp = createMcpHandler(
       _meta: { ui: { resourceUri: WEEK_SHOP_URI }, "ui/resourceUri": WEEK_SHOP_URI },
       description: "Use for any question about what to buy for the week or the plan. One call: everything the week's plan needs that the pantry lacks and the list does not have yet, with amounts. Its card lets the person untick what they have and add the rest. Do not read recipes or the pantry yourself to work this out.",
       inputSchema: z.object({ date }), annotations: read,
-    }, run((d, i) => A.weekShopping(d, dayOf(i.date))));
+    }, run((d, i) => A.weekShopping(d, dayOf(i.date)), true));
 
     server.registerTool("today_next", {
       title: "What to do next",
       _meta: { ui: { resourceUri: TODAY_URI }, "ui/resourceUri": TODAY_URI },
       description: "Use for any question about the person's day (insights, how am I doing, what next). Shows calories against their range, then the few things that matter right now, at most four: set up the profile (first use only), the next meal (with what to check they have), prep due, chores due, the shopping list. Empty parts are left out: do not mention them. The card asks and saves in place (I have it, Mark eaten, Done).",
       inputSchema: z.object({ date, hour: z.number().int().min(0).max(23).describe("Local hour, 0-23") }), annotations: read,
-    }, run((d, i) => A.todayNext(d, { date: dayOf(i.date), hour: i.hour })));
+    }, run((d, i) => A.todayNext(d, { date: dayOf(i.date), hour: i.hour }), true));
 
     server.registerTool("eat_next", {
       title: "Eat next",
       _meta: { ui: { resourceUri: EAT_NEXT_URI }, "ui/resourceUri": EAT_NEXT_URI },
       description: "The one planned meal to eat next by the person's clock, what to buy, swap or skip to cook it, and the rest of today. Same answer as the app's Home.",
       inputSchema: z.object({ date, hour: z.number().int().min(0).max(23).describe("Local hour, 0-23") }), annotations: read,
-    }, run((d, i) => A.eatNextNow(d, { date: dayOf(i.date), hour: i.hour })));
+    }, run((d, i) => A.eatNextNow(d, { date: dayOf(i.date), hour: i.hour }), true));
 
     server.registerTool("week_plan", {
       title: "Week plan",
       _meta: { ui: { resourceUri: WEEK_PLAN_URI }, "ui/resourceUri": WEEK_PLAN_URI },
       description: "The person's stored plan for the next 7 days from date: meals with calories and protein. The app shows the same week.",
       inputSchema: z.object({ date }), annotations: read,
-    }, run((d, i) => A.weekPlan(d, dayOf(i.date))));
+    }, run((d, i) => A.weekPlan(d, dayOf(i.date)), true));
 
     server.registerTool("swap_meal", {
       title: "Swap a planned meal",
@@ -289,7 +295,7 @@ Make it complete. A dish with parts (chicken tikka masala = marinade + masala gr
       _meta: { ui: { resourceUri: SHOPPING_URI }, "ui/resourceUri": SHOPPING_URI },
       description: "What is on the shopping list, with amounts.",
       inputSchema: z.object({}), annotations: read,
-    }, run((d) => A.shoppingList(d)));
+    }, run((d) => A.shoppingList(d), true));
 
     server.registerTool("add_to_shopping_list", {
       title: "Add to shopping list",
