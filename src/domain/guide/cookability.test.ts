@@ -52,4 +52,10 @@ describe("cookability", () => {
     const out = cookability(r, [item({ id: "1", name: "Eggs" }), item({ id: "2", name: "Salt", qty: 0 })]);
     expect(out.needed.map((n) => n.name)).toEqual(["Salt"]);
   });
+
+  it("an ingredient listed in two parts of the dish counts once", () => {
+    const r = { id: "t", name: "T", ingredients: [{ name: "Salt", qty: 1, unit: "tsp" }, { name: "Paneer", qty: 1, unit: "" }, { name: "Salt", qty: 1, unit: "tsp" }, { name: "Paneer", qty: 1, unit: "" }], steps: [] } as unknown as Recipe;
+    const five = ["a", "b", "c", "d", "e"].map((n) => item({ id: n, name: `Thing ${n}` }));
+    expect(cookability(r, five).needed.map((n) => n.name)).toEqual(["Paneer"]);
+  });
 });

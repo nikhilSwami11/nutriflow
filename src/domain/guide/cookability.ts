@@ -46,7 +46,11 @@ function standIn(recipe: Recipe, name: string, pantry: PantryItem[]): string | n
 export function cookability(recipe: Recipe, pantry: PantryItem[]): Cookability {
   const out: Cookability = { swaps: [], skips: [], needed: [], canCook: true, unknown: [], assumed: [], state: "ready" };
   const setUp = pantry.filter((p) => p.qty > 0).length >= PANTRY_SET_UP;
+  // An ingredient used in two parts of a dish (salt for the marinade and the masala) is one thing to have or to buy.
+  const seen = new Set<string>();
   for (const { ingredient, inPantry } of ingredientStatus(recipe, pantry)) {
+    if (seen.has(norm(ingredient.name))) continue;
+    seen.add(norm(ingredient.name));
     if (inPantry) continue;
     // Known out: the pantry has a record of it at 0 (it ran out, or the person said they do not have it).
     const knownOut = pantry.some((p) => norm(p.name) === norm(ingredient.name));

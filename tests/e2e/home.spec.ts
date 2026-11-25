@@ -166,8 +166,7 @@ test("desktop dashboard records the same events and follows the same feed", asyn
 });
 
 test("Up next says what is missing and puts it on the shopping list in one tap", async ({ page }) => {
-  // Lunch is planned from what the pantry has, so it is ready; the snack after it is not.
-  await page.getByRole("article", { name: "Up next" }).getByRole("button", { name: "Mark eaten" }).click();
+  // Lunch (a complete chana masala) needs things the demo pantry lacks.
   const add = page.getByRole("button", { name: /^Add \d+ to shopping$/ });
   await expect(add).toBeVisible();
   const n = (await add.textContent())!.match(/\d+/)![0];
