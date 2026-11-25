@@ -62,6 +62,7 @@ import { PantryDepsProvider, type PantryDeps } from "@/view-models/pantry/Pantry
 import { ChatDepsProvider, type ChatDeps } from "@/view-models/home/ChatDeps";
 import { EdgeChatBrain } from "@/data/assistant/edgeChat";
 import type { ChatBrain } from "@/domain/assistant";
+import { watchTables } from "@/data/live/watch";
 import { chatTools } from "./chatTools";
 
 interface Deps {
@@ -171,7 +172,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       void Promise.resolve().then(() => setDeps(inMemory()));
       return;
     }
-    createSupabase(URL, KEY).then((db) =>
+    let stop: (() => void) | undefined;
+    let cancelled = false;
+    void createSupabase(URL, KEY).then((db) => {
+      // Changes made in chat or on another device refetch what is on screen.
+      if (!cancelled) stop = watchTables(db, () => void client.invalidateQueries());
       setDeps(
         assemble(
           true,
@@ -193,9 +198,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
           new EdgeRecipeAdapter(db),
           new EdgeChatBrain(db),
         ),
-      ),
-    );
-  }, []);
+      );
+    });
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [client]);
 
   // Meals that could not reach the database wait in a queue: retry now, when back online, and every half minute.
   const flush = deps?.flushLogs;

@@ -26,7 +26,7 @@ describe("MCP connector", () => {
 
   it("week_plan and shopping_list point at cards that are served as MCP app pages", async () => {
     const tools = (await json(await call(mcp, { jsonrpc: "2.0", id: 7, method: "tools/list", params: {} }))).result.tools;
-    for (const [tool, uri] of [["week_plan", "ui://nutriflow/week-plan"], ["shopping_list", "ui://nutriflow/shopping"], ["today_next", "ui://nutriflow/today"], ["week_shopping", "ui://nutriflow/week-shopping"], ["what_to_eat", "ui://nutriflow/meal-stories"], ["my_targets", "ui://nutriflow/profile"]]) {
+    for (const [tool, uri] of [["week_plan", "ui://nutriflow/week-plan"], ["shopping_list", "ui://nutriflow/shopping"], ["today_next", "ui://nutriflow/today"], ["week_shopping", "ui://nutriflow/week-shopping"], ["what_to_eat", "ui://nutriflow/meal-stories"], ["my_targets", "ui://nutriflow/profile"], ["write_recipe", "ui://nutriflow/recipe"]]) {
       expect(tools.find((t: { name: string }) => t.name === tool)._meta.ui.resourceUri).toBe(uri);
       const res = (await json(await call(mcp, { jsonrpc: "2.0", id: 8, method: "resources/read", params: { uri } }))).result;
       expect(res.contents[0].text).toContain("ui/notifications/tool-result");

@@ -11,6 +11,7 @@ export const TODAY_URI = "ui://nutriflow/today";
 export const WEEK_SHOP_URI = "ui://nutriflow/week-shopping";
 export const MEALS_URI = "ui://nutriflow/meal-stories";
 export const PROFILE_URI = "ui://nutriflow/profile";
+export const RECIPE_URI = "ui://nutriflow/recipe";
 
 /** Lets a card load the app's own pictures (MCP Apps CSP); the host blocks every other origin. */
 export const cardMeta = () => (appOrigin() ? { ui: { csp: { resourceDomains: [appOrigin()] } } } : undefined);
@@ -301,6 +302,19 @@ function render(d) {
   };
 }
 `;
+// A recipe the chat just wrote: picture, name, numbers, and Keep / Open, so the chat does not type it out again.
+const RECIPE_RENDER = `
+function render(d) {
+  const meta = [d.minutes ? d.minutes + " min" : "", d.kcalPerServing ? d.kcalPerServing + " kcal per serving" : "", d.servings ? "serves " + d.servings : ""].filter(Boolean).join(" · ");
+  root.innerHTML = '<div class="card"><div class="tile">' + pic(d.image) + '<span class="k">Written for you</span><span class="n">' + esc(d.name) + '</span><span class="m">' + esc(meta) + "</span></div>"
+    + '<div class="row">' + (d.saved ? '<span class="pill ok">In your Recipes</span>' : '<button class="btn" id="keep">Keep it</button>')
+    + (ORIGIN ? '<button class="pill" id="open">Open in app</button>' : "") + "</div></div>";
+  const keep = document.getElementById("keep");
+  if (keep) keep.onclick = async () => { const ok = await call("keep_recipe", { id: d.id, keep: true }).catch(() => null); if (ok && !ok.isError) { d.saved = true; render(d); fit(); } };
+  const open = document.getElementById("open");
+  if (open) open.onclick = () => ask("ui/open-link", { url: ORIGIN + "/recipes/" + d.id });
+}
+`;
 const TAIL = `
 function fit() { send({ method: "ui/notifications/size-changed", params: { height: document.documentElement.scrollHeight } }); }
 addEventListener("message", (e) => {
@@ -325,3 +339,4 @@ export const todayHtml = () => page("today", "Today", TODAY_RENDER);
 export const weekShoppingHtml = () => page("week-shopping", "For your week", WEEK_SHOP_RENDER);
 export const mealStoriesHtml = () => page("meal-stories", "Meal ideas", MEALS_RENDER);
 export const profileHtml = () => page("profile", "Your calories", PROFILE_RENDER);
+export const recipeHtml = () => page("recipe", "Recipe", RECIPE_RENDER);

@@ -1,6 +1,6 @@
 import { createMcpHandler, getPublicOrigin, metadataCorsOptionsRequestHandler, protectedResourceHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
-import { CARD_MIME, EAT_NEXT_URI, SHOPPING_URI, TODAY_URI, WEEK_PLAN_URI, WEEK_SHOP_URI, MEALS_URI, mealStoriesHtml, PROFILE_URI, profileHtml, cardMeta, eatNextHtml, shoppingHtml, todayHtml, weekPlanHtml, weekShoppingHtml } from "./mcpCards";
+import { CARD_MIME, EAT_NEXT_URI, SHOPPING_URI, TODAY_URI, WEEK_PLAN_URI, WEEK_SHOP_URI, MEALS_URI, mealStoriesHtml, PROFILE_URI, profileHtml, RECIPE_URI, recipeHtml, cardMeta, eatNextHtml, shoppingHtml, todayHtml, weekPlanHtml, weekShoppingHtml } from "./mcpCards";
 import { clientForToken, verifyAccessToken } from "@/data/auth/token";
 import { SupabaseChoreRepository } from "@/data/chores/supabase";
 import { SupabaseMealPlanRepository } from "@/data/planning/supabase";
@@ -51,25 +51,16 @@ const slot = z.enum(["breakfast", "lunch", "dinner", "snack"]);
 const meal = z.enum(["Breakfast", "Lunch", "Snack", "Dinner"]);
 const dayOf = (d?: string) => d ?? toDateKey(new Date());
 
-const INSTRUCTIONS = `NutriFlow is one person's food loop: what they ate, their pantry, shopping list, recipes and chores.
-ONE CALL, ONE CARD. Simple questions are answered by exactly one tool, with no other calls before or after:
-- today, how am I doing, insights, what next, what should I do -> today_next
-- what to eat, what can I cook (now / with what I have) , meal or recipe ideas -> what_to_eat
-- my next meal -> eat_next
-- my plan, this week's meals -> week_plan
-- what to buy (this week, for the plan) -> week_shopping
-- my shopping list -> shopping_list
-- calorie target, range, goal, diet -> my_targets
-Do not check profile or pantry first for these; the tool already uses them. The card is the answer: one short line at most.
-Log only what the person says they ate, for themselves. If several people ate, each logs their own in their own account.
-Prefer a recipe id (find_recipes) so calories come from the recipe. For anything else give your best kcal estimate and say it is an estimate.
-Always pass the person's local date. Keep answers short: the next step, not a report.
-For ANY question about today (how am I doing, insights, summary, what next, what should I do) call today_next ONCE and nothing else: its card shows calories against the range and the few things that matter, and asks and saves in place. Do not call other tools to build a report.
-For what to buy (this week, for the plan) call week_shopping ONCE; never sum recipes yourself.
-Answer with one tool when one tool answers it; reach for several only when the person asks for something that needs them.
-Never write reports. Never mention empty or zero things (no chores, nothing due, 0 g protein) and never comment on how little they log.
-When a tool shows a card, the card is the answer: add at most one short line. Never paste links or ids. Never search the web for photos and never build your own page, widget or cooking session; use the tools and their cards.
-When the person wants a recipe, write it yourself with write_recipe, show it, and keep_recipe only if they like it. Make it adaptive: use profile (diet, foods to skip) and pantry, and adapt an existing recipe by writing a new version with basedOn. Write it like a cook: salt and a cooking fat with amounts, aromatics (onion, garlic, ginger), spices with amounts added in the right order (whole spices into hot oil first, then aromatics, then ground spices, then liquid), and a last step that tastes and balances salt, sourness, heat and sweetness. Check profile first for diet and foods to skip.`;
+const INSTRUCTIONS = `NutriFlow is one person's food loop: meals eaten, pantry, shopping, recipes, chores.
+Pick ONE way to answer:
+1. CARD: the question is one of these -> call that one tool, nothing before or after (it already reads profile and pantry). The card is the answer; add one short line at most.
+   today, how am I doing, what next -> today_next | what to eat, what can I cook, ideas -> what_to_eat | my next meal -> eat_next | this week's plan -> week_plan | what to buy for the week -> week_shopping | my shopping list -> shopping_list | calories, goal, diet -> my_targets | a new recipe or a change to one -> write_recipe
+2. ACTION: they say something happened or to change something (I ate, add milk, bought it, chore done) -> one tool, then one line saying what changed ("Logged dal, 420 kcal").
+3. TEXT: a cooking or food question that needs none of their data (how long to boil eggs, what replaces cream) -> answer in 1 to 3 sentences, no tool.
+4. ASK: unclear which meal, dish or amount -> one short question, no tool.
+Several tools only when they ask for several things. No reports, links, ids, web photos or pages of your own.
+Always pass the person's local date. Log only what this person ate; prefer a recipe id (find_recipes), else say the kcal is an estimate.
+Never mention empty or zero things or how little they log.`;
 
 type Ctx = { http?: { authInfo?: { token: string } } };
 type Out = { content: { type: "text"; text: string }[]; structuredContent?: Record<string, unknown>; isError?: boolean };
@@ -245,9 +236,8 @@ export const mcp = createMcpHandler(
 
     server.registerTool("write_recipe", {
       title: "Write a recipe for this person",
-      description: `Write a recipe for this person and show it to them; it opens in their NutriFlow app (cook screen). It is NOT saved to their Recipes until they like it: ask, then call keep_recipe. You write it, this checks it. Adapt it to them: call profile (diet, foods to skip) and pantry (what they have) first, and prefer what they already have. To adapt a recipe they already have (no onion, for 2, vegan), write the adapted version and pass the original id as basedOn so it keeps the picture.
-Write it like a real cook: salt, a cooking fat (oil, ghee or butter), aromatics (onion, garlic, ginger), spices with amounts, and the order things go in the pan (whole spices in hot oil, then aromatics, then ground spices, then tomatoes or liquid). The last step must taste and balance (adjust salt, sourness, heat, sweetness). Ingredient amounts are for the whole recipe; nutrition is per serving and may be a fair estimate. Each step's verb must be one of: ${COOK_VERBS.join(", ")}. Give minutes only for steps that wait (simmering, boiling, baking). Add a short "look" (what it looks, smells or sounds like when right) and a "tip" to each step when you can.
-Make it complete. A dish with parts (chicken tikka masala = marinade + masala gravy; biryani = rice + masala) gets every part with its own ingredients and steps, tagged with "group". Pastes and spice mixes are ingredients with amounts (ginger-garlic paste, garam masala, kasuri methi), and "swaps" says what to do without each (grate fresh ginger and garlic, mix your own masala), so "I don't have it" is never a dead end. "fixes" covers too salty, too sour, too thick, watery, bland, burnt. If the result lists problems, fix them and call again.`,
+      description: `Write a recipe and save it unsaved; the person sees it in a card with Keep it. Do not type the recipe out in chat. Call it straight away (diet and foods to skip are checked here; profile or pantry only if they ask to use what they have). To adapt one of theirs, pass its id as basedOn.
+Must pass: salt and a cooking fat with amounts; aromatics (onion, garlic, ginger) unless sweet or raw; spices with amounts in pan order (whole spices in hot oil, aromatics, ground spices, then liquid); last step tastes and balances salt, sourness, heat, sweetness. Amounts are for the whole recipe; nutrition per serving (estimate is fine). verb is one of: ${COOK_VERBS.join(", ")}. minutes only on steps that wait. look and tip only where they help. A dish in parts (marinade + gravy) tags ingredients and steps with group. Pastes and masalas are ingredients with a swap saying how to make them; fixes: 2 to 4 common ones. If problems come back, fix only those and call again.`,
       inputSchema: z.object({
         meal,
         basedOn: z.string().max(80).optional().describe("The id of the recipe this adapts (from find_recipes or recipe)."),
@@ -262,15 +252,15 @@ Make it complete. A dish with parts (chicken tikka masala = marinade + masala gr
           fat: z.number().min(0).max(300),
           ingredients: z.array(z.object({ name: z.string().max(80).describe("Plain grocery name: Onion, Basmati rice, Ginger-garlic paste"), qty: z.number().positive(), unit: z.string().max(20).describe("g, ml, pcs, cups, tbsp, tsp, cloves"), group: z.string().max(40).optional().describe("The part of the dish: Marinade, Masala, Rice") })).min(2).max(60),
           steps: z.array(z.object({ text: z.string().max(400), verb: z.string().max(20), minutes: z.number().min(1).max(240).optional(), look: z.string().max(240).optional(), tip: z.string().max(240).optional(), group: z.string().max(40).optional().describe("Same names as the ingredients' groups") })).min(2).max(40),
-          swaps: z.array(z.object({ ingredient: z.string().max(60), use: z.string().max(200), note: z.string().max(240).optional() })).max(20).optional().describe("What to use when the person does not have an ingredient, or how to make it (paste, spice mix). Cover every non-staple ingredient."),
+          swaps: z.array(z.object({ ingredient: z.string().max(60), use: z.string().max(200), note: z.string().max(240).optional() })).max(20).optional().describe("What to use when the person does not have an ingredient, or how to make it (paste, spice mix). Cover pastes, spice mixes and less common items."),
           fixes: z.array(z.object({ problem: z.string().max(40), fix: z.string().max(240) })).max(20).optional().describe("What can go wrong and how to fix it: too salty, too sour, too thick, watery, bland, burnt."),
           prep: z.array(z.string().max(160)).max(12).optional().describe("What to set out and prepare before the first step."),
         }),
       }), annotations: write,
-    }, run(async (d, i) => {
-      const out = await A.writeRecipe(d, i);
-      const origin = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
-      return { ...out, ...(origin ? { link: `${origin}/recipes/${out.id}` } : {}), next: "Show the person the recipe (the link opens it) and ask if they want to keep it. Only then call keep_recipe." };
+      _meta: { ui: { resourceUri: RECIPE_URI }, "ui/resourceUri": RECIPE_URI },
+    }, run((d, i) => A.writeRecipe(d, i), true));
+    server.registerResource("recipe-card", RECIPE_URI, { title: "Recipe card", mimeType: CARD_MIME }, async (uri) => ({
+      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: recipeHtml(), _meta: cardMeta() }],
     }));
 
     server.registerTool("keep_recipe", {

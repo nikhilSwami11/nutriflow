@@ -292,7 +292,9 @@ export async function writeRecipe(deps: AssistantDeps, input: { meal: MealName; 
   const [profile, builtins] = await Promise.all([deps.profile.get(), deps.recipes.list()]);
   const recipe = toRecipe(input.recipe, `ai-${deps.newId()}`, input.meal, { diet: profile?.diet, dislikes: profile?.dislikes ?? [] }, builtins);
   if (!recipe) {
-    throw new Error("The recipe was not accepted: it needs a name, sane numbers, at least 2 ingredients and 2 steps, and it must fit the person's diet and dislikes (see profile).");
+    // Says the diet and foods to skip, so the chat can fix it without another call.
+    const skip = profile?.dislikes?.length ? profile.dislikes.join(", ") : "none";
+    throw new Error(`The recipe was not accepted: it needs a name, sane numbers, at least 2 ingredients and 2 steps, and it must fit the diet (${profile?.diet ?? "anything"}) and skip these foods: ${skip}.`);
   }
   const problems = recipeProblems(recipe);
   if (problems.length) throw new Error(`Not saved yet. Fix these and send it again:\n- ${problems.join("\n- ")}`);
@@ -302,7 +304,7 @@ export async function writeRecipe(deps: AssistantDeps, input: { meal: MealName; 
     if (base.image) recipe.tint = base.tint;
   }
   await deps.mine.put(recipe, false);
-  return { id: recipe.id, name: recipe.name, saved: false, hasPicture: !!recipe.image };
+  return { id: recipe.id, name: recipe.name, saved: false, minutes: recipe.minutes, servings: recipe.servings, kcalPerServing: recipe.kcal, image: recipe.image };
 }
 
 /** The person liked it: keep it in their Recipes (or take it back out with keep: false). */
