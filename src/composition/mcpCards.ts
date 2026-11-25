@@ -10,6 +10,7 @@ export const SHOPPING_URI = "ui://nutriflow/shopping";
 export const TODAY_URI = "ui://nutriflow/today";
 export const WEEK_SHOP_URI = "ui://nutriflow/week-shopping";
 export const MEALS_URI = "ui://nutriflow/meal-stories";
+export const PROFILE_URI = "ui://nutriflow/profile";
 
 /** Lets a card load the app's own pictures (MCP Apps CSP); the host blocks every other origin. */
 export const cardMeta = () => (appOrigin() ? { ui: { csp: { resourceDomains: [appOrigin()] } } } : undefined);
@@ -27,7 +28,7 @@ const STYLE = `
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .btn{min-height:44px;padding:0 20px;border-radius:999px;border:0;background:var(--ink);color:var(--bg);font:500 15px inherit;font-family:inherit;cursor:pointer}
 .pill{border-radius:999px;background:var(--panel);padding:8px 14px;font-size:14px;color:var(--ink2)}
-.btn.sm{min-height:44px;padding:0 14px;font-size:14px}.pill{border:0;font-family:inherit;cursor:pointer;min-height:44px}.step{gap:4px}.step span{min-width:24px;text-align:center}button:disabled{opacity:.5}
+.btn.sm{min-height:44px;padding:0 14px;font-size:14px}.pill{border:0;font-family:inherit;cursor:pointer;min-height:44px}.step{gap:4px}.line .step{flex:0 0 auto}.step span{min-width:24px;text-align:center}button:disabled{opacity:.5}
 .day{display:flex;flex-direction:column;gap:6px}.bar{height:6px;border-radius:999px;background:var(--panel);overflow:hidden}.bar i{display:block;height:100%;background:var(--mint)}
 .pic{width:120px;height:120px;object-fit:contain;align-self:center;margin:-4px 0 4px}
 .pick{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:0;border-top:1px solid var(--line);font:inherit;color:inherit;text-align:left;cursor:pointer;min-height:44px}.pick.off span:first-child{text-decoration:line-through;color:var(--ink2)}
@@ -252,6 +253,34 @@ function render(d) {
   }));
 }
 `;
+// Calorie range and diet, set in the card: steppers and chips, one Save.
+const PROFILE_RENDER = `
+let p = null;
+const DIETS = [["anything", "Anything"], ["vegetarian", "Vegetarian"], ["eggetarian", "Eggetarian"], ["vegan", "Vegan"]];
+function step(id, label, v) {
+  return '<div class="line"><span>' + label + '</span><span class="row step"><button class="pill" data-step="' + id + ':-50" aria-label="Less">−</button><b>' + v + '</b><button class="pill" data-step="' + id + ':50" aria-label="More">+</button></span></div>';
+}
+function render(d) {
+  p = p || { kcalMin: d.kcalMin, kcalMax: d.kcalMax, diet: d.diet, saved: d.saved };
+  root.innerHTML = '<div class="card"><p class="n">Your daily calories</p>'
+    + '<p class="m" style="color:var(--ink2)">' + (p.saved ? "Saved" : "Suggested, not saved yet") + "</p>"
+    + step("kcalMin", "From", p.kcalMin) + step("kcalMax", "To", p.kcalMax)
+    + '<p class="k">How you eat</p><div class="row">' + DIETS.map(([v, l]) => '<button class="pill' + (p.diet === v ? " ok" : "") + '" data-diet="' + v + '">' + l + "</button>").join("") + "</div>"
+    + '<div class="row"><button class="btn" id="save">Save</button></div></div>';
+  root.querySelectorAll("[data-step]").forEach((b) => (b.onclick = () => {
+    const [k, by] = b.dataset.step.split(":");
+    p[k] = Math.max(1000, Math.min(5000, p[k] + Number(by)));
+    if (p.kcalMin > p.kcalMax) k === "kcalMin" ? (p.kcalMax = p.kcalMin) : (p.kcalMin = p.kcalMax);
+    p.saved = false; render(d);
+  }));
+  root.querySelectorAll("[data-diet]").forEach((b) => (b.onclick = () => { p.diet = b.dataset.diet; p.saved = false; render(d); }));
+  document.getElementById("save").onclick = async () => {
+    document.getElementById("save").disabled = true;
+    const ok = await call("set_profile", { kcal_min: p.kcalMin, kcal_max: p.kcalMax, diet: p.diet }).then((r) => r && !r.isError).catch(() => false);
+    p.saved = !!ok; render(d); fit();
+  };
+}
+`;
 const TAIL = `
 function fit() { send({ method: "ui/notifications/size-changed", params: { height: document.documentElement.scrollHeight } }); }
 addEventListener("message", (e) => {
@@ -272,3 +301,4 @@ export const shoppingHtml = () => page("shopping", "Shopping list", SHOPPING_REN
 export const todayHtml = () => page("today", "Today", TODAY_RENDER);
 export const weekShoppingHtml = () => page("week-shopping", "For your week", WEEK_SHOP_RENDER);
 export const mealStoriesHtml = () => page("meal-stories", "Meal ideas", MEALS_RENDER);
+export const profileHtml = () => page("profile", "Your calories", PROFILE_RENDER);

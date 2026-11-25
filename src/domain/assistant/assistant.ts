@@ -232,14 +232,14 @@ export async function weekShopping(deps: AssistantDeps, date: DateKey) {
 export async function weekPlan(deps: AssistantDeps, date: DateKey) {
   const { plan, recipes } = await storedWeek(deps, date);
   const byId = new Map(recipes.map((r) => [r.id, r]));
-  return plan.map((d) => ({
-    date: d.date,
-    focus: d.focus,
-    meals: d.meals.flatMap((m) => {
+  return plan.map((d) => {
+    const meals = d.meals.flatMap((m) => {
       const r = byId.get(m.recipeId);
       return r ? [{ meal: m.meal, recipeId: r.id, name: r.name, kcal: r.kcal, protein: r.protein }] : [];
-    }),
-  }));
+    });
+    // Totals done here so the chat never adds them up (and gets them wrong).
+    return { date: d.date, focus: d.focus, kcal: meals.reduce((s, m) => s + m.kcal, 0), protein: meals.reduce((s, m) => s + m.protein, 0), meals };
+  });
 }
 
 /** Day i of the plan as meals with their recipes. */

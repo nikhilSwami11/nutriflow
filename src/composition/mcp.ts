@@ -1,6 +1,6 @@
 import { createMcpHandler, getPublicOrigin, metadataCorsOptionsRequestHandler, protectedResourceHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
-import { CARD_MIME, EAT_NEXT_URI, SHOPPING_URI, TODAY_URI, WEEK_PLAN_URI, WEEK_SHOP_URI, MEALS_URI, mealStoriesHtml, cardMeta, eatNextHtml, shoppingHtml, todayHtml, weekPlanHtml, weekShoppingHtml } from "./mcpCards";
+import { CARD_MIME, EAT_NEXT_URI, SHOPPING_URI, TODAY_URI, WEEK_PLAN_URI, WEEK_SHOP_URI, MEALS_URI, mealStoriesHtml, PROFILE_URI, profileHtml, cardMeta, eatNextHtml, shoppingHtml, todayHtml, weekPlanHtml, weekShoppingHtml } from "./mcpCards";
 import { clientForToken, verifyAccessToken } from "@/data/auth/token";
 import { SupabaseChoreRepository } from "@/data/chores/supabase";
 import { SupabaseMealPlanRepository } from "@/data/planning/supabase";
@@ -53,6 +53,15 @@ const meal = z.enum(["Breakfast", "Lunch", "Snack", "Dinner"]);
 const dayOf = (d?: string) => d ?? toDateKey(new Date());
 
 const INSTRUCTIONS = `NutriFlow is one person's food loop: what they ate, their pantry, shopping list, recipes and chores.
+ONE CALL, ONE CARD. Simple questions are answered by exactly one tool, with no other calls before or after:
+- today, how am I doing, insights, what next, what should I do -> today_next
+- what to eat, what can I cook (now / with what I have) , meal or recipe ideas -> what_to_eat
+- my next meal -> eat_next
+- my plan, this week's meals -> week_plan
+- what to buy (this week, for the plan) -> week_shopping
+- my shopping list -> shopping_list
+- calorie target, range, goal, diet -> my_targets
+Do not check profile or pantry first for these; the tool already uses them. The card is the answer: one short line at most.
 Log only what the person says they ate, for themselves. If several people ate, each logs their own in their own account.
 Prefer a recipe id (find_recipes) so calories come from the recipe. For anything else give your best kcal estimate and say it is an estimate.
 Always pass the person's local date. Keep answers short: the next step, not a report.
@@ -196,9 +205,20 @@ export const mcp = createMcpHandler(
       inputSchema: z.object({ date, meal, recipe_id: z.string().max(80) }), annotations: write,
     }, run((d, i) => A.swapMeal(d, { date: dayOf(i.date), meal: i.meal, recipeId: i.recipe_id })));
 
+    server.registerResource("profile-card", PROFILE_URI, { title: "Your calories", mimeType: CARD_MIME }, async (uri) => ({
+      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: profileHtml(), _meta: cardMeta() }],
+    }));
+
+    server.registerTool("my_targets", {
+      _meta: { ui: { resourceUri: PROFILE_URI }, "ui/resourceUri": PROFILE_URI },
+      title: "Calorie target and diet",
+      description: "Use when the person asks about or wants to change their calorie target, daily range, goal or diet. Its card shows the range with steppers and diet chips and saves in place. The range is the same every day of the week.",
+      inputSchema: z.object({}), annotations: read,
+    }, run((d) => A.profileInfo(d), true));
+
     server.registerTool("profile", {
       title: "Profile",
-      description: "The person's diet, daily calorie range and foods to skip. Check it before suggesting or writing food.",
+      description: "The person's diet, daily calorie range and foods to skip, as data. Check it quietly before suggesting or writing food; to show or change targets use my_targets.",
       inputSchema: z.object({}), annotations: read,
     }, run((d) => A.profileInfo(d)));
 
