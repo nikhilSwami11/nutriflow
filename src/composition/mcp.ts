@@ -1,6 +1,6 @@
 import { createMcpHandler, getPublicOrigin, metadataCorsOptionsRequestHandler, protectedResourceHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
-import { CARD_MIME, EAT_NEXT_URI, SHOPPING_URI, TODAY_URI, WEEK_PLAN_URI, eatNextHtml, shoppingHtml, todayHtml, weekPlanHtml } from "./mcpCards";
+import { CARD_MIME, EAT_NEXT_URI, SHOPPING_URI, TODAY_URI, WEEK_PLAN_URI, cardMeta, eatNextHtml, shoppingHtml, todayHtml, weekPlanHtml } from "./mcpCards";
 import { clientForToken, verifyAccessToken } from "@/data/auth/token";
 import { SupabaseChoreRepository } from "@/data/chores/supabase";
 import { SupabaseMealPlanRepository } from "@/data/planning/supabase";
@@ -135,18 +135,18 @@ export const mcp = createMcpHandler(
     }, run((d, i) => A.cooked(d, { date: dayOf(i.date), recipeId: i.recipe_id, servingsMade: i.servings_made, servingsEaten: i.servings_eaten })));
 
     server.registerResource("eat-next-card", EAT_NEXT_URI, { title: "Eat next card", mimeType: CARD_MIME }, async (uri) => ({
-      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: eatNextHtml() }],
+      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: eatNextHtml(), _meta: cardMeta() }],
     }));
 
     server.registerResource("week-plan-card", WEEK_PLAN_URI, { title: "Week plan card", mimeType: CARD_MIME }, async (uri) => ({
-      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: weekPlanHtml() }],
+      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: weekPlanHtml(), _meta: cardMeta() }],
     }));
     server.registerResource("shopping-card", SHOPPING_URI, { title: "Shopping list card", mimeType: CARD_MIME }, async (uri) => ({
-      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: shoppingHtml() }],
+      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: shoppingHtml(), _meta: cardMeta() }],
     }));
 
     server.registerResource("today-card", TODAY_URI, { title: "Today card", mimeType: CARD_MIME }, async (uri) => ({
-      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: todayHtml() }],
+      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: todayHtml(), _meta: cardMeta() }],
     }));
 
     server.registerTool("today_next", {

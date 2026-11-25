@@ -240,7 +240,7 @@ export async function eatNextNow(deps: AssistantDeps, input: { date: DateKey; ho
   const n = eatNext({ today: day(0), tomorrow: day(1), eaten: eatenToday, hour: input.hour, pantry });
   if (!n) return { next: null };
   return {
-    next: { meal: n.meal, recipeId: n.recipe.id, name: n.recipe.name, minutes: n.recipe.minutes, kcalPerServing: n.recipe.kcal, tomorrow: n.tomorrow },
+    next: { meal: n.meal, recipeId: n.recipe.id, name: n.recipe.name, minutes: n.recipe.minutes, kcalPerServing: n.recipe.kcal, tomorrow: n.tomorrow, image: n.recipe.image },
     canCook: n.cook.canCook,
     toBuy: n.cook.needed.map((i) => i.name),
     // The pantry is not set up, so these are not known to be missing: ask.
@@ -380,6 +380,8 @@ export type NextItem =
   | { kind: "profile" }
   | {
       kind: "meal"; meal: MealName; recipeId: string; name: string; minutes: number; kcalPerServing: number; tomorrow: boolean;
+      /** The app's own dish picture, a path like /recipes/dal-tadka.webp; absent when the dish has none. */
+      image?: string;
       canCook: boolean;
       /** Ask "Do you have it?" for these: the pantry does not know them, or records them as out. */
       ask: string[];

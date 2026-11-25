@@ -9,6 +9,9 @@ export const WEEK_PLAN_URI = "ui://nutriflow/week-plan";
 export const SHOPPING_URI = "ui://nutriflow/shopping";
 export const TODAY_URI = "ui://nutriflow/today";
 
+/** Lets a card load the app's own pictures (MCP Apps CSP); the host blocks every other origin. */
+export const cardMeta = () => (appOrigin() ? { ui: { csp: { resourceDomains: [appOrigin()] } } } : undefined);
+
 /** The public address of the app, for the card's "Start cooking" link. Without it the card shows no links. */
 const appOrigin = () => (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
 
@@ -24,6 +27,8 @@ const STYLE = `
 .pill{border-radius:999px;background:var(--panel);padding:8px 14px;font-size:14px;color:var(--ink2)}
 .btn.sm{min-height:44px;padding:0 14px;font-size:14px}.pill{border:0;font-family:inherit;cursor:pointer;min-height:44px}.step{gap:4px}.step span{min-width:24px;text-align:center}button:disabled{opacity:.5}
 .day{display:flex;flex-direction:column;gap:6px}.bar{height:6px;border-radius:999px;background:var(--panel);overflow:hidden}.bar i{display:block;height:100%;background:var(--mint)}
+.pic{width:120px;height:120px;object-fit:contain;align-self:center;margin:-4px 0 4px}
+.chip{border:0;background:var(--bg);color:var(--onp);border-radius:999px;padding:4px 10px;margin:2px 0;font:inherit;font-size:14px;cursor:pointer;min-height:32px}
 .ok{background:var(--mint);color:var(--onp)}.warn{background:var(--peach);color:var(--onp)}
 p{margin:0}
 .line{display:flex;gap:12px;justify-content:space-between;align-items:baseline;padding:10px 0;border-top:1px solid var(--line)}.line b{min-width:36px}.line span:nth-child(2){flex:1}
@@ -36,6 +41,22 @@ const send = (m) => parent.postMessage({ jsonrpc: "2.0", ...m }, "*");
 const ask = (method, params) => new Promise((res) => { const id = ++seq; waiting[id] = res; send({ id, method, params }); });
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const root = document.getElementById("root");
+const day = () => { const t = new Date(); return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0"); };
+const call = (name, args) => ask("tools/call", { name, arguments: args });
+// What is missing for a meal, with the action right there: add all to shopping, say you have them all, or tap one you have.
+// The app's own dish picture on the meal's tint; nothing when the dish has none (never a photo from elsewhere).
+const pic = (image) => (image && ORIGIN ? '<img class="pic" alt="" src="' + esc(ORIGIN + image) + '">' : "");
+function missing(names) {
+  if (!names || !names.length) return "";
+  const n = names.length;
+  return '<p class="m">You are missing ' + names.map((x) => '<button class="chip" data-has="' + esc(x) + '" title="I have this">' + esc(x) + "</button>").join(" ") + '</p>'
+    + '<div class="row"><button class="btn" data-shop-all="1">Add ' + n + " to shopping</button>" + '<button class="pill" data-have-all="1">' + (n > 1 ? "I have them" : "I have it") + "</button></div>";
+}
+function wireMissing(names, act) {
+  root.querySelectorAll("[data-has]").forEach((b) => (b.onclick = () => act("add_to_pantry", { items: [{ name: b.dataset.has, qty: 1 }] })));
+  root.querySelectorAll("[data-shop-all]").forEach((b) => (b.onclick = () => act("add_to_shopping_list", { items: names.map((name) => ({ name })) })));
+  root.querySelectorAll("[data-have-all]").forEach((b) => (b.onclick = () => act("add_to_pantry", { items: names.map((name) => ({ name, qty: 1 })) })));
+}
 `;
 
 const PARSE = `
@@ -48,16 +69,25 @@ function draw(result) {
 }
 `;
 const EAT_NEXT_RENDER = `
+let busy = false;
+async function act(name, args) {
+  if (busy) return; busy = true;
+  root.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  await call(name, args).catch(() => null);
+  const fresh = await call("eat_next", { date: day(), hour: new Date().getHours() }).catch(() => null);
+  busy = false;
+  if (fresh) draw(fresh);
+}
 function render(d) {
   if (!d.next) { root.innerHTML = '<div class="card"><div class="tile"><span class="n">All meals eaten for today</span></div></div>'; return; }
   const n = d.next;
-  const status = d.canCook ? (d.toBuy && d.toBuy.length ? "Cook now with swaps or skips" : "Ready to cook")
-    : "You are missing " + d.toBuy.map(esc).join(", ");
+  const gaps = (d.toBuy || []).concat(d.unknown || []);
   const then = (d.thenToday || []).map((t) => '<span class="pill">' + esc(t.meal) + " · " + esc(t.name) + "</span>").join("");
-  root.innerHTML = '<div class="card"><div class="tile"><span class="k">' + (n.tomorrow ? "Tomorrow · " : "") + esc(n.meal) + '</span><span class="n">' + esc(n.name) + '</span><span class="m">' + n.minutes + " min · " + n.kcalPerServing + ' kcal per serving</span></div>'
-    + '<p><span class="pill ' + (d.canCook ? "ok" : "warn") + '">' + status + "</span></p>"
-    + (ORIGIN ? '<div class="row"><button class="btn" id="go">' + (d.canCook ? "Start cooking" : "Cook anyway") + '</button></div>' : "")
+  root.innerHTML = '<div class="card"><div class="tile">' + pic(n.image) + '<span class="k">' + (n.tomorrow ? "Tomorrow · " : "") + esc(n.meal) + '</span><span class="n">' + esc(n.name) + '</span><span class="m">' + n.minutes + " min · " + n.kcalPerServing + ' kcal per serving</span></div>'
+    + (gaps.length ? missing(gaps) + (ORIGIN ? '<div class="row"><button class="pill" id="go">Cook anyway</button></div>' : "")
+      : '<p><span class="pill ok">Ready to cook</span></p>' + (ORIGIN ? '<div class="row"><button class="btn" id="go">Start cooking</button></div>' : ""))
     + (then ? '<div class="row"><span class="m" style="color:var(--ink2)">Then</span>' + then + "</div>" : "") + "</div>";
+  wireMissing(gaps, act);
   const go = document.getElementById("go");
   if (go) go.onclick = () => ask("ui/open-link", { url: ORIGIN + "/cook/" + n.recipeId });
 }
@@ -84,8 +114,6 @@ function render(d) {
 `;
 // The today card asks and saves in place: each button calls a tool through the chat, then the card reloads itself.
 const TODAY_RENDER = `
-const day = () => { const t = new Date(); return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0"); };
-const call = (name, args) => ask("tools/call", { name, arguments: args });
 let busy = false;
 async function act(name, args) {
   if (busy) return; busy = true;
@@ -110,9 +138,8 @@ function render(d) {
   const parts = items.map((it, i) => {
     if (it.kind === "profile") return '<div class="tile"><span class="k">First, how do you eat?</span><div class="row">' + DIETS.map(([v, l]) => '<button class="pill" data-diet="' + v + '">' + l + "</button>").join("") + "</div></div>";
     if (it.kind === "meal") {
-      const q = it.ask[0];
-      return '<div class="tile"><span class="k">' + (it.tomorrow ? "Tomorrow · " : "") + esc(it.meal) + '</span><span class="n">' + esc(it.name) + '</span><span class="m">' + it.minutes + " min · " + it.kcalPerServing + " kcal</span>"
-        + (q ? '<p class="m">Do you have ' + esc(q.toLowerCase()) + '?</p><div class="row"><button class="pill ok" data-have="' + esc(q) + '">I have it</button><button class="pill" data-out="' + esc(q) + '">Don’t have</button></div>'
+      return '<div class="tile">' + pic(it.image) + '<span class="k">' + (it.tomorrow ? "Tomorrow · " : "") + esc(it.meal) + '</span><span class="n">' + esc(it.name) + '</span><span class="m">' + it.minutes + " min · " + it.kcalPerServing + " kcal</span>"
+        + (it.ask.length ? missing(it.ask)
           : '<div class="row">' + (ORIGIN ? '<button class="btn" id="cook">Start cooking</button>' : "")
             + '<span class="row step"><button class="pill" id="less" aria-label="Fewer servings">−</button><span id="sv">1</span><button class="pill" id="more" aria-label="More servings">+</button></span><button class="pill" id="ate">Mark eaten</button></div>')
         + "</div>";
@@ -127,8 +154,7 @@ function render(d) {
   let sv = 1;
   const $ = (id) => document.getElementById(id);
   root.querySelectorAll("[data-diet]").forEach((b) => (b.onclick = () => act("set_profile", { diet: b.dataset.diet })));
-  root.querySelectorAll("[data-have]").forEach((b) => (b.onclick = () => act("add_to_pantry", { items: [{ name: b.dataset.have, qty: 1 }] })));
-  root.querySelectorAll("[data-out]").forEach((b) => (b.onclick = () => act("add_to_shopping_list", { items: [{ name: b.dataset.out }] })));
+  if (meal) wireMissing(meal.ask, act);
   root.querySelectorAll("[data-tick]").forEach((b) => (b.onclick = () => {
     const [k, id] = [b.dataset.tick.slice(0, 1), b.dataset.tick.slice(2)];
     act(k === "p" ? "set_prep_done" : "set_chore_done", k === "p" ? { id, done: true } : { id, done: true, date: day() });
