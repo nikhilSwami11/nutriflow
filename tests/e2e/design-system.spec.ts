@@ -5,10 +5,10 @@ import { expect, test, type Page } from "@playwright/test";
  * The design system, enforced. One reading size floor, one touch size floor, readable contrast, one page gutter.
  * See "Design system" in CLAUDE.md for the rules and why.
  */
-const ROUTES = ["/", "/pantry", "/recipes", "/recipes/dal-tadka", "/plan", "/cook/dal-tadka", "/cook/dal-tadka#steps", "/photo", "/signin", "/chores", "/shopping", "/eat", "/profile", "/history", "/oauth/consent?authorization_id=x"];
+const ROUTES = ["/", "/pantry", "/recipes", "/recipes/dal-tadka", "/plan", "/cook/dal-tadka", "/cook/dal-tadka#ingredients", "/photo", "/signin", "/chores", "/shopping", "/eat", "/profile", "/history", "/oauth/consent?authorization_id=x"];
 const settle = async (page: Page, route: string) => {
-  await page.goto(route.replace("#steps", ""));
-  if (route.endsWith("#steps")) await page.getByRole("button", { name: "Start cooking" }).click();
+  await page.goto(route.replace("#ingredients", ""));
+  if (route.endsWith("#ingredients")) await page.getByRole("button", { name: "Ingredients" }).click();
   await page.waitForTimeout(route === "/photo" ? 1800 : 1200);
 };
 
@@ -108,7 +108,6 @@ test("cards share one corner radius, buttons are pills", async ({ page }) => {
 
 test("the Ask sheet is readable too", async ({ page }) => {
   await page.goto("/cook/dal-tadka");
-  await page.getByRole("button", { name: "Start cooking" }).click();
   await page.getByRole("button", { name: "Ask about this step" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "How do I know it is done?" }).click();
   // the sheet itself: the page behind its dimmed backdrop is not meant to be read at that moment

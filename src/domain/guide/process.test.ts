@@ -55,4 +55,9 @@ describe("processTiles", () => {
     expect(chop.alongside).toEqual([{ verb: "Boil", label: "toor dal", minutes: 15 }]);
     expect(t.find((x) => x.verb === "Serve")!.alongside).toEqual([]);
   });
+
+  it("gives every action its tasks to tick: items to wash, and the steps with their timers", () => {
+    expect(tiles[0].tasks.map((t) => t.text)).toEqual(["Rinse toor dal", "Wash tomatoes"]);
+    expect(tiles[1].tasks).toEqual([{ id: "s:0", text: "Chop the onions and tomatoes", stepIndex: 0 }, { id: "s:4", text: "Chop fresh tomatoes to finish", stepIndex: 4 }]);
+  });
 });

@@ -1,26 +1,45 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const eaten = (page: Page) => page.getByRole("status", { name: "Servings eaten" });
-const stepText = (page: Page, text: string) => page.locator("p[aria-live=polite]", { hasText: text });
-/** Open a cook screen and move past the Get ready checklist to step one. */
+const stepText = (page: Page, text: string) => page.locator("span[aria-live=polite]", { hasText: text });
+/** Open a cook screen: it starts on the first action (Wash for dal tadka). Dal tadka has 7 actions. */
 const begin = async (page: Page, path: string) => {
   await page.goto(path);
-  await page.getByRole("button", { name: "Start cooking" }).click();
 };
-const next = (page: Page) => page.getByRole("button", { name: /Next step|Finish|Mark done/ });
+const next = (page: Page) => page.getByRole("button", { name: /Done · next action|Finish|Mark done/ });
+const jump = (page: Page, verb: string) => page.getByRole("tab", { name: verb }).click();
+const ACTIONS = 7;
 
-test("start cooking opens Get ready, then step one with progress", async ({ page }) => {
+test("start cooking opens the cook: actions stay on screen, the first one shows, nothing else to press", async ({ page }) => {
   await page.goto("/recipes/dal-tadka");
   await page.getByRole("link", { name: "Start cooking" }).click();
   await expect(page).toHaveURL(/\/cook\/dal-tadka\?servings=4/);
-  await expect(page.getByRole("heading", { name: "Get ready" })).toBeVisible();
-  await page.getByRole("button", { name: "Start cooking" }).click();
+  const tabs = page.getByRole("tablist", { name: "Actions" });
+  await expect(tabs.getByRole("tab")).toHaveCount(ACTIONS);
+  await expect(tabs.getByRole("tab", { name: "Wash" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByLabel("Wash tasks")).toContainText("Rinse toor dal");
+  await next(page).click();
+  await expect(tabs.getByRole("tab", { name: "Chop" })).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.getByRole("tab", { name: "Wash" }).getByLabel("done")).toBeVisible(); // a tick on what is done
   await expect(stepText(page, "Chop the onions and tomatoes")).toBeVisible();
-  await expect(page.getByRole("progressbar", { name: "Recipe progress" })).toHaveAttribute("aria-valuetext", "Step 1 of 6");
-  await expect(page.getByRole("button", { name: "Back to the checklist" })).toBeVisible();
   await expect(page.locator(".cook-motion svg")).toBeVisible(); // the chop loop
   await page.getByRole("link", { name: "Close cooking" }).click();
   await expect(page).toHaveURL("/");
+});
+
+test("tasks tick on their own, and a swipe moves to the next action", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "swipe is for touch");
+  await page.goto("/cook/dal-tadka");
+  await page.getByText("Rinse toor dal").click();
+  await expect(page.getByLabel("Wash tasks").getByRole("checkbox").first()).toBeChecked();
+  // Left swipe = next action (touch only); the handler is on the cook area.
+  const area = page.locator("div.touch-pan-y");
+  await area.dispatchEvent("pointerdown", { pointerType: "touch", clientX: 300, clientY: 400, bubbles: true });
+  await area.dispatchEvent("pointerup", { pointerType: "touch", clientX: 80, clientY: 410, bubbles: true });
+  await expect(page.getByRole("tab", { name: "Chop" })).toHaveAttribute("aria-selected", "true");
+  await area.dispatchEvent("pointerdown", { pointerType: "touch", clientX: 80, clientY: 400, bubbles: true });
+  await area.dispatchEvent("pointerup", { pointerType: "touch", clientX: 300, clientY: 400, bubbles: true });
+  await expect(page.getByRole("tab", { name: "Wash" })).toHaveAttribute("aria-selected", "true");
 });
 
 test("servings picked on the recipe page carry into the cook", async ({ page }) => {
@@ -29,9 +48,10 @@ test("servings picked on the recipe page carry into the cook", async ({ page }) 
   await page.getByRole("button", { name: "More servings" }).click();
   await page.getByRole("link", { name: "Start cooking" }).click();
   await expect(page).toHaveURL(/servings=6/);
+  await page.getByRole("button", { name: "Ingredients" }).click();
   await expect(page.getByText("for 6 servings")).toBeVisible();
-  await page.getByRole("button", { name: "Start cooking" }).click();
-  for (let i = 0; i < 6; i++) await next(page).click();
+  await page.getByRole("button", { name: "Actions" }).click();
+  for (let i = 0; i < ACTIONS; i++) await next(page).click();
   await expect(page.getByText("You made 6 servings. How many did you eat?")).toBeVisible();
 });
 
@@ -39,8 +59,9 @@ test.describe("a whole cook", () => {
   test("timer counts down and ends with Time's up; finishing logs the meal and uses up the pantry", async ({ page }) => {
     await page.clock.install({ time: new Date("2026-11-21T12:00:00") });
     await begin(page, "/cook/dal-tadka");
+    await next(page).click(); // Wash done
     await expect(stepText(page, "Chop the onions and tomatoes")).toBeVisible();
-    await next(page).click(); // step 2: boil the dal (a timed step)
+    await next(page).click(); // Boil the dal (a timed step)
     await expect(stepText(page, "Boil the dal until soft")).toBeVisible();
     await expect(page.getByRole("timer")).toHaveText("15:00");
     await page.getByRole("button", { name: "Start" }).click();
@@ -54,7 +75,7 @@ test.describe("a whole cook", () => {
     await expect(page.getByText("Time’s up").first()).toBeVisible();
     await page.getByRole("button", { name: /Time.s up. Mark done/ }).click();
 
-    for (let i = 0; i < 4; i++) await next(page).click(); // steps 3..6, then Finish on the last
+    for (let i = 0; i < 4; i++) await next(page).click(); // Mash, Sauté, Stir, then Finish on Simmer
     await expect(page.getByRole("heading", { name: "Nicely done" })).toBeVisible();
     await expect(page.getByText("You made 4 servings. How many did you eat?")).toBeVisible();
     await expect(eaten(page)).toHaveText("1");
@@ -79,18 +100,18 @@ test.describe("a whole cook", () => {
 
   test("the next cook starts from your usual serving size", async ({ page }) => {
     await begin(page, "/cook/dal-tadka");
-    for (let i = 0; i < 6; i++) await next(page).click();
+    for (let i = 0; i < ACTIONS; i++) await next(page).click();
     await page.getByRole("button", { name: "More servings eaten" }).click();
     await page.getByRole("button", { name: "Log it" }).click();
     await expect(page.getByRole("heading", { name: /Logged/ })).toBeVisible();
     await begin(page, "/cook/dal-tadka");
-    for (let i = 0; i < 6; i++) await next(page).click();
+    for (let i = 0; i < ACTIONS; i++) await next(page).click();
     await expect(eaten(page)).toHaveText("1.5");
   });
 
   test("the pantry shows what was used", async ({ page }) => {
     await begin(page, "/cook/dal-tadka");
-    for (let i = 0; i < 6; i++) await next(page).click();
+    for (let i = 0; i < ACTIONS; i++) await next(page).click();
     await page.getByRole("button", { name: "Log it" }).click();
     await expect(page.getByRole("heading", { name: /Logged/ })).toBeVisible();
     await page.getByRole("link", { name: "Back to home" }).click();
@@ -101,7 +122,7 @@ test.describe("a whole cook", () => {
 
 test("servings eaten stay between half a serving and what was made", async ({ page }) => {
   await begin(page, "/cook/dal-tadka?servings=2");
-  for (let i = 0; i < 6; i++) await next(page).click();
+  for (let i = 0; i < ACTIONS; i++) await next(page).click();
   const less = page.getByRole("button", { name: "Fewer servings eaten" });
   const more = page.getByRole("button", { name: "More servings eaten" });
   await less.click();
@@ -126,6 +147,8 @@ test("voice commands move through the steps and start the timer", async ({ page 
   await page.getByRole("button", { name: "Voice control" }).click();
   await expect(page.getByRole("button", { name: "Voice control" })).toHaveAttribute("aria-pressed", "true");
   await say("next step");
+  await expect(stepText(page, "Chop the onions and tomatoes")).toBeVisible();
+  await say("next step");
   await expect(stepText(page, "Boil the dal until soft")).toBeVisible();
   await say("start the timer");
   await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
@@ -141,6 +164,7 @@ test.describe("reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
   test("the cooking loops stand still", async ({ page }) => {
     await begin(page, "/cook/dal-tadka");
+    await jump(page, "Chop");
     const name = await page.locator(".cook-motion .ch-knife").evaluate((el) => getComputedStyle(el).animationName);
     expect(name).toBe("none");
   });
@@ -152,12 +176,11 @@ test("an unknown recipe shows not found", async ({ page }) => {
 });
 
 test.describe("the cooking guide", () => {
-  test("Get ready: a checklist to tick off, and what to use for anything missing", async ({ page }) => {
+  test("Ingredients: a checklist to tick off, and what to use for anything missing", async ({ page }) => {
     await page.goto("/cook/dal-tadka");
-    await expect(page.getByRole("heading", { name: "Get ready" })).toBeVisible();
+    await page.getByRole("button", { name: "Ingredients" }).click();
     await expect(page.getByText("Set these out before you start. About 35 minutes for 4 servings.")).toBeVisible();
-    await page.getByRole("button", { name: "Set out" }).click();
-    const items = page.getByRole("list", { name: "Set out" }).getByRole("checkbox");
+    const items = page.getByRole("list", { name: "Ingredients" }).getByRole("checkbox");
     await expect(items).toHaveCount(5);
     await expect(page.getByRole("status")).toHaveText("0 of 5 set out");
     // tap the row, as a person would: the checkbox itself is visually hidden behind a larger tap target
@@ -173,17 +196,12 @@ test.describe("the cooking guide", () => {
     await expect(missing).toContainText("use mint or parsley, or leave it out");
   });
 
-  test("the first step's back button returns to the checklist", async ({ page }) => {
-    await begin(page, "/cook/dal-tadka");
-    await page.getByRole("button", { name: "Back to the checklist" }).click();
-    await expect(page.getByRole("heading", { name: "Get ready" })).toBeVisible();
-  });
-
   test("every step says what to look for and gives a tip", async ({ page }) => {
     await begin(page, "/cook/dal-tadka");
+    await jump(page, "Chop");
     await expect(page.getByLabel("Look for")).toContainText("Onions in small, even pieces");
     await expect(page.getByLabel("Tip")).toContainText("Chop the onions first");
-    for (let i = 0; i < 3; i++) await next(page).click(); // step 4: the tadka
+    await jump(page, "Sauté"); // the tadka
     await expect(stepText(page, "Sauté cumin and garlic in ghee")).toBeVisible();
     await expect(page.getByLabel("Look for")).toContainText("The cumin seeds crackle");
     await expect(page.getByLabel("Tip")).toContainText("Dark garlic tastes bitter");
@@ -191,13 +209,14 @@ test.describe("the cooking guide", () => {
 
   test("a recipe without hand-written notes still gets guidance for its verbs", async ({ page }) => {
     await begin(page, "/cook/chana");
+    await jump(page, "Mix");
     await expect(page.getByLabel("Look for")).not.toBeEmpty();
     await expect(page.getByLabel("Tip")).not.toBeEmpty();
   });
 
   test("Ask: suggestions, typed questions, answers from the recipe, and a clear limit", async ({ page }) => {
     await begin(page, "/cook/dal-tadka");
-    for (let i = 0; i < 3; i++) await next(page).click(); // the tadka step
+    await jump(page, "Sauté"); // the tadka step
     await page.getByRole("button", { name: "Ask about this step" }).click();
     const sheet = page.getByRole("dialog", { name: "Ask about this step" });
     await expect(sheet).toBeVisible();
@@ -222,24 +241,19 @@ test.describe("the cooking guide", () => {
 
   test("Ask follows the step you are on", async ({ page }) => {
     await begin(page, "/cook/dal-tadka");
-    await next(page).click(); // boil the dal: 15 minutes
+    await jump(page, "Boil"); // 15 minutes
     await page.getByRole("button", { name: "Ask about this step" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "How long does it take?" }).click();
     await expect(page.getByRole("log")).toContainText("About 15 minutes");
   });
 });
 
-test("Get ready: the plan is one action at a time, with Parallel for what can run together", async ({ page }) => {
+test("Parallel shows what can run while a timed action runs", async ({ page }) => {
   await page.goto("/cook/dal-tadka");
-  const tabs = page.getByRole("tablist", { name: "Actions" });
-  await expect(tabs.getByRole("tab", { name: "Wash" })).toHaveAttribute("aria-selected", "true");
-  await tabs.getByRole("tab", { name: "Boil" }).click();
+  await jump(page, "Boil");
   const card = page.getByRole("tabpanel", { name: "Boil" });
-  await expect(card).toContainText("Toor dal");
   await expect(card).toContainText("15 min");
   await expect(card.getByLabel("At the same time")).toHaveCount(0);
   await page.getByRole("button", { name: "Parallel" }).click();
   await expect(card.getByLabel("At the same time")).toContainText("Chop");
-  await page.getByRole("button", { name: "Next action" }).click();
-  await expect(page.getByRole("tab", { selected: true })).not.toHaveText("Boil");
 });

@@ -9,6 +9,15 @@ export interface ProcessItem {
   /** "2 cups · ≈ 400 g dry" */
   amount: string;
 }
+/** One thing to do inside an action, with a tick: a step of the recipe, or one item to rinse or wash. */
+export interface ProcessTask {
+  id: string;
+  text: string;
+  /** The recipe step it comes from (0-based). Absent for washing, which happens before step 1. */
+  stepIndex?: number;
+  minutes?: number;
+}
+
 export interface ProcessTile {
   /** A cooking verb, or "Wash" for the rinsing before step 1. */
   verb: string;
@@ -16,6 +25,8 @@ export interface ProcessTile {
   steps: number[];
   /** What is worked on: the recipe's ingredients named in those steps. */
   items: ProcessItem[];
+  /** What to do and tick off: the steps of this action, or the items to wash. */
+  tasks: ProcessTask[];
   /** What the steps say, shown when no ingredient is named in them. */
   lines: string[];
   note?: string;
@@ -66,6 +77,7 @@ export function processTiles(recipe: Recipe, servings: number): ProcessTile[] {
       verb: "Wash",
       steps: [],
       items: washed.map(item),
+      tasks: washed.map((i) => ({ id: `w:${i.name}`, text: `${washKind(i) === "rinse" ? "Rinse" : "Wash"} ${i.name.toLowerCase()}` })),
       lines: [],
       alongside: [],
       note: rinse ? "Rinse dal, rice and beans until the water runs clear. Wash the rest under cold water." : "Wash under cold water and pat dry.",
@@ -79,7 +91,8 @@ export function processTiles(recipe: Recipe, servings: number): ProcessTile[] {
     const texts = idx.map((n) => recipe.steps[n].text);
     const items = recipe.ingredients.filter((i) => texts.some((t) => named(t, i.name))).map(item);
     const minutes = idx.reduce((m, n) => m + (recipe.steps[n].minutes ?? 0), 0);
-    tiles.push({ verb, steps: idx.map((n) => n + 1), items, lines: items.length ? [] : texts, alongside: [], ...(minutes ? { minutes } : {}) });
+    const tasks = idx.map((n) => ({ id: `s:${n}`, text: recipe.steps[n].text, stepIndex: n, ...(recipe.steps[n].minutes ? { minutes: recipe.steps[n].minutes } : {}) }));
+    tiles.push({ verb, steps: idx.map((n) => n + 1), items, tasks, lines: items.length ? [] : texts, alongside: [], ...(minutes ? { minutes } : {}) });
   }
 
   // Parallel work: while a timed action runs, hands-on actions that do not use the same food can go ahead.

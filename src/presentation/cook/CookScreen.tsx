@@ -2,11 +2,11 @@
 import Link from "next/link";
 import { useCook, type CookModel } from "@/view-models/cook/useCook";
 import { AskSheet } from "./AskSheet";
-import { CookMotion, ServedDish } from "./CookMotion";
-import { GuideCards } from "./GuideCards";
-import { Prep } from "./Prep";
+import { ServedDish } from "./CookMotion";
+import { ActionCard, ActionStrip } from "./ActionView";
+import { IngredientsView } from "./IngredientsView";
+import { useSwipe } from "../shared/useSwipe";
 
-import { verbColor } from "../shared/verbColor";
 const pill = "touch rounded-full px-6 text-[15px] font-medium";
 
 function Shell({ title, children, close }: { title: string; children: React.ReactNode; close?: boolean }) {
@@ -27,45 +27,23 @@ function Shell({ title, children, close }: { title: string; children: React.Reac
 }
 
 function Steps({ c }: { c: CookModel }) {
-  const s = c.step;
+  const swipe = useSwipe(c.next, c.prev);
+  const p = c.position;
   return (
     <Shell title={c.recipe.name}>
-      <div role="progressbar" aria-label="Recipe progress" aria-valuemin={1} aria-valuemax={s.count} aria-valuenow={s.number} aria-valuetext={`Step ${s.number} of ${s.count}`} className="flex shrink-0 gap-1 px-5 pb-3">
-        {Array.from({ length: s.count }, (_, i) => (
-          <span key={i} className="h-1 flex-1 overflow-hidden rounded-full bg-track"><span className="block h-full rounded-full bg-ink transition-[width] duration-500" style={{ width: i < s.number ? "100%" : "0%" }} /></span>
+      <div role="group" aria-label="View" className="mx-5 mb-2 flex shrink-0 gap-0.5 self-start rounded-full bg-track p-[3px]">
+        {(["actions", "ingredients"] as const).map((v) => (
+          <button key={v} type="button" aria-pressed={c.view === v} onClick={() => c.setView(v)} className={`min-h-11 rounded-full px-4 text-sm ${c.view === v ? "bg-bg font-medium text-ink shadow-[0_1px_5px_rgba(0,0,0,0.10)]" : "text-ink2"}`}>{v === "actions" ? "Actions" : "Ingredients"}</button>
         ))}
       </div>
+      <ActionStrip c={c} />
 
-      <div key={s.number} className="story-in flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pb-4">
-        <div className="flex flex-1 flex-col justify-center gap-5 py-2">
-          <div className="flex items-center gap-3">
-            <div className="w-[84px] shrink-0"><CookMotion verb={s.verb} tint={c.recipe.tint} image={c.recipe.image} small /></div>
-            <div className="flex flex-col items-start gap-1.5">
-              <span className="rounded-full px-3 py-1 text-xs font-medium text-onp" style={{ background: verbColor(s.verb) }}>{s.verb}</span>
-              <span className="text-sm text-muted tabular-nums">Step {s.number} of {s.count}</span>
-            </div>
-          </div>
-          <p aria-live="polite" className="m-0 text-[32px] font-medium leading-[1.15] tracking-[-0.02em]">{s.text}</p>
-          {c.timer && (
-            <div aria-label="Timer" role="group" className="flex items-center justify-between gap-3 rounded-[20px] bg-panel py-3 pl-5 pr-3">
-              <div role="timer" aria-live="off" className="text-[56px] font-medium leading-none tracking-[-0.02em] tabular-nums">{c.timer.done ? "0:00" : c.timer.label}</div>
-              {c.timer.done ? (
-                <span className="rounded-full bg-mint px-4 py-3 text-sm font-medium text-onp">Time&apos;s up</span>
-              ) : (
-                <button type="button" onClick={c.timer.toggle} aria-pressed={c.timer.running} className="touch rounded-full bg-ink px-5 text-[15px] font-medium text-bg">{c.timer.running ? "Pause" : c.timer.started ? "Resume" : "Start"}</button>
-              )}
-            </div>
-          )}
-        </div>
-        <GuideCards look={s.look} tip={s.tip} />
-        <button type="button" onClick={() => c.ask.setOpen(true)} className="hoverable touch flex items-center justify-center gap-2 rounded-full border border-line2 px-5 text-[15px] font-medium">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" /></svg>
-          Ask about this step
-        </button>
+      <div {...swipe} key={c.view === "actions" ? p.number : "ingredients"} className="story-in flex min-h-0 flex-1 touch-pan-y flex-col gap-4 overflow-y-auto px-5 pb-4">
+        {c.view === "actions" ? <ActionCard c={c} /> : <IngredientsView c={c} />}
       </div>
 
       <div className="flex shrink-0 items-center gap-2.5 border-t border-line px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
-        <button type="button" onClick={c.prev} aria-label={s.isFirst ? "Back to the checklist" : "Previous step"} className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-line2">
+        <button type="button" onClick={c.prev} disabled={p.isFirst} aria-label="Previous action" className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-line2 disabled:opacity-30">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
         </button>
         {c.voice.supported && (
@@ -74,7 +52,7 @@ function Steps({ c }: { c: CookModel }) {
           </button>
         )}
         <button type="button" onClick={c.next} className={`${pill} min-h-[52px] flex-1 ${c.timer?.done ? "bg-mint text-onp" : "bg-ink text-bg"}`}>
-          {c.timer?.done ? "Time’s up. Mark done" : s.isLast ? "Finish" : "Next step"}
+          {c.timer?.done ? "Time’s up. Mark done" : p.isLast ? "Finish" : "Done · next action"}
         </button>
       </div>
       {c.ask.open && <AskSheet ask={c.ask} />}
@@ -147,6 +125,5 @@ export function CookScreen({ id, servings }: { id: string; servings?: number }) 
   if (c.notFound) {
     return <Shell title="Cook"><p className="px-5 text-sm text-muted">That recipe does not exist.</p></Shell>;
   }
-  if (c.phase === "prep") return <Shell title={c.recipe.name}><Prep c={c} /></Shell>;
   return c.phase === "cooking" ? <Steps c={c} /> : c.phase === "finish" ? <Finish c={c} /> : <Done c={c} />;
 }
