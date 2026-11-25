@@ -36,7 +36,8 @@ const STYLE = `
 .story{flex:0 0 86%;scroll-snap-align:center;background:var(--lav);color:var(--onp);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:6px}
 .pic.big{width:160px;height:160px}.pic.blank{border-radius:50%;background:var(--bg);opacity:.5;align-self:center}
 .dots{display:flex;gap:6px;justify-content:center}.dots i{width:6px;height:6px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--ink)}
-.chip{border:0;background:var(--bg);color:var(--onp);border-radius:999px;padding:4px 10px;margin:2px 0;font:inherit;font-size:14px;cursor:pointer;min-height:32px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:0;background:rgba(255,255,255,.75);color:var(--onp);border-radius:999px;padding:4px 10px;margin:2px 0;font:inherit;font-size:14px;cursor:pointer;min-height:32px}
 .ok{background:var(--mint);color:var(--onp)}.warn{background:var(--peach);color:var(--onp)}
 p{margin:0}
 .line{display:flex;gap:12px;justify-content:space-between;align-items:baseline;padding:10px 0;border-top:1px solid var(--line)}.line b{min-width:36px}.line span:nth-child(2){flex:1}
@@ -57,7 +58,7 @@ const pic = (image) => (image && ORIGIN ? '<img class="pic" alt="" onerror="this
 function missing(names) {
   if (!names || !names.length) return "";
   const n = names.length;
-  return '<p class="m">You are missing ' + names.map((x) => '<button class="chip" data-has="' + esc(x) + '" title="I have this">' + esc(x) + "</button>").join(" ") + '</p>'
+  return '<p class="m">You are missing ' + n + (n > 1 ? " things" : " thing") + ' <span style="opacity:.75">· tap one you have</span></p><div class="chips">' + names.map((x) => '<button class="chip" data-has="' + esc(x) + '">' + esc(x) + "</button>").join("") + "</div>"
     + '<div class="row"><button class="btn" data-shop-all="1">Add ' + n + " to shopping</button>" + '<button class="pill" data-have-all="1">' + (n > 1 ? "I have them" : "I have it") + "</button></div>";
 }
 function wireMissing(names, act) {
