@@ -31,7 +31,7 @@ export interface DraftRecipe {
   carbs: number;
   fat: number;
   ingredients: { name: string; qty: number; unit: string }[];
-  steps: { text: string; verb: string; minutes?: number }[];
+  steps: { text: string; verb: string; minutes?: number; look?: string; tip?: string }[];
 }
 
 /** A one-line meal idea. From the rules it points at a recipe; from the writer it is written out when tapped. */
@@ -77,7 +77,8 @@ export function toRecipe(d: DraftRecipe, id: string, meal: MealName, input: Pick
   const ingredients = (d.ingredients ?? []).filter((i) => i?.name?.trim() && fin(i.qty, 0, 10000)).map((i) => ({ name: i.name.trim(), qty: i.qty, unit: (i.unit ?? "").trim() || "pcs" }));
   const steps = (d.steps ?? []).filter((s) => s?.text?.trim()).map((s) => {
     const verb = COOK_VERBS.find((v) => norm(v) === norm(s.verb ?? "") || (v === "Sauté" && norm(s.verb ?? "") === "saute")) ?? "Stir";
-    return { text: s.text.trim(), verb, ...(fin(s.minutes, 1, 240) ? { minutes: Math.round(s.minutes!) } : {}) };
+    const note = (v: unknown) => (typeof v === "string" && v.trim() && v.length <= 240 ? v.trim() : undefined);
+    return { text: s.text.trim(), verb, ...(fin(s.minutes, 1, 240) ? { minutes: Math.round(s.minutes!) } : {}), ...(note(s.look) ? { look: note(s.look) } : {}), ...(note(s.tip) ? { tip: note(s.tip) } : {}) };
   });
   if (ingredients.length < 2 || steps.length < 2) return null;
 

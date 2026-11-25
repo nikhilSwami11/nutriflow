@@ -17,7 +17,8 @@ import {
 } from "../nutrition";
 import { addNamesToShoppingList, addParsedItems, isLow, type PantryRepository, type ShoppingListRepository } from "../pantry";
 import { DEFAULT_AMOUNT, type Need, type ParsedItem } from "../pantry/types";
-import { readiness, type MealName, type Recipe, type RecipeRepository } from "../recipes";
+import { readiness, recipeProblems, type MealName, type MyRecipeRepository, type Recipe, type RecipeRepository } from "../recipes";
+import { toRecipe, type DraftRecipe } from "../eat/write";
 import { markBought } from "../shopping";
 import { dashboardFromLogs } from "../dashboard/fromLogs";
 import { lastNDays, nextNDays } from "../nutrition/dates";
@@ -34,6 +35,8 @@ export interface AssistantDeps {
   list: ShoppingListRepository;
   chores: ChoreRepository;
   recipes: RecipeRepository;
+  /** Where recipes the assistant writes for the person are kept. */
+  mine: MyRecipeRepository;
   plans: MealPlanRepository;
   prep: PrepDoneRepository;
   newId: () => string;
@@ -253,4 +256,21 @@ export async function setPrepDone(deps: AssistantDeps, id: string, done: boolean
   if (!/^\d{4}-\d{2}-\d{2}:/.test(id)) throw new Error("Use an id from prep_today.");
   await deps.prep.set(id, done);
   return { id, done };
+}
+
+
+/**
+ * The assistant (Claude, ChatGPT) writes the recipe with its own model; this checks it and keeps it for the person.
+ * Anything the check finds is returned as an error the assistant can read, fix and send again. Nothing is invented here.
+ */
+export async function saveWrittenRecipe(deps: AssistantDeps, input: { meal: MealName; recipe: DraftRecipe }) {
+  const [profile, builtins] = await Promise.all([deps.profile.get(), deps.recipes.list()]);
+  const recipe = toRecipe(input.recipe, `ai-${deps.newId()}`, input.meal, { diet: profile?.diet, dislikes: profile?.dislikes ?? [] }, builtins);
+  if (!recipe) {
+    throw new Error("The recipe was not accepted: it needs a name, sane numbers, at least 2 ingredients and 2 steps, and it must fit the person's diet and dislikes (see profile).");
+  }
+  const problems = recipeProblems(recipe);
+  if (problems.length) throw new Error(`Not saved yet. Fix these and send it again:\n- ${problems.join("\n- ")}`);
+  await deps.mine.put(recipe, true);
+  return { id: recipe.id, name: recipe.name, saved: true };
 }

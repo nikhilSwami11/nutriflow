@@ -19,7 +19,7 @@ describe("MCP connector", () => {
     const res = await call(mcp, { jsonrpc: "2.0", id: 1, method: "tools/list", params: {} });
     const names = (await json(res)).result.tools.map((t: { name: string }) => t.name);
     expect(names).toEqual([
-      "today", "log_meal", "undo_log", "what_to_eat", "eat_next", "week_plan", "prep_today", "set_prep_done", "find_recipes", "recipe", "pantry", "add_to_pantry",
+      "today", "log_meal", "undo_log", "what_to_eat", "eat_next", "week_plan", "prep_today", "set_prep_done", "save_recipe", "find_recipes", "recipe", "pantry", "add_to_pantry",
       "shopping_list", "add_to_shopping_list", "mark_bought", "chores_today", "set_chore_done", "add_chore",
     ]);
   });

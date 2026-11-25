@@ -11,6 +11,7 @@ import { DemoRecipeRepository } from "@/data/recipes/demo";
 import { CombinedRecipeRepository, SupabaseMyRecipeRepository } from "@/data/recipes/mine";
 import * as A from "@/domain/assistant";
 import { toDateKey } from "@/domain/nutrition";
+import { COOK_VERBS } from "@/domain/recipes";
 import { SHOP_UNIT_IDS } from "@/domain/pantry/types";
 
 // The ChatGPT / Claude connector: an MCP server over the same use cases the app uses, as the signed-in person.
@@ -23,6 +24,7 @@ const ISSUER = `${URL}/auth/v1`;
 
 const depsFor = (token: string): A.AssistantDeps => {
   const db = clientForToken(URL, KEY, token);
+  const mine = new SupabaseMyRecipeRepository(db);
   return {
     logs: new SupabaseMealLogRepository(db),
     profile: new SupabaseProfileRepository(db),
@@ -31,7 +33,8 @@ const depsFor = (token: string): A.AssistantDeps => {
     chores: new SupabaseChoreRepository(db),
     plans: new SupabaseMealPlanRepository(db),
     prep: new SupabasePrepDoneRepository(db),
-    recipes: new CombinedRecipeRepository(new DemoRecipeRepository(), new SupabaseMyRecipeRepository(db)),
+    recipes: new CombinedRecipeRepository(new DemoRecipeRepository(), mine),
+    mine,
     newId: () => crypto.randomUUID(),
   };
 };
@@ -48,7 +51,8 @@ const dayOf = (d?: string) => d ?? toDateKey(new Date());
 const INSTRUCTIONS = `NutriFlow is one person's food loop: what they ate, their pantry, shopping list, recipes and chores.
 Log only what the person says they ate, for themselves. If several people ate, each logs their own in their own account.
 Prefer a recipe id (find_recipes) so calories come from the recipe. For anything else give your best kcal estimate and say it is an estimate.
-Always pass the person's local date. Keep answers short: the next step, not a report.`;
+Always pass the person's local date. Keep answers short: the next step, not a report.
+When the person wants a recipe, write it yourself and save it with save_recipe. Write it like a cook: salt and a cooking fat with amounts, aromatics (onion, garlic, ginger), spices with amounts added in the right order (whole spices into hot oil first, then aromatics, then ground spices, then liquid), and a last step that tastes and balances salt, sourness, heat and sweetness. Check profile first for diet and foods to skip.`;
 
 type Ctx = { http?: { authInfo?: { token: string } } };
 type Out = { content: { type: "text"; text: string }[]; isError?: boolean };
@@ -135,6 +139,27 @@ export const mcp = createMcpHandler(
       description: "Mark a prep job done, or not done (done: false). Use an id from prep_today.",
       inputSchema: z.object({ id: z.string().max(200), done: z.boolean().default(true) }), annotations: write,
     }, run((d, i) => A.setPrepDone(d, i.id, i.done)));
+
+    server.registerTool("save_recipe", {
+      title: "Save a recipe you wrote",
+      description: `Save a recipe you wrote for this person; it opens in their NutriFlow app (cook screen, Recipes tab). You write it, this checks it. Respect the person's diet and dislikes (call profile first).
+Write it like a real cook: salt, a cooking fat (oil, ghee or butter), aromatics (onion, garlic, ginger), spices with amounts, and the order things go in the pan (whole spices in hot oil, then aromatics, then ground spices, then tomatoes or liquid). The last step must taste and balance (adjust salt, sourness, heat, sweetness). Ingredient amounts are for the whole recipe; nutrition is per serving and may be a fair estimate. Each step's verb must be one of: ${COOK_VERBS.join(", ")}. Give minutes only for steps that wait (simmering, boiling, baking). Add a short "look" (what it looks, smells or sounds like when right) and a "tip" to each step when you can. If the result lists problems, fix them and call again.`,
+      inputSchema: z.object({
+        meal,
+        recipe: z.object({
+          name: z.string().min(1).max(80),
+          blurb: z.string().max(200).describe("One line: what it tastes like."),
+          minutes: z.number().min(1).max(360),
+          servings: z.number().min(1).max(12),
+          kcal: z.number().min(30).max(2500),
+          protein: z.number().min(0).max(300),
+          carbs: z.number().min(0).max(500),
+          fat: z.number().min(0).max(300),
+          ingredients: z.array(z.object({ name: z.string().max(80).describe("Plain grocery name: Onion, Basmati rice"), qty: z.number().positive(), unit: z.string().max(20).describe("g, ml, pcs, cups, tbsp, tsp, cloves") })).min(2).max(40),
+          steps: z.array(z.object({ text: z.string().max(400), verb: z.string().max(20), minutes: z.number().min(1).max(240).optional(), look: z.string().max(240).optional(), tip: z.string().max(240).optional() })).min(2).max(30),
+        }),
+      }), annotations: write,
+    }, run((d, i) => A.saveWrittenRecipe(d, i)));
 
     server.registerTool("find_recipes", {
       title: "Find recipes",

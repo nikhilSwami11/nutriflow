@@ -19,6 +19,7 @@ import {
   shoppingList,
   suggestNow,
   eatNextNow,
+  saveWrittenRecipe,
   prepToday,
   setPrepDone,
   weekPlan,
@@ -33,6 +34,7 @@ const recipe = (o: Partial<Recipe> & { id: string }): Recipe => ({
 function deps(o: { profile?: Profile; logs?: MealLog[]; chores?: Chore[] } = {}) {
   let logs = [...(o.logs ?? [])];
   let chores = [...(o.chores ?? [])];
+  const saved: { recipe: Recipe; saved: boolean }[] = [];
   let n = 0;
   let days: StoredDay[] = [];
   let ticks: string[] = [];
@@ -62,9 +64,10 @@ function deps(o: { profile?: Profile; logs?: MealLog[]; chores?: Chore[] } = {})
         recipe({ id: "oats", name: "Oats", meal: "Breakfast", kcal: 300, minutes: 10 }),
       ],
     },
+    mine: { list: async () => saved, put: async (r, kept) => void saved.push({ recipe: r, saved: kept }) },
     newId: () => `id${++n}`,
   };
-  return { d, logs: () => logs };
+  return { d, logs: () => logs, saved: () => saved };
 }
 
 const D = "2026-11-23";
@@ -166,5 +169,21 @@ describe("prep (shared with the app's Prep story)", () => {
     await setPrepDone(d, "2026-11-23:today:rajma:soak", true);
     expect(await d.prep.doneOn("2026-11-23")).toEqual(["2026-11-23:today:rajma:soak"]);
     expect(Array.isArray(await prepToday(d, { date: "2026-11-23", hour: 9 }))).toBe(true);
+  });
+
+  it("saves a recipe the assistant wrote, and sends back what is missing from a thin one", async () => {
+    const { d, saved } = deps();
+    const thin = { name: "Roasted chana", blurb: "Crunchy", minutes: 20, servings: 2, kcal: 200, protein: 9, carbs: 27, fat: 5,
+      ingredients: [{ name: "Chickpeas", qty: 2, unit: "cups" }, { name: "Cumin seeds", qty: 1, unit: "tsp" }],
+      steps: [{ text: "Dry the chickpeas", verb: "Mix" }, { text: "Roast with cumin", verb: "Roast" }] };
+    await expect(saveWrittenRecipe(d, { meal: "Snack", recipe: thin })).rejects.toThrow(/salt[\s\S]*fat[\s\S]*aromatics[\s\S]*tastes and balances/);
+    expect(saved()).toHaveLength(0);
+    const good = { ...thin, ingredients: [...thin.ingredients, { name: "Salt", qty: 1, unit: "tsp" }, { name: "Olive oil", qty: 1, unit: "tbsp" }, { name: "Onion", qty: 1, unit: "pcs" }, { name: "Red chilli powder", qty: 0.5, unit: "tsp" }],
+      steps: [...thin.steps, { text: "Taste, then adjust salt, heat and a squeeze of lemon", verb: "Toss", look: "Crisp and golden", tip: "Shake the tray halfway" }] };
+    const out = await saveWrittenRecipe(d, { meal: "Snack", recipe: good });
+    expect(out).toMatchObject({ name: "Roasted chana", saved: true });
+    expect(out.id).toMatch(/^ai-/);
+    expect(saved()[0].saved).toBe(true);
+    expect(saved()[0].recipe.steps[2]).toMatchObject({ look: "Crisp and golden", tip: "Shake the tray halfway" });
   });
 });

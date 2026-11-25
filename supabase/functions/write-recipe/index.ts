@@ -18,6 +18,7 @@ Rules:
 - 2 servings unless the dish only makes sense as one. 3 to 7 short steps, each starting with one action.
 - Each step's verb must be one of: ${VERBS.join(", ")}. Give minutes only for steps that wait (boiling, simmering, baking).
 - Ingredient names are plain grocery names ("Onion", "Paneer", "Basmati rice"), amounts for the whole recipe, units like g, ml, pcs, cups, tbsp, tsp, cloves.
+- Write like a real cook: include salt and a cooking fat (oil, ghee or butter) with amounts, aromatics (onion, garlic, ginger) and spices with amounts. Say the order: whole spices into hot oil first, then aromatics, then ground spices, then tomatoes or liquid. Make the last step taste and balance (adjust salt, sourness, heat, sweetness).
 - If an idea is given, write that dish.
 - Also give two different one-line ideas that would also fit.`;
 
