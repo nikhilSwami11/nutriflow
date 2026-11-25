@@ -56,7 +56,8 @@ const INSTRUCTIONS = `NutriFlow is one person's food loop: what they ate, their 
 Log only what the person says they ate, for themselves. If several people ate, each logs their own in their own account.
 Prefer a recipe id (find_recipes) so calories come from the recipe. For anything else give your best kcal estimate and say it is an estimate.
 Always pass the person's local date. Keep answers short: the next step, not a report.
-When they ask what to do, what is next, or open the day, call today_next: its card shows the few things that matter and asks and saves in place.
+For ANY question about today (how am I doing, insights, summary, what next, what should I do) call today_next ONCE and nothing else: its card shows calories against the range and the few things that matter, and asks and saves in place. Do not call other tools to build a report.
+Never write reports. Never mention empty or zero things (no chores, nothing due, 0 g protein) and never comment on how little they log.
 When a tool shows a card, the card is the answer: add at most one short line. Never paste links or ids. Never search the web for photos and never build your own page, widget or cooking session; use the tools and their cards.
 When the person wants a recipe, write it yourself with write_recipe, show it, and keep_recipe only if they like it. Make it adaptive: use profile (diet, foods to skip) and pantry, and adapt an existing recipe by writing a new version with basedOn. Write it like a cook: salt and a cooking fat with amounts, aromatics (onion, garlic, ginger), spices with amounts added in the right order (whole spices into hot oil first, then aromatics, then ground spices, then liquid), and a last step that tastes and balances salt, sourness, heat and sweetness. Check profile first for diet and foods to skip.`;
 
@@ -86,7 +87,7 @@ export const mcp = createMcpHandler(
   (server) => {
     server.registerTool("today", {
       title: "Today so far",
-      description: "What the person ate on a day, calories against their range, calories left and macros.",
+      description: "Raw numbers for one day: meals logged, calories against the range, macros. For questions about today, use today_next instead.",
       inputSchema: z.object({ date }), annotations: read,
     }, run((d, i) => A.daySummary(d, dayOf(i.date))));
 
@@ -151,7 +152,7 @@ export const mcp = createMcpHandler(
     server.registerTool("today_next", {
       title: "What to do next",
       _meta: { ui: { resourceUri: TODAY_URI }, "ui/resourceUri": TODAY_URI },
-      description: "The few things that matter right now, at most four: set up the profile (first use only), the next meal (with what to check they have), prep due, chores due, the shopping list. Empty parts are left out: do not mention them. The card asks and saves in place (I have it, Mark eaten, Done).",
+      description: "Use for any question about the person's day (insights, how am I doing, what next). Shows calories against their range, then the few things that matter right now, at most four: set up the profile (first use only), the next meal (with what to check they have), prep due, chores due, the shopping list. Empty parts are left out: do not mention them. The card asks and saves in place (I have it, Mark eaten, Done).",
       inputSchema: z.object({ date, hour: z.number().int().min(0).max(23).describe("Local hour, 0-23") }), annotations: read,
     }, run((d, i) => A.todayNext(d, { date: dayOf(i.date), hour: i.hour })));
 

@@ -280,7 +280,8 @@ describe("today next (the chat's glance at the day)", () => {
   it("lists only what matters: profile on first use, the meal with what to ask, open chores, the list; no empty parts", async () => {
     const { d } = deps({ chores: [{ id: "c1", title: "Dishes", repeat: "daily", lastDone: null }, { id: "c2", title: "Bins", repeat: "daily", lastDone: D }] });
     await addToShopping(d, [{ name: "Milk" }]);
-    const { items } = await todayNext(d, { date: D, hour: 19 });
+    const { items, day } = await todayNext(d, { date: D, hour: 19 });
+    expect(day).toEqual({ kcalEaten: 0, range: { min: 1800, max: 2100 }, logged: false });
     expect(items.map((i) => i.kind)).toEqual(["profile", "meal", "chore", "shopping"]);
     expect(items[1]).toMatchObject({ kind: "meal", name: "Dal tadka", ask: ["Rice"] });
     expect(items[2]).toEqual({ kind: "chore", id: "c1", title: "Dishes" }); // Bins is done today: not shown

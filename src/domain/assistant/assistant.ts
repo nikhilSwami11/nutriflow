@@ -392,13 +392,15 @@ export type NextItem =
 const MAX_ITEMS = 4;
 
 /**
- * What to do now, the few things that matter, in order: set up the profile (first use only), the next meal, prep due,
+ * The day at a glance (calories against the range) and what to do now, the few things that matter, in order: set up the profile (first use only), the next meal, prep due,
  * chores due, the shopping list. Empty parts are left out, never mentioned. Same rules as the app's Home.
  */
-export async function todayNext(deps: AssistantDeps, input: { date: DateKey; hour: number }): Promise<{ items: NextItem[] }> {
-  const [profile, next, prep, chores, list] = await Promise.all([
-    deps.profile.get(), eatNextNow(deps, input), prepToday(deps, input), choresToday(deps, input.date), shoppingList(deps),
+export async function todayNext(deps: AssistantDeps, input: { date: DateKey; hour: number }) {
+  const [profile, next, prep, chores, list, summary] = await Promise.all([
+    deps.profile.get(), eatNextNow(deps, input), prepToday(deps, input), choresToday(deps, input.date), shoppingList(deps), daySummary(deps, input.date),
   ]);
+  // The day in one line: calories against the range, macros only once something is logged.
+  const day = { kcalEaten: summary.kcalEaten, range: summary.range, logged: summary.meals.length > 0, ...(summary.meals.length ? { macros: summary.macros } : {}) };
   const items: NextItem[] = [];
   if (!profile) items.push({ kind: "profile" });
   if (next.next) {
@@ -408,5 +410,5 @@ export async function todayNext(deps: AssistantDeps, input: { date: DateKey; hou
   for (const p of prep.filter((t) => !t.done)) items.push({ kind: "prep", id: p.id, action: p.action, dish: p.dish, due: p.due });
   for (const c of chores.filter((c) => !c.done)) items.push({ kind: "chore", id: c.id, title: c.title });
   if (list.length) items.push({ kind: "shopping", count: list.length, names: list.slice(0, 3).map((i) => i.name) });
-  return { items: items.slice(0, MAX_ITEMS) };
+  return { day, items: items.slice(0, MAX_ITEMS) };
 }

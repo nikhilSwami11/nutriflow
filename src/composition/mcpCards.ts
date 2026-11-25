@@ -23,6 +23,7 @@ const STYLE = `
 .btn{min-height:44px;padding:0 20px;border-radius:999px;border:0;background:var(--ink);color:var(--bg);font:500 15px inherit;font-family:inherit;cursor:pointer}
 .pill{border-radius:999px;background:var(--panel);padding:8px 14px;font-size:14px;color:var(--ink2)}
 .btn.sm{min-height:44px;padding:0 14px;font-size:14px}.pill{border:0;font-family:inherit;cursor:pointer;min-height:44px}.step{gap:4px}.step span{min-width:24px;text-align:center}button:disabled{opacity:.5}
+.day{display:flex;flex-direction:column;gap:6px}.bar{height:6px;border-radius:999px;background:var(--panel);overflow:hidden}.bar i{display:block;height:100%;background:var(--mint)}
 .ok{background:var(--mint);color:var(--onp)}.warn{background:var(--peach);color:var(--onp)}
 p{margin:0}
 .line{display:flex;gap:12px;justify-content:space-between;align-items:baseline;padding:10px 0;border-top:1px solid var(--line)}.line b{min-width:36px}.line span:nth-child(2){flex:1}
@@ -96,9 +97,16 @@ async function act(name, args) {
 }
 const DIETS = [["anything", "Anything"], ["vegetarian", "Vegetarian"], ["eggetarian", "Eggetarian"], ["vegan", "Vegan"]];
 const tick = (label, id) => '<div class="line"><span>' + label + '</span><button class="pill" data-tick="' + esc(id) + '">Done</button></div>';
+function dayLine(x) {
+  if (!x) return "";
+  const pct = Math.min(100, Math.round((x.kcalEaten / x.range.max) * 100));
+  const words = x.logged ? x.kcalEaten + " of " + x.range.min + "–" + x.range.max + " kcal" : "Nothing logged today";
+  const macros = x.macros ? '<span class="m" style="color:var(--ink2)">' + x.macros.protein + " g protein · " + x.macros.carbs + " g carbs · " + x.macros.fat + " g fat</span>" : "";
+  return '<div class="day"><span>' + words + "</span>" + macros + '<div class="bar"><i style="width:' + pct + '%"></i></div></div>';
+}
 function render(d) {
   const items = d.items || [];
-  if (!items.length) { root.innerHTML = '<div class="card"><div class="tile"><span class="n">All done for now</span></div></div>'; return; }
+  if (!items.length) { root.innerHTML = '<div class="card">' + dayLine(d.day) + '<div class="tile"><span class="n">All done for now</span></div></div>'; return; }
   const parts = items.map((it, i) => {
     if (it.kind === "profile") return '<div class="tile"><span class="k">First, how do you eat?</span><div class="row">' + DIETS.map(([v, l]) => '<button class="pill" data-diet="' + v + '">' + l + "</button>").join("") + "</div></div>";
     if (it.kind === "meal") {
@@ -114,7 +122,7 @@ function render(d) {
     if (it.kind === "shopping") return '<div class="line"><span>' + it.count + " to buy" + ' <span class="m" style="color:var(--ink2)">' + it.names.map(esc).join(", ") + "</span></span>" + (ORIGIN ? '<button class="pill" id="shop">Open</button>' : "") + "</div>";
     return "";
   });
-  root.innerHTML = '<div class="card">' + parts.join("") + "</div>";
+  root.innerHTML = '<div class="card">' + dayLine(d.day) + parts.join("") + "</div>";
   const meal = items.find((it) => it.kind === "meal");
   let sv = 1;
   const $ = (id) => document.getElementById(id);
