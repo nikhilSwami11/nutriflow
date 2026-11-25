@@ -10,7 +10,7 @@ const dir = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? join(homed
 const DEST = "art-src/recipes";
 
 const hasArt = (slug) => ["jpeg", "jpg", "png"].some((e) => existsSync(`${DEST}/${slug}.${e}`));
-const slugs = [...readFileSync("docs/next-prompts.md", "utf8").matchAll(/^### [^ ]+ ([a-z0-9-]+)\.jpeg$/gm)].map((m) => m[1]).filter((s) => !hasArt(s));
+const slugs = [...readFileSync(existsSync("docs/remaining-images.md") ? "docs/remaining-images.md" : "docs/next-prompts.md", "utf8").matchAll(/^### [^ ]+ ([a-z0-9-]+)\.jpeg$/gm)].map((m) => m[1]).filter((s) => !hasArt(s));
 // Only images downloaded after the newest art already in art-src/recipes, so old downloads are never renamed.
 const since = Math.max(0, ...readdirSync(DEST).map((f) => statSync(join(DEST, f)).mtimeMs));
 const files = readdirSync(dir)
