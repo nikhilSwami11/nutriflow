@@ -30,6 +30,7 @@ import {
   profileInfo,
   updateProfile,
   todayNext,
+  weekShopping,
   type AssistantDeps,
 } from "./assistant";
 
@@ -292,5 +293,18 @@ describe("today next (the chat's glance at the day)", () => {
     expect((await todayNext(d, { date: D, hour: 19 })).items.map((i) => i.kind)).toEqual(["meal"]);
     const many = deps({ chores: Array.from({ length: 6 }, (_, i) => ({ id: `c${i}`, title: `C${i}`, repeat: "daily" as const, lastDone: null })) });
     expect((await todayNext(many.d, { date: D, hour: 19 })).items).toHaveLength(4);
+  });
+});
+
+describe("week shopping (one call for the week's list)", () => {
+  it("sums what the week's plan lacks and leaves out what is already on the list", async () => {
+    const { d } = deps();
+    const first = await weekShopping(d, D);
+    expect(first.toAdd.map((n) => n.name)).toContain("Rice");
+    expect(first.alreadyOnList).toBe(0);
+    await addToShopping(d, [{ name: "Rice" }]);
+    const again = await weekShopping(d, D);
+    expect(again.toAdd.map((n) => n.name)).not.toContain("Rice");
+    expect(again.alreadyOnList).toBe(1);
   });
 });

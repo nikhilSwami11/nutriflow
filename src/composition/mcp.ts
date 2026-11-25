@@ -1,6 +1,6 @@
 import { createMcpHandler, getPublicOrigin, metadataCorsOptionsRequestHandler, protectedResourceHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
-import { CARD_MIME, EAT_NEXT_URI, SHOPPING_URI, TODAY_URI, WEEK_PLAN_URI, cardMeta, eatNextHtml, shoppingHtml, todayHtml, weekPlanHtml } from "./mcpCards";
+import { CARD_MIME, EAT_NEXT_URI, SHOPPING_URI, TODAY_URI, WEEK_PLAN_URI, WEEK_SHOP_URI, cardMeta, eatNextHtml, shoppingHtml, todayHtml, weekPlanHtml, weekShoppingHtml } from "./mcpCards";
 import { clientForToken, verifyAccessToken } from "@/data/auth/token";
 import { SupabaseChoreRepository } from "@/data/chores/supabase";
 import { SupabaseMealPlanRepository } from "@/data/planning/supabase";
@@ -57,6 +57,8 @@ Log only what the person says they ate, for themselves. If several people ate, e
 Prefer a recipe id (find_recipes) so calories come from the recipe. For anything else give your best kcal estimate and say it is an estimate.
 Always pass the person's local date. Keep answers short: the next step, not a report.
 For ANY question about today (how am I doing, insights, summary, what next, what should I do) call today_next ONCE and nothing else: its card shows calories against the range and the few things that matter, and asks and saves in place. Do not call other tools to build a report.
+For what to buy (this week, for the plan) call week_shopping ONCE; never sum recipes yourself.
+Answer with one tool when one tool answers it; reach for several only when the person asks for something that needs them.
 Never write reports. Never mention empty or zero things (no chores, nothing due, 0 g protein) and never comment on how little they log.
 When a tool shows a card, the card is the answer: add at most one short line. Never paste links or ids. Never search the web for photos and never build your own page, widget or cooking session; use the tools and their cards.
 When the person wants a recipe, write it yourself with write_recipe, show it, and keep_recipe only if they like it. Make it adaptive: use profile (diet, foods to skip) and pantry, and adapt an existing recipe by writing a new version with basedOn. Write it like a cook: salt and a cooking fat with amounts, aromatics (onion, garlic, ginger), spices with amounts added in the right order (whole spices into hot oil first, then aromatics, then ground spices, then liquid), and a last step that tastes and balances salt, sourness, heat and sweetness. Check profile first for diet and foods to skip.`;
@@ -148,6 +150,17 @@ export const mcp = createMcpHandler(
     server.registerResource("today-card", TODAY_URI, { title: "Today card", mimeType: CARD_MIME }, async (uri) => ({
       contents: [{ uri: uri.href, mimeType: CARD_MIME, text: todayHtml(), _meta: cardMeta() }],
     }));
+
+    server.registerResource("week-shopping-card", WEEK_SHOP_URI, { title: "Week shopping card", mimeType: CARD_MIME }, async (uri) => ({
+      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: weekShoppingHtml(), _meta: cardMeta() }],
+    }));
+
+    server.registerTool("week_shopping", {
+      title: "What to buy for the week",
+      _meta: { ui: { resourceUri: WEEK_SHOP_URI }, "ui/resourceUri": WEEK_SHOP_URI },
+      description: "Use for any question about what to buy for the week or the plan. One call: everything the week's plan needs that the pantry lacks and the list does not have yet, with amounts. Its card lets the person untick what they have and add the rest. Do not read recipes or the pantry yourself to work this out.",
+      inputSchema: z.object({ date }), annotations: read,
+    }, run((d, i) => A.weekShopping(d, dayOf(i.date))));
 
     server.registerTool("today_next", {
       title: "What to do next",

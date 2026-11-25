@@ -22,7 +22,7 @@ import { addNamesToShoppingList, addParsedItems, isLow, type PantryRepository, t
 import { DEFAULT_AMOUNT, type Need, type ParsedItem } from "../pantry/types";
 import { readiness, recipeProblems, type MealName, type MyRecipeRepository, type Recipe, type RecipeRepository } from "../recipes";
 import { toRecipe, type DraftRecipe } from "../eat/write";
-import { markBought } from "../shopping";
+import { markBought, neededForPlan } from "../shopping";
 import { dashboardFromLogs } from "../dashboard/fromLogs";
 import { lastNDays, nextNDays } from "../nutrition/dates";
 import { eatNext, ensurePlan, plannableRecipes, prepTasks, upcomingMeals, type MealPlanRepository, type PrepDoneRepository } from "../planning";
@@ -211,6 +211,18 @@ async function storedWeek(deps: AssistantDeps, date: DateKey) {
     pantry,
   });
   return { plan, recipes, pantry, eatenToday: dash.eatenToday };
+}
+
+/**
+ * What to buy for the rest of the week's plan, the app's own sum (same rule as the Shopping screen, over 7 days):
+ * what the pantry lacks, minus what is already on the list. One call instead of reading every recipe.
+ */
+export async function weekShopping(deps: AssistantDeps, date: DateKey) {
+  const [{ plan, recipes, pantry, eatenToday }, list] = await Promise.all([storedWeek(deps, date), shoppingList(deps)]);
+  const needs = neededForPlan({ plan, recipes, pantry, today: date, eatenToday, days: 7 });
+  const onList = new Set(list.map((i) => norm(i.name)));
+  const toAdd = needs.filter((n) => !onList.has(norm(n.name)));
+  return { toAdd, alreadyOnList: needs.length - toAdd.length };
 }
 
 /** The week plan: seven days of meals with calories and protein. */

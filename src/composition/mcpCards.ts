@@ -8,6 +8,7 @@ export const EAT_NEXT_URI = "ui://nutriflow/eat-next";
 export const WEEK_PLAN_URI = "ui://nutriflow/week-plan";
 export const SHOPPING_URI = "ui://nutriflow/shopping";
 export const TODAY_URI = "ui://nutriflow/today";
+export const WEEK_SHOP_URI = "ui://nutriflow/week-shopping";
 
 /** Lets a card load the app's own pictures (MCP Apps CSP); the host blocks every other origin. */
 export const cardMeta = () => (appOrigin() ? { ui: { csp: { resourceDomains: [appOrigin()] } } } : undefined);
@@ -28,6 +29,7 @@ const STYLE = `
 .btn.sm{min-height:44px;padding:0 14px;font-size:14px}.pill{border:0;font-family:inherit;cursor:pointer;min-height:44px}.step{gap:4px}.step span{min-width:24px;text-align:center}button:disabled{opacity:.5}
 .day{display:flex;flex-direction:column;gap:6px}.bar{height:6px;border-radius:999px;background:var(--panel);overflow:hidden}.bar i{display:block;height:100%;background:var(--mint)}
 .pic{width:120px;height:120px;object-fit:contain;align-self:center;margin:-4px 0 4px}
+.pick{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:0;border-top:1px solid var(--line);font:inherit;color:inherit;text-align:left;cursor:pointer;min-height:44px}.pick.off span:first-child{text-decoration:line-through;color:var(--ink2)}
 .chip{border:0;background:var(--bg);color:var(--onp);border-radius:999px;padding:4px 10px;margin:2px 0;font:inherit;font-size:14px;cursor:pointer;min-height:32px}
 .ok{background:var(--mint);color:var(--onp)}.warn{background:var(--peach);color:var(--onp)}
 p{margin:0}
@@ -165,6 +167,35 @@ function render(d) {
   if ($("shop")) $("shop").onclick = () => ask("ui/open-link", { url: ORIGIN + "/shopping" });
 }
 `;
+// Everything the week needs, all chosen; tap a row you already have to leave it out, then one button adds the rest.
+const WEEK_SHOP_RENDER = `
+let skip = new Set();
+let done = false;
+function render(d) {
+  const items = d.toAdd || [];
+  const on = d.alreadyOnList ? '<p class="m" style="color:var(--ink2)">' + d.alreadyOnList + " already on your list</p>" : "";
+  if (done || !items.length) {
+    root.innerHTML = '<div class="card"><p class="n">' + (done ? "Added to your list" : "You have everything for the week") + "</p>" + on
+      + (ORIGIN ? '<div class="row"><button class="btn" id="go">Open shopping</button></div>' : "") + "</div>";
+    const go = document.getElementById("go");
+    if (go) go.onclick = () => ask("ui/open-link", { url: ORIGIN + "/shopping" });
+    return;
+  }
+  const picked = items.filter((x) => !skip.has(x.name));
+  const rows = items.map((x) => '<button class="line pick' + (skip.has(x.name) ? " off" : "") + '" data-n="' + esc(x.name) + '"><span>' + esc(x.name) + '</span><span class="m" style="color:var(--ink2)">' + (skip.has(x.name) ? "have it" : (x.qty ? x.qty + " " + esc(x.unit || "") : "")) + "</span></button>").join("");
+  root.innerHTML = '<div class="card"><p class="n">For your week</p><p class="m" style="color:var(--ink2)">Tap anything you already have.</p>' + on + rows
+    + '<div class="row"><button class="btn" id="add"' + (picked.length ? "" : " disabled") + ">Add " + picked.length + " to shopping</button></div></div>";
+  root.querySelectorAll("[data-n]").forEach((b) => (b.onclick = () => { const n = b.dataset.n; skip.has(n) ? skip.delete(n) : skip.add(n); render(d); fit(); }));
+  document.getElementById("add").onclick = async () => {
+    document.getElementById("add").disabled = true;
+    const list = picked.map((x) => ({ name: x.name, qty: x.qty, unit: x.unit }));
+    for (let i = 0; i < list.length; i += 30) await call("add_to_shopping_list", { items: list.slice(i, i + 30) }).catch(() => null);
+    const have = items.filter((x) => skip.has(x.name)).map((x) => ({ name: x.name, qty: 1 }));
+    for (let i = 0; i < have.length; i += 30) await call("add_to_pantry", { items: have.slice(i, i + 30) }).catch(() => null);
+    done = true; render(d); fit();
+  };
+}
+`;
 const TAIL = `
 function fit() { send({ method: "ui/notifications/size-changed", params: { height: document.documentElement.scrollHeight } }); }
 addEventListener("message", (e) => {
@@ -183,3 +214,4 @@ export const eatNextHtml = () => page("eat-next", "Eat next", EAT_NEXT_RENDER);
 export const weekPlanHtml = () => page("week-plan", "Week plan", WEEK_RENDER);
 export const shoppingHtml = () => page("shopping", "Shopping list", SHOPPING_RENDER);
 export const todayHtml = () => page("today", "Today", TODAY_RENDER);
+export const weekShoppingHtml = () => page("week-shopping", "For your week", WEEK_SHOP_RENDER);
