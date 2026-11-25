@@ -39,4 +39,20 @@ describe("processTiles", () => {
     expect(tiles[4].items).toEqual([]);
     expect(tiles[4].lines).toEqual(["Serve hot"]);
   });
+
+  it("a timed action leaves hands free for ones that use other food, and the finish never runs in parallel", () => {
+    const r = { ...recipe, steps: [
+      { text: "Boil the dal until soft", verb: "Boil", minutes: 15 },
+      { text: "Chop the onions and tomatoes", verb: "Chop" },
+      { text: "Fry the onions in ghee", verb: "Fry" },
+      { text: "Serve hot", verb: "Serve" },
+    ] } as Recipe;
+    const t = processTiles(r, 4);
+    const boil = t.find((x) => x.verb === "Boil")!;
+    const chop = t.find((x) => x.verb === "Chop")!;
+    expect(boil.minutes).toBe(15);
+    expect(boil.alongside.map((a) => a.verb)).toEqual(["Chop", "Fry"]);
+    expect(chop.alongside).toEqual([{ verb: "Boil", label: "toor dal", minutes: 15 }]);
+    expect(t.find((x) => x.verb === "Serve")!.alongside).toEqual([]);
+  });
 });

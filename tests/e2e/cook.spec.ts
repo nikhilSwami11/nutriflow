@@ -156,6 +156,7 @@ test.describe("the cooking guide", () => {
     await page.goto("/cook/dal-tadka");
     await expect(page.getByRole("heading", { name: "Get ready" })).toBeVisible();
     await expect(page.getByText("Set these out before you start. About 35 minutes for 4 servings.")).toBeVisible();
+    await page.getByRole("button", { name: "Set out" }).click();
     const items = page.getByRole("list", { name: "Set out" }).getByRole("checkbox");
     await expect(items).toHaveCount(5);
     await expect(page.getByRole("status")).toHaveText("0 of 5 set out");
@@ -226,4 +227,19 @@ test.describe("the cooking guide", () => {
     await page.getByRole("dialog").getByRole("button", { name: "How long does it take?" }).click();
     await expect(page.getByRole("log")).toContainText("About 15 minutes");
   });
+});
+
+test("Get ready: the plan is one action at a time, with Parallel for what can run together", async ({ page }) => {
+  await page.goto("/cook/dal-tadka");
+  const tabs = page.getByRole("tablist", { name: "Actions" });
+  await expect(tabs.getByRole("tab", { name: "Wash" })).toHaveAttribute("aria-selected", "true");
+  await tabs.getByRole("tab", { name: "Boil" }).click();
+  const card = page.getByRole("tabpanel", { name: "Boil" });
+  await expect(card).toContainText("Toor dal");
+  await expect(card).toContainText("15 min");
+  await expect(card.getByLabel("At the same time")).toHaveCount(0);
+  await page.getByRole("button", { name: "Parallel" }).click();
+  await expect(card.getByLabel("At the same time")).toContainText("Chop");
+  await page.getByRole("button", { name: "Next action" }).click();
+  await expect(page.getByRole("tab", { selected: true })).not.toHaveText("Boil");
 });

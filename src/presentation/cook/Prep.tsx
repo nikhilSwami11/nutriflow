@@ -1,43 +1,27 @@
+import { useState } from "react";
 import type { CookModel } from "@/view-models/cook/useCook";
-import { verbColor } from "../shared/verbColor";
+import { ProcessCards } from "./ProcessCards";
 
-const when = (steps: number[]) => (steps.length === 0 ? "Before step 1" : steps.length === 1 ? `Step ${steps[0]}` : `Steps ${steps.slice(0, -1).join(", ")} and ${steps[steps.length - 1]}`);
 
 /** Before the first step: set things out, and see what to use if something is missing. */
 export function Prep({ c }: { c: CookModel }) {
   const p = c.prep;
+  const [view, setView] = useState<"plan" | "setout">("plan");
   return (
     <>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4 pt-2">
         <h2 className="m-0 text-[26px] font-medium tracking-[-0.02em]">Get ready</h2>
         <p className="m-0 mt-1 text-[15px] leading-normal text-ink2">Set these out before you start. About {p.minutes} minutes for {p.servings} servings.</p>
 
-        <section aria-label="The process" className="mt-4 flex flex-col gap-3">
-          <h3 className="m-0 text-base font-medium">The whole cook, by action</h3>
-          {p.process.map((t) => (
-            <div key={t.verb} className="flex flex-col gap-2 rounded-[20px] bg-panel p-4">
-              <div className="flex items-center justify-between gap-2">
-                <span className="rounded-full px-3 py-1 text-xs font-medium text-onp" style={{ background: t.verb === "Wash" ? "var(--sky)" : verbColor(t.verb) }}>{t.verb}</span>
-                <span className="text-xs text-muted">{when(t.steps)}</span>
-              </div>
-              {t.items.length > 0 ? (
-                <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
-                  {t.items.map((i) => (
-                    <li key={i.name} className="flex items-baseline justify-between gap-3 text-[15px]">
-                      <span>{i.name}</span>
-                      <span className="text-right text-sm tabular-nums text-ink2">{i.amount}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="m-0 text-[15px]">{t.lines.join(" ")}</p>
-              )}
-              {t.note && <p className="m-0 text-sm text-ink2">{t.note}</p>}
-            </div>
+        <div role="group" aria-label="View" className="mt-3 flex gap-0.5 self-start rounded-full bg-track p-[3px]">
+          {(["plan", "setout"] as const).map((v) => (
+            <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={`min-h-11 rounded-full px-4 text-sm ${view === v ? "bg-bg font-medium text-ink shadow-[0_1px_5px_rgba(0,0,0,0.10)]" : "text-ink2"}`}>{v === "plan" ? "Plan" : "Set out"}</button>
           ))}
-        </section>
+        </div>
 
-        <h3 className="m-0 mt-6 text-base font-medium">Set out</h3>
+        {view === "plan" && <div className="mt-3"><ProcessCards tiles={p.process} /></div>}
+
+        {view === "setout" && <>
         <ul aria-label="Set out" className="m-0 mt-2 list-none p-0">
           {p.items.map((i) => (
             <li key={i.id} className="border-t border-line">
@@ -66,6 +50,7 @@ export function Prep({ c }: { c: CookModel }) {
             </ul>
           </section>
         )}
+        </>}
       </div>
       <div className="shrink-0 border-t border-line px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
         <button type="button" onClick={p.start} className="min-h-[52px] w-full rounded-full bg-ink px-6 text-[15px] font-medium text-bg">Start cooking</button>

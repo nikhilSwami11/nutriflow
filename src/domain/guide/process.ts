@@ -19,7 +19,15 @@ export interface ProcessTile {
   /** What the steps say, shown when no ingredient is named in them. */
   lines: string[];
   note?: string;
+  /** Minutes the action takes by itself (a timed step: boil, simmer, bake). Hands are free meanwhile. */
+  minutes?: number;
+  /** Other actions that can run at the same time, and why: a timed action leaves your hands free for them. */
+  alongside: { verb: string; label: string; minutes?: number }[];
 }
+
+// Only prep and a second pan can overlap with a timed action. Stirring things together, topping and serving need the rest done first.
+// shortcut: by action name only, it cannot tell that a "Sauté" feeds the dal; the cook decides.
+const OVERLAPS = new Set(["Chop", "Slice", "Grate", "Mash", "Mix", "Whisk", "Knead", "Roll", "Sauté", "Fry", "Sear", "Toast"]);
 
 const RINSE = /rice|dal|lentil|chickpea|bean|quinoa|poha|oats?\b/;
 const WASH = /tomato|spinach|palak|coriander|cilantro|mint|parsley|cucumber|lettuce|potato|carrot|pepper|capsicum|cauliflower|broccoli|cabbage|berr|okra|eggplant|brinjal|baingan|zucchini|apple|lemon|lime|beet|radish|celery|kale|peas|corn|mushroom/;
@@ -59,6 +67,7 @@ export function processTiles(recipe: Recipe, servings: number): ProcessTile[] {
       steps: [],
       items: washed.map(item),
       lines: [],
+      alongside: [],
       note: rinse ? "Rinse dal, rice and beans until the water runs clear. Wash the rest under cold water." : "Wash under cold water and pat dry.",
     });
   }
@@ -69,7 +78,18 @@ export function processTiles(recipe: Recipe, servings: number): ProcessTile[] {
     const idx = recipe.steps.flatMap((s, n) => (s.verb === verb ? [n] : []));
     const texts = idx.map((n) => recipe.steps[n].text);
     const items = recipe.ingredients.filter((i) => texts.some((t) => named(t, i.name))).map(item);
-    tiles.push({ verb, steps: idx.map((n) => n + 1), items, lines: items.length ? [] : texts });
+    const minutes = idx.reduce((m, n) => m + (recipe.steps[n].minutes ?? 0), 0);
+    tiles.push({ verb, steps: idx.map((n) => n + 1), items, lines: items.length ? [] : texts, alongside: [], ...(minutes ? { minutes } : {}) });
+  }
+
+  // Parallel work: while a timed action runs, hands-on actions that do not use the same food can go ahead.
+  const label = (t: ProcessTile) => (t.items.length ? t.items.map((i) => i.name.toLowerCase()).join(", ") : t.lines[0] ?? t.verb.toLowerCase());
+  const free = (t: ProcessTile, by: ProcessTile) => t.verb !== "Wash" && !t.minutes && OVERLAPS.has(t.verb) && !t.items.some((i) => by.items.some((j) => j.name === i.name));
+  for (const timed of tiles.filter((t) => t.minutes)) {
+    for (const other of tiles.filter((t) => t !== timed && free(t, timed))) {
+      timed.alongside.push({ verb: other.verb, label: label(other) });
+      other.alongside.push({ verb: timed.verb, label: label(timed), minutes: timed.minutes });
+    }
   }
   return tiles;
 }
