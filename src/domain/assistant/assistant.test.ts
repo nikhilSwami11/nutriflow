@@ -24,6 +24,11 @@ import {
   prepToday,
   setPrepDone,
   weekPlan,
+  swapMeal,
+  cooked,
+  whatToEatNow,
+  profileInfo,
+  updateProfile,
   type AssistantDeps,
 } from "./assistant";
 
@@ -32,14 +37,18 @@ const recipe = (o: Partial<Recipe> & { id: string }): Recipe => ({
   ingredients: [], steps: [{ text: "Cook it", verb: "stir" }], ...o,
 });
 
-function deps(o: { profile?: Profile; logs?: MealLog[]; chores?: Chore[] } = {}) {
+function deps(o: { profile?: Profile; logs?: MealLog[]; chores?: Chore[]; extra?: Recipe[]; writer?: AssistantDeps["writer"] } = {}) {
   let logs = [...(o.logs ?? [])];
   let chores = [...(o.chores ?? [])];
   const saved: { recipe: Recipe; saved: boolean }[] = [];
   let n = 0;
   let days: StoredDay[] = [];
   let ticks: string[] = [];
+  let prof = o.profile ?? null;
+  const habits = new Map<string, { recipeId: string; count: number; avg: number }>();
   const d: AssistantDeps = {
+    habits: { get: async (id) => habits.get(id) ?? null, save: async (h) => void habits.set(h.recipeId, h) },
+    writer: o.writer,
     prep: { doneOn: async (date) => ticks.filter((t) => t.startsWith(date)), set: async (id, done) => void (ticks = done ? [...ticks, id] : ticks.filter((t) => t !== id)) },
     plans: {
       list: async (a, b) => days.filter((x) => x.date >= a && x.date <= b),
@@ -51,7 +60,7 @@ function deps(o: { profile?: Profile; logs?: MealLog[]; chores?: Chore[] } = {})
       add: async (l) => void logs.push(l),
       remove: async (id) => void (logs = logs.filter((l) => l.id !== id)),
     },
-    profile: { get: async () => o.profile ?? null, save: async () => undefined },
+    profile: { get: async () => prof, save: async (p) => void (prof = p) },
     pantry: fakePantry([item({ id: "p1", name: "Onion", qty: 3 }), item({ id: "p2", name: "Rice", qty: 0, unit: "cups" })]),
     list: fakeList(),
     chores: {
@@ -63,6 +72,7 @@ function deps(o: { profile?: Profile; logs?: MealLog[]; chores?: Chore[] } = {})
       list: async () => [
         recipe({ id: "dal", name: "Dal tadka", blurb: "Yellow lentils", ingredients: [{ name: "Onion", qty: 1, unit: "pcs" }, { name: "Rice", qty: 1, unit: "cups" }] }),
         recipe({ id: "oats", name: "Oats", meal: "Breakfast", kcal: 300, minutes: 10 }),
+        ...(o.extra ?? []),
       ],
     },
     mine: { list: async () => saved, put: async (r, kept) => void saved.push({ recipe: r, saved: kept }) },
@@ -215,5 +225,52 @@ describe("prep (shared with the app's Prep story)", () => {
     expect(r.swaps).toEqual([{ ingredient: "Ginger-garlic paste", use: "1/2 tbsp grated ginger and 3 crushed garlic cloves" }]);
     expect(r.fixes).toEqual([{ problem: "too sour", fix: "Add a pinch of sugar and a spoon of cream." }]);
     expect(r.prep).toHaveLength(1);
+  });
+
+  it("profile starts unsaved with the default range; set_profile changes only the fields given", async () => {
+    const { d } = deps();
+    expect(await profileInfo(d)).toMatchObject({ saved: false, diet: "anything", dislikes: [] });
+    await updateProfile(d, { kcalMin: 2800, kcalMax: 3100 });
+    await updateProfile(d, { dislikes: [" Mushroom ", "mushroom"] });
+    expect(await profileInfo(d)).toEqual({ saved: true, kcalMin: 2800, kcalMax: 3100, diet: "anything", dislikes: ["mushroom"] });
+    await expect(updateProfile(d, { kcalMin: 3200 })).rejects.toThrow(/min < max/);
+  });
+
+  it("swaps one planned meal for another of the same meal and keeps the other days", async () => {
+    const { d } = deps({ extra: [recipe({ id: "eggs", name: "Egg toast", meal: "Breakfast", kcal: 350, minutes: 10 })] });
+    const before = await weekPlan(d, D);
+    const pick = before[0].meals.find((m) => m.meal === "Breakfast")!.recipeId === "oats" ? "eggs" : "oats";
+    const out = await swapMeal(d, { date: D, meal: "Breakfast", recipeId: pick });
+    expect(out.now).toBe(pick === "eggs" ? "Egg toast" : "Oats");
+    const after = await weekPlan(d, D);
+    expect(after[0].meals.find((m) => m.meal === "Breakfast")!.recipeId).toBe(pick);
+    expect(after.slice(1)).toEqual(before.slice(1));
+    await expect(swapMeal(d, { date: D, meal: "Breakfast", recipeId: "dal" })).rejects.toThrow(/find_recipes/);
+    await expect(swapMeal(d, { date: D, meal: "Lunch", recipeId: pick })).rejects.toThrow(/no Lunch planned/);
+  });
+
+  it("cooked logs the meal as a cook, uses up the pantry and learns the serving size", async () => {
+    const { d, logs } = deps();
+    const out = await cooked(d, { date: D, recipeId: "dal", servingsEaten: 2 });
+    expect(out.logged).toMatchObject({ name: "Dal tadka", kcal: 1000, servings: 2 });
+    expect(logs()[0]).toMatchObject({ source: "cook", recipeId: "dal" });
+    expect(out.pantryUsedUp).toEqual(["Rice"]);
+    expect(out.notEnoughInPantry).toHaveLength(1); // the pantry had none
+    expect((await d.habits.get("dal"))?.avg).toBe(2);
+    expect((await cooked(d, { date: D, recipeId: "dal" })).logged.servings).toBe(2); // usual
+    await expect(cooked(d, { date: D, recipeId: "nope" })).rejects.toThrow(/find_recipes/);
+  });
+
+  it("what to eat: one written meal when the writer works, the app's rules when it does not", async () => {
+    const draft = { name: "Egg bhurji", blurb: "Soft eggs", minutes: 15, servings: 1, kcal: 400, protein: 25, carbs: 10, fat: 20,
+      ingredients: [{ name: "Eggs", qty: 3, unit: "pcs" }, { name: "Onion", qty: 1, unit: "pcs" }], steps: [{ text: "Fry onion", verb: "Fry" }, { text: "Scramble eggs", verb: "Stir" }] };
+    const ai = deps({ writer: { write: async () => ({ recipe: draft, ideas: [{ name: "Poha", blurb: "Light" }] }) } });
+    const a = await whatToEatNow(ai.d, { date: D, hour: 8 });
+    expect(a).toMatchObject({ best: { name: "Egg bhurji" }, ideas: [{ name: "Poha" }] });
+    expect(a.best.id).toMatch(/^ai-/);
+    expect(ai.saved()).toHaveLength(1);
+    const rules = await whatToEatNow(deps({ writer: { write: async () => { throw new Error("down"); } } }).d, { date: D, hour: 8 });
+    expect(rules.source).toMatch(/app's recipes/);
+    expect(rules.best.name).toBe("Oats");
   });
 });

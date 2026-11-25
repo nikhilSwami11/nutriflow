@@ -161,6 +161,13 @@ export function useShopping() {
       const unit = amounts.data?.[id]?.unit ?? DEFAULT_AMOUNT.unit;
       setAmount.mutate({ id, amount: clampAmount({ qty, unit }) });
     },
+    /** One line typed by hand: it goes on the list (amount from the model when there is one, else 1). */
+    addByName: async (name: string) => {
+      const n = name.trim();
+      if (!n) return;
+      await addNamesToShoppingList({ pantry, list, newId, advisor }, [{ name: n }]).catch(() => 0);
+      await refresh();
+    },
     savePrefs: (zip: string, storeId: StoreId) => save.mutate({ zip: zip.trim(), store: storeId }),
   };
 }

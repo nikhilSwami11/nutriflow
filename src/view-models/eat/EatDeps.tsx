@@ -1,11 +1,13 @@
 "use client";
 import { createContext, useContext } from "react";
-import type { RecipeSearch, RecipeWriter } from "@/domain/eat";
+import type { RecipeAdapter, RecipeSearch, RecipeWriter } from "@/domain/eat";
 import type { MyRecipeRepository, RecipeRepository } from "@/domain/recipes";
 
 export interface EatDeps {
   /** The AI that writes a meal. Absent without Supabase: the built-in recipes answer instead. */
   writer?: RecipeWriter;
+  /** The AI that changes a recipe by an instruction (Ask AI). Absent without Supabase. */
+  adapter?: RecipeAdapter;
   /** Recipes written for or saved by this person. */
   mine: MyRecipeRepository;
   /** The built-in recipes: the fallback, and pictures for written dishes. */

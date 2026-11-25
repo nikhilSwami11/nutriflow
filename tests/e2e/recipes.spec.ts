@@ -40,3 +40,18 @@ test("unknown recipe shows the not-found page, not a crash", async ({ page }) =>
   await page.goto("/recipes/nope");
   await expect(page.getByText(/could not be found/i)).toBeVisible();
 });
+
+test("edit a recipe by hand: a built-in becomes your own saved copy", async ({ page }) => {
+  await page.goto("/recipes/dal-tadka");
+  await expect(page.getByRole("button", { name: "Ask AI" })).toHaveCount(0); // needs the account
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Edit recipe" });
+  await dialog.getByLabel("Name").fill("Dal tadka, my way");
+  await dialog.getByRole("button", { name: "Remove step 1" }).click();
+  await dialog.getByRole("button", { name: "Save recipe" }).click();
+  await expect(page.getByRole("heading", { name: "Dal tadka, my way", level: 1 })).toBeVisible();
+  await expect(page).toHaveURL(/\/recipes\/ai-/);
+  await expect(page.getByRole("button", { name: "Save recipe" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("navigation", { name: "Food" }).getByRole("link", { name: "Recipes" }).click();
+  await expect(page.getByRole("link", { name: "Dal tadka, my way" })).toBeVisible();
+});

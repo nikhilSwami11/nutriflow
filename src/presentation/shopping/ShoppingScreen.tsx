@@ -64,6 +64,7 @@ function ToBuyRow({ r, onShopped, onQty }: { r: ShoppingRow; onShopped: (id: str
 export function ShoppingScreen() {
   const s = useShopping();
   const [editing, setEditing] = useState(false);
+  const [item, setItem] = useState("");
   const [shown, setShown] = useState(false);
   const [zip, setZip] = useState("");
   const [store, setStore] = useState<StoreId>("walmart");
@@ -150,6 +151,19 @@ export function ShoppingScreen() {
             </div>
           </Fold>
         </section>
+
+        {!s.isLoading && !editing && (
+          <form
+            className="mx-5 flex shrink-0 gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void s.addByName(item).then(() => setItem(""));
+            }}
+          >
+            <input value={item} onChange={(e) => setItem(e.target.value)} aria-label="Add an item" placeholder="Add an item" autoComplete="off" maxLength={60} className="touch min-w-0 flex-1 rounded-full border border-line2 bg-bg px-4 text-[15px]" />
+            <button type="submit" disabled={!item.trim()} className="touch shrink-0 rounded-full bg-ink px-5 text-[15px] font-medium text-bg disabled:opacity-40">Add</button>
+          </form>
+        )}
 
         {s.isLoading && s.rows.length === 0 && <Skeleton />}
         {s.rows.length > 0 && (

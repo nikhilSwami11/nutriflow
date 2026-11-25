@@ -1,6 +1,6 @@
 import { createMcpHandler, getPublicOrigin, metadataCorsOptionsRequestHandler, protectedResourceHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
-import { CARD_MIME, EAT_NEXT_URI, eatNextHtml } from "./mcpCards";
+import { CARD_MIME, EAT_NEXT_URI, SHOPPING_URI, WEEK_PLAN_URI, eatNextHtml, shoppingHtml, weekPlanHtml } from "./mcpCards";
 import { clientForToken, verifyAccessToken } from "@/data/auth/token";
 import { SupabaseChoreRepository } from "@/data/chores/supabase";
 import { SupabaseMealPlanRepository } from "@/data/planning/supabase";
@@ -8,6 +8,8 @@ import { SupabasePrepDoneRepository } from "@/data/planning/prep";
 import { SupabaseMealLogRepository, SupabaseProfileRepository } from "@/data/nutrition/supabase";
 import { SupabasePantryRepository, SupabaseShoppingListRepository } from "@/data/pantry/supabase";
 import { DemoRecipeRepository } from "@/data/recipes/demo";
+import { SupabaseServingHabitRepository } from "@/data/cooking/habits";
+import { EdgeRecipeWriter } from "@/data/eat/edgeWriter";
 import { CombinedRecipeRepository, SupabaseMyRecipeRepository } from "@/data/recipes/mine";
 import * as A from "@/domain/assistant";
 import { toDateKey } from "@/domain/nutrition";
@@ -33,6 +35,8 @@ const depsFor = (token: string): A.AssistantDeps => {
     chores: new SupabaseChoreRepository(db),
     plans: new SupabaseMealPlanRepository(db),
     prep: new SupabasePrepDoneRepository(db),
+    habits: new SupabaseServingHabitRepository(db),
+    writer: new EdgeRecipeWriter(db),
     recipes: new CombinedRecipeRepository(new DemoRecipeRepository(), mine),
     mine,
     newId: () => crypto.randomUUID(),
@@ -106,13 +110,34 @@ export const mcp = createMcpHandler(
 
     server.registerTool("what_to_eat", {
       title: "What should I eat?",
-      description: "The app's best three meals for now: diet, dislikes, pantry, calories left, time of day and an optional wish (quick, light, high protein, use what I have).",
+      description: "One meal for right now, written for this person (diet, dislikes, pantry, calories left, time of day, an optional wish: quick, light, high protein, use what I have), plus two ideas. Same answer as the app's Eat screen. If it was written for them its id opens in the app; offer to cook it or to log it.",
       inputSchema: z.object({ date, hour: z.number().int().min(0).max(23).describe("Local hour, 0-23"), wish: z.string().max(200).optional() }),
-      annotations: read,
-    }, run((d, i) => A.suggestNow(d, { date: dayOf(i.date), hour: i.hour, wish: i.wish })));
+      annotations: write,
+    }, run(async (d, i) => {
+      const out = await A.whatToEatNow(d, { date: dayOf(i.date), hour: i.hour, wish: i.wish });
+      const origin = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+      return { ...out, ...(origin ? { link: `${origin}/recipes/${out.best.id}` } : {}) };
+    }));
+
+    server.registerTool("cooked", {
+      title: "I cooked it",
+      description: "The person cooked and ate a NutriFlow recipe: logs the meal, uses up what it took from the pantry and learns their usual serving size. Leave servings_eaten out to use their usual. Prefer this over log_meal when they cooked a recipe from the app.",
+      inputSchema: z.object({
+        date, recipe_id: z.string().max(80),
+        servings_made: z.number().positive().max(20).optional().describe("How many servings the pot made; default the recipe's"),
+        servings_eaten: z.number().positive().max(20).optional().describe("Servings this person ate; default their usual"),
+      }), annotations: write,
+    }, run((d, i) => A.cooked(d, { date: dayOf(i.date), recipeId: i.recipe_id, servingsMade: i.servings_made, servingsEaten: i.servings_eaten })));
 
     server.registerResource("eat-next-card", EAT_NEXT_URI, { title: "Eat next card", mimeType: CARD_MIME }, async (uri) => ({
       contents: [{ uri: uri.href, mimeType: CARD_MIME, text: eatNextHtml() }],
+    }));
+
+    server.registerResource("week-plan-card", WEEK_PLAN_URI, { title: "Week plan card", mimeType: CARD_MIME }, async (uri) => ({
+      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: weekPlanHtml() }],
+    }));
+    server.registerResource("shopping-card", SHOPPING_URI, { title: "Shopping list card", mimeType: CARD_MIME }, async (uri) => ({
+      contents: [{ uri: uri.href, mimeType: CARD_MIME, text: shoppingHtml() }],
     }));
 
     server.registerTool("eat_next", {
@@ -124,9 +149,32 @@ export const mcp = createMcpHandler(
 
     server.registerTool("week_plan", {
       title: "Week plan",
+      _meta: { ui: { resourceUri: WEEK_PLAN_URI }, "ui/resourceUri": WEEK_PLAN_URI },
       description: "The person's stored plan for the next 7 days from date: meals with calories and protein. The app shows the same week.",
       inputSchema: z.object({ date }), annotations: read,
     }, run((d, i) => A.weekPlan(d, dayOf(i.date))));
+
+    server.registerTool("swap_meal", {
+      title: "Swap a planned meal",
+      description: "Replace one planned meal (a date and meal) with another recipe. Get ids with find_recipes using the same meal; it must fit their diet and dislikes.",
+      inputSchema: z.object({ date, meal, recipe_id: z.string().max(80) }), annotations: write,
+    }, run((d, i) => A.swapMeal(d, { date: dayOf(i.date), meal: i.meal, recipeId: i.recipe_id })));
+
+    server.registerTool("profile", {
+      title: "Profile",
+      description: "The person's diet, daily calorie range and foods to skip. Check it before suggesting or writing food.",
+      inputSchema: z.object({}), annotations: read,
+    }, run((d) => A.profileInfo(d)));
+
+    server.registerTool("set_profile", {
+      title: "Change profile",
+      description: "Change diet, calorie range or foods to skip. Only the fields given change. Changing diet or foods to skip re-plans days that no longer fit.",
+      inputSchema: z.object({
+        kcal_min: z.number().int().min(800).max(6000).optional(), kcal_max: z.number().int().min(900).max(7000).optional(),
+        diet: z.enum(["anything", "vegetarian", "eggetarian", "vegan"]).optional(),
+        dislikes: z.array(z.string().min(1).max(40)).max(30).optional().describe("Replaces the whole list"),
+      }), annotations: write,
+    }, run((d, i) => A.updateProfile(d, { kcalMin: i.kcal_min, kcalMax: i.kcal_max, diet: i.diet, dislikes: i.dislikes })));
 
     server.registerTool("prep_today", {
       title: "Prep today",
@@ -208,7 +256,9 @@ Make it complete. A dish with parts (chicken tikka masala = marinade + masala gr
     }, run((d, i) => A.addToPantry(d, i.items)));
 
     server.registerTool("shopping_list", {
-      title: "Shopping list", description: "What is on the shopping list, with amounts.",
+      title: "Shopping list",
+      _meta: { ui: { resourceUri: SHOPPING_URI }, "ui/resourceUri": SHOPPING_URI },
+      description: "What is on the shopping list, with amounts.",
       inputSchema: z.object({}), annotations: read,
     }, run((d) => A.shoppingList(d)));
 

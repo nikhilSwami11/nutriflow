@@ -1,10 +1,13 @@
 import { foodKey as norm } from "../pantry/foodKey";
 import { addChore, isDue, markChore, type Chore, type ChoreRepository, type Repeat } from "../chores";
+import { finishCooking, suggestedServings, type ServingHabitRepository } from "../cooking";
 import { logRecipeEaten } from "../cooking/logRecipe";
-import { parseWants, suggestMeals } from "../eat";
+import { parseWants, suggestMeals, whatToEat, type RecipeWriter } from "../eat";
 import {
   DEFAULT_RANGE,
   dayTotal,
+  saveProfile,
+  type Diet,
   intakeStatus,
   kcalLeft,
   logMeal,
@@ -39,6 +42,10 @@ export interface AssistantDeps {
   mine: MyRecipeRepository;
   plans: MealPlanRepository;
   prep: PrepDoneRepository;
+  /** Usual servings per recipe, updated when a cook is finished. */
+  habits: ServingHabitRepository;
+  /** The AI that writes a meal. Absent: what_to_eat uses the app's rules over the built-in recipes. */
+  writer?: RecipeWriter;
   newId: () => string;
 }
 
@@ -287,4 +294,82 @@ export async function keepRecipe(deps: AssistantDeps, id: string, keep: boolean)
   if (!found) throw new Error("That recipe is not one you wrote for this person. Use an id from write_recipe.");
   await deps.mine.put(found.recipe, keep);
   return { id, name: found.recipe.name, saved: keep };
+}
+
+/** Diet, calorie range and foods to skip: what write_recipe and what_to_eat must respect. `saved` is false until the person sets it once. */
+export async function profileInfo(deps: AssistantDeps) {
+  const p = await deps.profile.get();
+  return { saved: p !== null, kcalMin: (p?.range ?? DEFAULT_RANGE).min, kcalMax: (p?.range ?? DEFAULT_RANGE).max, diet: p?.diet ?? "anything", dislikes: p?.dislikes ?? [] };
+}
+
+/** Changes only the fields given; the rest stay as saved. */
+export async function updateProfile(deps: AssistantDeps, patch: { kcalMin?: number; kcalMax?: number; diet?: Diet; dislikes?: string[] }) {
+  const now = await profileInfo(deps);
+  const saved = await saveProfile(deps.profile, {
+    range: { min: patch.kcalMin ?? now.kcalMin, max: patch.kcalMax ?? now.kcalMax },
+    diet: patch.diet ?? (now.diet as Diet),
+    dislikes: patch.dislikes ?? now.dislikes,
+  });
+  return { saved: true, kcalMin: saved.range.min, kcalMax: saved.range.max, diet: saved.diet, dislikes: saved.dislikes };
+}
+
+/**
+ * Puts another recipe into one slot of a planned day. The recipe must be one the plan may use (diet, dislikes) and be the
+ * same meal. Later days are kept as they are.
+ */
+export async function swapMeal(deps: AssistantDeps, input: { date: DateKey; meal: MealName; recipeId: string }) {
+  const { plan, recipes } = await storedWeek(deps, input.date);
+  const day = plan.find((d) => d.date === input.date);
+  if (!day) throw new Error("That date is not in the next 7 days of the plan.");
+  const slot = day.meals.find((m) => m.meal === input.meal);
+  if (!slot) throw new Error(`There is no ${input.meal} planned on ${input.date}.`);
+  const profile = await deps.profile.get();
+  const next = plannableRecipes(recipes, profile).find((r) => r.id === input.recipeId && r.meal === input.meal);
+  if (!next) throw new Error(`Recipe ${input.recipeId} cannot replace a ${input.meal}: use find_recipes with meal ${input.meal} (it must fit their diet and dislikes).`);
+  const changed = plan.filter((d) => d.date >= input.date).map((d) => (d === day ? { ...d, meals: d.meals.map((m) => (m === slot ? { ...m, recipeId: next.id } : m)) } : d));
+  await deps.plans.clearFrom(input.date);
+  await deps.plans.add(changed);
+  return { date: input.date, meal: input.meal, was: recipes.find((r) => r.id === slot.recipeId)?.name, now: next.name };
+}
+
+/**
+ * What to eat now, the way the app's Eat screen answers: one meal written for this person (kept unsaved, opens by id),
+ * plus two ideas; when the writer is missing, slow or wrong, the rules pick from the built-in recipes.
+ */
+export async function whatToEatNow(deps: AssistantDeps, input: { date: DateKey; hour: number; wish?: string }) {
+  const [all, pantry, profile, day] = await Promise.all([deps.recipes.list(), deps.pantry.list(), deps.profile.get(), daySummary(deps, input.date)]);
+  const meal = await whatToEat(
+    { writer: deps.writer, mine: deps.mine, newId: deps.newId },
+    {
+      builtins: all.filter((r) => !r.written), pantry, diet: profile?.diet, dislikes: profile?.dislikes, dayMax: day.range.max,
+      kcalLeft: day.kcalLeft ?? undefined, hour: input.hour, wants: parseWants(input.wish ?? ""),
+    },
+  );
+  const r = meal.best;
+  return {
+    source: meal.source === "ai" ? "written for you now (nutrition is an estimate)" : "picked from the app's recipes",
+    best: { id: r.id, name: r.name, blurb: r.blurb, minutes: r.minutes, kcalPerServing: r.kcal, protein: r.protein, missingFromPantry: readiness(r, pantry).missing },
+    ideas: meal.ideas.map((i) => ({ name: i.name, blurb: i.blurb, ...(i.recipeId ? { id: i.recipeId } : {}) })),
+  };
+}
+
+/**
+ * The person cooked and ate it: logs the meal (never lost), uses up the pantry and learns their usual serving size, the
+ * same as the cook screen's Finish. Servings eaten default to their usual.
+ */
+export async function cooked(deps: AssistantDeps, input: { date: DateKey; recipeId: string; servingsMade?: number; servingsEaten?: number }) {
+  const recipe = (await deps.recipes.list()).find((r) => r.id === input.recipeId);
+  if (!recipe) throw new Error(`No recipe with id ${input.recipeId}. Use find_recipes to get ids.`);
+  const eaten = input.servingsEaten ?? suggestedServings(await deps.habits.get(recipe.id).catch(() => null));
+  const made = Math.max(input.servingsMade ?? recipe.servings, eaten);
+  const out = await finishCooking(
+    { pantry: deps.pantry, logs: deps.logs, habits: deps.habits, newId: deps.newId },
+    { recipe, servingsMade: made, servingsEaten: eaten, date: input.date },
+  );
+  return {
+    logged: { id: out.log.id, name: out.log.name, kcal: out.log.kcal, servings: eaten },
+    pantryUsedUp: out.depleted.map((i) => i.name),
+    notEnoughInPantry: out.shortfalls,
+    warnings: out.warnings,
+  };
 }

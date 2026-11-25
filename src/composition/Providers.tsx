@@ -41,10 +41,11 @@ import type { FeedEventRepository } from "@/domain/feed";
 import type { MealLogRepository, ProfileRepository } from "@/domain/nutrition";
 import type { RecipeRepository } from "@/domain/recipes";
 import type { AuthRepository } from "@/domain/auth";
-import type { RecipeSearch, RecipeWriter } from "@/domain/eat";
+import type { RecipeAdapter, RecipeSearch, RecipeWriter } from "@/domain/eat";
 import type { MyRecipeRepository } from "@/domain/recipes";
 import { CombinedRecipeRepository, InMemoryMyRecipeRepository, SupabaseMyRecipeRepository } from "@/data/recipes/mine";
 import { EdgeRecipeWriter } from "@/data/eat/edgeWriter";
+import { EdgeRecipeAdapter } from "@/data/recipes/edgeAdapter";
 import type { BuyAdvisor } from "@/domain/pantry";
 import { EatDepsProvider, type EatDeps } from "@/view-models/eat/EatDeps";
 import { AuthDepsProvider } from "@/view-models/auth/AuthDeps";
@@ -58,6 +59,10 @@ import { RecipeDepsProvider } from "@/view-models/recipes/RecipeDeps";
 import { DashboardDepsProvider } from "@/view-models/dashboard/DashboardDeps";
 import { NutritionDepsProvider, type NutritionDeps } from "@/view-models/nutrition/NutritionDeps";
 import { PantryDepsProvider, type PantryDeps } from "@/view-models/pantry/PantryDeps";
+import { ChatDepsProvider, type ChatDeps } from "@/view-models/home/ChatDeps";
+import { EdgeChatBrain } from "@/data/assistant/edgeChat";
+import type { ChatBrain } from "@/domain/assistant";
+import { chatTools } from "./chatTools";
 
 interface Deps {
   auth: AuthRepository;
@@ -72,6 +77,8 @@ interface Deps {
   /** Browser storage, mirrored to Supabase when it is set. */
   feedEvents: FeedEventRepository;
   cook: CookDeps;
+  /** The Home chat: the assistant's tools over these same repositories, and the model when Supabase is set. */
+  chat: ChatDeps;
   /** Retries meals that could not reach the database. */
   flushLogs: () => Promise<number>;
 }
@@ -108,19 +115,24 @@ const assemble = (
   prep: PrepDoneRepository = new LocalPrepDoneRepository(storage()),
   shoppingPrefs: ShoppingPrefsRepository = new LocalShoppingPrefsRepository(storage()),
   bought: BoughtRepository = new LocalBoughtRepository(storage()),
+  adapter?: RecipeAdapter,
+  brain?: ChatBrain,
 ): Deps => {
   const builtins = new DemoRecipeRepository();
   const queue = new QueuedMealLogRepository(primaryLogs, storage());
+  const recipes = new CombinedRecipeRepository(builtins, mine);
+  const tools = chatTools({ logs: queue, profile, pantry: pantry.pantry, list: pantry.list, chores, recipes, mine, plans, prep, habits, writer, newId });
   return {
     auth,
     chores,
-    eat: { writer, mine, builtins, search: recipeSearch, newId },
+    eat: { writer, adapter, mine, builtins, search: recipeSearch, newId },
     shopping: { prefs: shoppingPrefs, bought, advisor },
     pantry,
     nutrition: { logs: queue, profile, plans, prep },
     // Only the offline demo shows sample history; a real account sees its own logs, empty at first.
     dashboard: live ? new LogDashboardRepository(queue, profile) : new DemoDashboardRepository(),
-    recipes: new CombinedRecipeRepository(builtins, mine),
+    recipes,
+    chat: { brain, tools },
     feedEvents: remoteFeed ? new MirroredFeedEventRepository(new LocalFeedEventRepository(storage()), remoteFeed) : new LocalFeedEventRepository(storage()),
     cook: { habits, pendingLogs: () => queue.pending() },
     flushLogs: () => queue.flush(),
@@ -178,6 +190,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
           new SupabasePrepDoneRepository(db),
           new SupabaseShoppingPrefsRepository(db),
           new SupabaseBoughtRepository(db),
+          new EdgeRecipeAdapter(db),
+          new EdgeChatBrain(db),
         ),
       ),
     );
@@ -210,7 +224,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <RecipeDepsProvider value={deps.recipes}>
               <FeedDepsProvider value={deps.feedEvents}>
                 <CookDepsProvider value={deps.cook}>
-                  <PhotoDepsProvider value={detector}>{children}</PhotoDepsProvider>
+                  <ChatDepsProvider value={deps.chat}>
+                    <PhotoDepsProvider value={detector}>{children}</PhotoDepsProvider>
+                  </ChatDepsProvider>
                 </CookDepsProvider>
               </FeedDepsProvider>
             </RecipeDepsProvider>

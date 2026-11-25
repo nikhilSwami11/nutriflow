@@ -13,7 +13,7 @@ export interface CatalogItem {
 
 const slug = (n: string) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 /** Slugs that have a picture in public/ingredients. Add one here after running the image script. */
-const WITH_IMAGE = new Set<string>([]);
+const WITH_IMAGE = new Set<string>(["onions", "tomatoes", "potatoes", "garlic", "ginger", "carrots", "spinach", "cucumbers", "cauliflower"]);
 
 const c = (name: string, group: PantryGroup, unit: Unit, qty: number): CatalogItem => ({ name, group, unit, qty, ...(WITH_IMAGE.has(slug(name)) ? { image: `/ingredients/${slug(name)}.webp` } : {}) });
 

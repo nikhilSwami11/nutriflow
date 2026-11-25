@@ -50,3 +50,10 @@ test("choose a store: a bad ZIP cannot be saved, then every item links to the st
   await expect(page.getByRole("button", { name: "Aldi · 94103" })).toBeVisible();
   await expect(page.getByRole("link", { name: /^Find .* at Aldi$/ }).first()).toHaveAttribute("href", /^https:\/\/www\.aldi\.us\/results\?q=/);
 });
+
+test("add an item by typing it", async ({ page }) => {
+  await page.goto("/shopping");
+  await page.getByRole("textbox", { name: "Add an item" }).fill("Dark chocolate");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByText("Dark chocolate")).toBeVisible();
+});

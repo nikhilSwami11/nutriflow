@@ -1,11 +1,28 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
 import { useRecipe } from "@/view-models/recipes/useRecipes";
+import { useRecipeEdit } from "@/view-models/recipes/useRecipeEdit";
 import { AppShell } from "../shell/AppShell";
 import { RecipeArt } from "./RecipeArt";
+import { AskAiSheet, EditRecipeSheet } from "./RecipeEditSheets";
 import { Skeleton } from "../shared/Skeleton";
 
 import { verbColor } from "../shared/verbColor";
+
+/** Edit and Ask AI for a loaded recipe. */
+function EditBar({ recipe }: { recipe: Parameters<typeof useRecipeEdit>[0] }) {
+  const [sheet, setSheet] = useState<"edit" | "ai" | null>(null);
+  const { canAskAi } = useRecipeEdit(recipe);
+  return (
+    <>
+      {canAskAi && <button type="button" onClick={() => setSheet("ai")} className="touch rounded-full border border-line2 bg-transparent px-4 text-sm font-medium text-ink">Ask AI</button>}
+      <button type="button" onClick={() => setSheet("edit")} className="touch rounded-full border border-line2 bg-transparent px-4 text-sm font-medium text-ink">Edit</button>
+      {sheet === "ai" && <AskAiSheet recipe={recipe} onClose={() => setSheet(null)} />}
+      {sheet === "edit" && <EditRecipeSheet recipe={recipe} onClose={() => setSheet(null)} />}
+    </>
+  );
+}
 
 export function RecipeDetailScreen({ id }: { id: string }) {
   const r = useRecipe(id);
@@ -17,6 +34,7 @@ export function RecipeDetailScreen({ id }: { id: string }) {
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
           </Link>
           <div className="flex-1" />
+          {!r.isLoading && !r.notFound && <EditBar recipe={r.recipe} />}
           {!r.isLoading && !r.notFound && (
             <button type="button" onClick={r.toggleSave} aria-pressed={r.saved} aria-label="Save recipe" className="flex h-11 w-11 items-center justify-center bg-transparent text-ink">
               <svg width="22" height="22" viewBox="0 0 24 24" fill={r.saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z" /></svg>
@@ -34,6 +52,7 @@ export function RecipeDetailScreen({ id }: { id: string }) {
                 <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">{r.recipe.name}</h1>
                 {r.recipe.blurb && <p className="mt-1.5 text-sm leading-normal text-ink2">{r.recipe.blurb}</p>}
               </div>
+              {r.recipe.written && !r.saved && <p className="m-0 -mb-2 rounded-2xl bg-butter-soft px-4 py-3 text-sm text-ink">Not kept yet. Tap the bookmark to keep it.</p>}
               <p className="m-0 -mb-2 text-sm text-ink2">{r.cookLine}</p>
               <div className="grid shrink-0 grid-cols-3 overflow-hidden rounded-[20px] border border-line">
                 {r.stats.map((s, i) => (
