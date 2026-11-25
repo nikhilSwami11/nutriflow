@@ -38,6 +38,7 @@ Plan of record. Edit as things ship. Product feel: the app decides and makes the
 3. `.env` line 3 is not `KEY=value`: it breaks the Supabase CLI. Name it or delete it.
 
 ## Done on production
+- Live 2026-11-24: app on Vercel at https://nutriflow-neon.vercel.app (env `NEXT_PUBLIC_APP_URL` set; `.vercelignore` keeps `.env*` out of uploads). Migrations 0001 to 0014 applied; all edge functions deployed incl. `chat`, `adapt-recipe`, `write-recipe`. Left: Supabase OAuth server on, Site URL, connector added, one real sign-in.
 - Migrations 0001 to 0009 are applied; edge functions `parse-pantry-utterance`, `suggest-buy-units`, `text-search`, `text-index` are deployed; secrets `OPENAI_API_KEY`, `INDEX_SECRET` are set.
 
 ## NEXT: two front doors, one brain (planned 2026-11-23)

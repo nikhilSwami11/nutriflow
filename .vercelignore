@@ -1,0 +1,6 @@
+# Never upload secrets or source art to Vercel.
+.env*
+art-src/
+supabase/.temp/
+test-results/
+playwright-report/
