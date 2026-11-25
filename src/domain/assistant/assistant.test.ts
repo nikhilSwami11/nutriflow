@@ -19,7 +19,8 @@ import {
   shoppingList,
   suggestNow,
   eatNextNow,
-  saveWrittenRecipe,
+  writeRecipe,
+  keepRecipe,
   prepToday,
   setPrepDone,
   weekPlan,
@@ -176,14 +177,17 @@ describe("prep (shared with the app's Prep story)", () => {
     const thin = { name: "Roasted chana", blurb: "Crunchy", minutes: 20, servings: 2, kcal: 200, protein: 9, carbs: 27, fat: 5,
       ingredients: [{ name: "Chickpeas", qty: 2, unit: "cups" }, { name: "Cumin seeds", qty: 1, unit: "tsp" }],
       steps: [{ text: "Dry the chickpeas", verb: "Mix" }, { text: "Roast with cumin", verb: "Roast" }] };
-    await expect(saveWrittenRecipe(d, { meal: "Snack", recipe: thin })).rejects.toThrow(/salt[\s\S]*fat[\s\S]*aromatics[\s\S]*tastes and balances/);
+    await expect(writeRecipe(d, { meal: "Snack", recipe: thin })).rejects.toThrow(/salt[\s\S]*fat[\s\S]*aromatics[\s\S]*tastes and balances/);
     expect(saved()).toHaveLength(0);
     const good = { ...thin, ingredients: [...thin.ingredients, { name: "Salt", qty: 1, unit: "tsp" }, { name: "Olive oil", qty: 1, unit: "tbsp" }, { name: "Onion", qty: 1, unit: "pcs" }, { name: "Red chilli powder", qty: 0.5, unit: "tsp" }],
       steps: [...thin.steps, { text: "Taste, then adjust salt, heat and a squeeze of lemon", verb: "Toss", look: "Crisp and golden", tip: "Shake the tray halfway" }] };
-    const out = await saveWrittenRecipe(d, { meal: "Snack", recipe: good });
-    expect(out).toMatchObject({ name: "Roasted chana", saved: true });
+    const out = await writeRecipe(d, { meal: "Snack", recipe: good });
+    expect(out).toMatchObject({ name: "Roasted chana", saved: false });
     expect(out.id).toMatch(/^ai-/);
-    expect(saved()[0].saved).toBe(true);
+    expect(saved()[0].saved).toBe(false); // shown first, not kept
+    await keepRecipe(d, out.id, true);
+    expect(saved().at(-1)!.saved).toBe(true);
+    await expect(keepRecipe(d, "ai-nope", true)).rejects.toThrow(/not one you wrote/);
     expect(saved()[0].recipe.steps[2]).toMatchObject({ look: "Crisp and golden", tip: "Shake the tray halfway" });
   });
 
@@ -204,7 +208,7 @@ describe("prep (shared with the app's Prep story)", () => {
       swaps: [{ ingredient: "Ginger-garlic paste", use: "1/2 tbsp grated ginger and 3 crushed garlic cloves" }],
       fixes: [{ problem: "Too Sour", fix: "Add a pinch of sugar and a spoon of cream." }],
       prep: ["Soak nothing: just set the marinade out first"] };
-    await saveWrittenRecipe(d, { meal: "Dinner", recipe: tikka });
+    await writeRecipe(d, { meal: "Dinner", recipe: tikka });
     const r = saved()[0].recipe;
     expect(r.ingredients.map((i) => i.group)).toEqual(["Marinade", "Marinade", "Marinade", "Masala", "Masala", "Masala", "Masala", "Masala"]);
     expect(r.steps[2].group).toBe("Masala");

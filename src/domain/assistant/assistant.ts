@@ -260,10 +260,11 @@ export async function setPrepDone(deps: AssistantDeps, id: string, done: boolean
 
 
 /**
- * The assistant (Claude, ChatGPT) writes the recipe with its own model; this checks it and keeps it for the person.
- * Anything the check finds is returned as an error the assistant can read, fix and send again. Nothing is invented here.
+ * The assistant (Claude, ChatGPT) writes a recipe with its own model; this checks it and keeps it for the person to look at.
+ * It is not saved to their Recipes until they like it (keepRecipe). `basedOn` makes it an adapted version of a recipe they
+ * already have: it takes that recipe's picture. Problems come back as an error the assistant can read, fix and send again.
  */
-export async function saveWrittenRecipe(deps: AssistantDeps, input: { meal: MealName; recipe: DraftRecipe }) {
+export async function writeRecipe(deps: AssistantDeps, input: { meal: MealName; recipe: DraftRecipe; basedOn?: string }) {
   const [profile, builtins] = await Promise.all([deps.profile.get(), deps.recipes.list()]);
   const recipe = toRecipe(input.recipe, `ai-${deps.newId()}`, input.meal, { diet: profile?.diet, dislikes: profile?.dislikes ?? [] }, builtins);
   if (!recipe) {
@@ -271,6 +272,19 @@ export async function saveWrittenRecipe(deps: AssistantDeps, input: { meal: Meal
   }
   const problems = recipeProblems(recipe);
   if (problems.length) throw new Error(`Not saved yet. Fix these and send it again:\n- ${problems.join("\n- ")}`);
-  await deps.mine.put(recipe, true);
-  return { id: recipe.id, name: recipe.name, saved: true };
+  const base = input.basedOn ? builtins.find((b) => b.id === input.basedOn) : undefined;
+  if (base) {
+    recipe.image ??= base.image;
+    if (base.image) recipe.tint = base.tint;
+  }
+  await deps.mine.put(recipe, false);
+  return { id: recipe.id, name: recipe.name, saved: false, hasPicture: !!recipe.image };
+}
+
+/** The person liked it: keep it in their Recipes (or take it back out with keep: false). */
+export async function keepRecipe(deps: AssistantDeps, id: string, keep: boolean) {
+  const found = (await deps.mine.list()).find((m) => m.recipe.id === id);
+  if (!found) throw new Error("That recipe is not one you wrote for this person. Use an id from write_recipe.");
+  await deps.mine.put(found.recipe, keep);
+  return { id, name: found.recipe.name, saved: keep };
 }

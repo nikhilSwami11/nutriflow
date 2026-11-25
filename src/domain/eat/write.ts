@@ -89,7 +89,7 @@ export function toRecipe(d: DraftRecipe, id: string, meal: MealName, input: Pick
   });
   if (ingredients.length < 2 || steps.length < 2) return null;
 
-  const twin = builtins.find((b) => norm(b.name) === norm(name));
+  const twin = matchPicture(name, builtins);
   const recipe: Recipe = {
     id, name, blurb: (d.blurb ?? "").trim(), minutes: Math.round(d.minutes), servings: Math.round(d.servings), meal,
     kcal: Math.round(d.kcal), protein: Math.round(d.protein), carbs: Math.round(d.carbs), fat: Math.round(d.fat),
@@ -104,6 +104,28 @@ export function toRecipe(d: DraftRecipe, id: string, meal: MealName, input: Pick
   const dislikes = input.dislikes.map(norm).filter(Boolean);
   const hated = recipe.ingredients.some((i) => dislikes.some((x) => norm(i.name).includes(x) || x.includes(norm(i.name))));
   return hated || !dietAllows(input.diet, recipe) ? null : recipe;
+}
+
+const STOP = new Set(["with", "and", "the", "a", "in", "of", "style", "easy", "quick", "simple", "homemade", "recipe", "my", "best"]);
+const words = (n: string) => n.toLowerCase().split(/[^a-z]+/).filter((w) => w && !STOP.has(w)).map(norm);
+
+/**
+ * The built-in dish whose picture fits this name: the same name, or one whose words are almost all inside it
+ * ("Dal tadka with jeera rice" -> Dal tadka). A name that only shares a word ("Chicken salad" vs "Chicken curry") does not match.
+ */
+export function matchPicture(name: string, builtins: Recipe[]): Recipe | undefined {
+  const a = new Set(words(name));
+  let best: { r: Recipe; score: number } | undefined;
+  for (const r of builtins) {
+    if (!r.image) continue;
+    const b = new Set(words(r.name));
+    const common = [...a].filter((w) => b.has(w)).length;
+    const small = Math.min(a.size, b.size);
+    if (!small || common / small < 0.8 || (common < 2 && small > 1)) continue;
+    const score = common / Math.max(a.size, b.size);
+    if (!best || score > best.score) best = { r, score };
+  }
+  return best?.r;
 }
 
 export interface WhatToEatDeps {

@@ -52,7 +52,7 @@ const INSTRUCTIONS = `NutriFlow is one person's food loop: what they ate, their 
 Log only what the person says they ate, for themselves. If several people ate, each logs their own in their own account.
 Prefer a recipe id (find_recipes) so calories come from the recipe. For anything else give your best kcal estimate and say it is an estimate.
 Always pass the person's local date. Keep answers short: the next step, not a report.
-When the person wants a recipe, write it yourself and save it with save_recipe. Write it like a cook: salt and a cooking fat with amounts, aromatics (onion, garlic, ginger), spices with amounts added in the right order (whole spices into hot oil first, then aromatics, then ground spices, then liquid), and a last step that tastes and balances salt, sourness, heat and sweetness. Check profile first for diet and foods to skip.`;
+When the person wants a recipe, write it yourself with write_recipe, show it, and keep_recipe only if they like it. Make it adaptive: use profile (diet, foods to skip) and pantry, and adapt an existing recipe by writing a new version with basedOn. Write it like a cook: salt and a cooking fat with amounts, aromatics (onion, garlic, ginger), spices with amounts added in the right order (whole spices into hot oil first, then aromatics, then ground spices, then liquid), and a last step that tastes and balances salt, sourness, heat and sweetness. Check profile first for diet and foods to skip.`;
 
 type Ctx = { http?: { authInfo?: { token: string } } };
 type Out = { content: { type: "text"; text: string }[]; isError?: boolean };
@@ -140,13 +140,14 @@ export const mcp = createMcpHandler(
       inputSchema: z.object({ id: z.string().max(200), done: z.boolean().default(true) }), annotations: write,
     }, run((d, i) => A.setPrepDone(d, i.id, i.done)));
 
-    server.registerTool("save_recipe", {
-      title: "Save a recipe you wrote",
-      description: `Save a recipe you wrote for this person; it opens in their NutriFlow app (cook screen, Recipes tab). You write it, this checks it. Respect the person's diet and dislikes (call profile first).
+    server.registerTool("write_recipe", {
+      title: "Write a recipe for this person",
+      description: `Write a recipe for this person and show it to them; it opens in their NutriFlow app (cook screen). It is NOT saved to their Recipes until they like it: ask, then call keep_recipe. You write it, this checks it. Adapt it to them: call profile (diet, foods to skip) and pantry (what they have) first, and prefer what they already have. To adapt a recipe they already have (no onion, for 2, vegan), write the adapted version and pass the original id as basedOn so it keeps the picture.
 Write it like a real cook: salt, a cooking fat (oil, ghee or butter), aromatics (onion, garlic, ginger), spices with amounts, and the order things go in the pan (whole spices in hot oil, then aromatics, then ground spices, then tomatoes or liquid). The last step must taste and balance (adjust salt, sourness, heat, sweetness). Ingredient amounts are for the whole recipe; nutrition is per serving and may be a fair estimate. Each step's verb must be one of: ${COOK_VERBS.join(", ")}. Give minutes only for steps that wait (simmering, boiling, baking). Add a short "look" (what it looks, smells or sounds like when right) and a "tip" to each step when you can.
 Make it complete. A dish with parts (chicken tikka masala = marinade + masala gravy; biryani = rice + masala) gets every part with its own ingredients and steps, tagged with "group". Pastes and spice mixes are ingredients with amounts (ginger-garlic paste, garam masala, kasuri methi), and "swaps" says what to do without each (grate fresh ginger and garlic, mix your own masala), so "I don't have it" is never a dead end. "fixes" covers too salty, too sour, too thick, watery, bland, burnt. If the result lists problems, fix them and call again.`,
       inputSchema: z.object({
         meal,
+        basedOn: z.string().max(80).optional().describe("The id of the recipe this adapts (from find_recipes or recipe)."),
         recipe: z.object({
           name: z.string().min(1).max(80),
           blurb: z.string().max(200).describe("One line: what it tastes like."),
@@ -163,7 +164,17 @@ Make it complete. A dish with parts (chicken tikka masala = marinade + masala gr
           prep: z.array(z.string().max(160)).max(12).optional().describe("What to set out and prepare before the first step."),
         }),
       }), annotations: write,
-    }, run((d, i) => A.saveWrittenRecipe(d, i)));
+    }, run(async (d, i) => {
+      const out = await A.writeRecipe(d, i);
+      const origin = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+      return { ...out, ...(origin ? { link: `${origin}/recipes/${out.id}` } : {}), next: "Show the person the recipe (the link opens it) and ask if they want to keep it. Only then call keep_recipe." };
+    }));
+
+    server.registerTool("keep_recipe", {
+      title: "Keep a recipe in their Recipes",
+      description: "The person liked a recipe you wrote with write_recipe: save it to their Recipes tab. keep: false takes it back out.",
+      inputSchema: z.object({ id: z.string().max(80), keep: z.boolean().default(true) }), annotations: write,
+    }, run((d, i) => A.keepRecipe(d, i.id, i.keep)));
 
     server.registerTool("find_recipes", {
       title: "Find recipes",

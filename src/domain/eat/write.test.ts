@@ -87,3 +87,18 @@ describe("whatToEat", () => {
     expect(seen).toMatchObject({ meal: "Lunch", kcalTarget: 500, pantry: ["Paneer"], idea: "Paneer wrap", dislikes: [] });
   });
 });
+
+import { matchPicture } from "./write";
+describe("matchPicture", () => {
+  const b = (name: string, image?: string) => ({ id: name, name, image }) as unknown as Recipe;
+  const builtins = [b("Dal tadka", "/recipes/dal-tadka.webp"), b("Chicken tikka masala", "/recipes/ctm.webp"), b("Chicken curry", "/recipes/cc.webp"), b("Vegetable poha", "/recipes/poha.webp"), b("Greek salad")];
+  it("takes the picture of the same dish, even with extra words or a different order", () => {
+    expect(matchPicture("Dal Tadka with jeera rice", builtins)?.image).toBe("/recipes/dal-tadka.webp");
+    expect(matchPicture("Tikka masala chicken", builtins)?.image).toBe("/recipes/ctm.webp");
+    expect(matchPicture("Poha", builtins)?.image).toBe("/recipes/poha.webp");
+  });
+  it("does not borrow a picture for a different dish that shares a word, or from a recipe without one", () => {
+    expect(matchPicture("Chicken salad", builtins)).toBeUndefined();
+    expect(matchPicture("Greek salad", builtins)).toBeUndefined();
+  });
+});
