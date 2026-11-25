@@ -363,7 +363,13 @@ export async function whatToEatNow(deps: AssistantDeps, input: { date: DateKey; 
     },
   );
   const r = meal.best;
+  // What a chat model needs to write its own dish instead (the connector writes with the person's own Claude or ChatGPT).
+  const forWriting = {
+    diet: profile?.diet ?? "anything", dislikes: profile?.dislikes ?? [], kcalLeft: day.kcalLeft, hour: input.hour, wish: input.wish ?? null,
+    pantry: pantry.filter((p) => p.qty > 0).map((p) => p.name),
+  };
   return {
+    forWriting,
     source: meal.source === "ai" ? "written for you now (nutrition is an estimate)" : "picked from the app's recipes",
     best: {
       id: r.id, name: r.name, blurb: r.blurb, minutes: r.minutes, kcalPerServing: r.kcal, protein: r.protein, missingFromPantry: readiness(r, pantry).missing,

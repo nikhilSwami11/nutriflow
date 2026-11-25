@@ -9,7 +9,6 @@ import { SupabaseMealLogRepository, SupabaseProfileRepository } from "@/data/nut
 import { SupabasePantryRepository, SupabaseShoppingListRepository } from "@/data/pantry/supabase";
 import { DemoRecipeRepository } from "@/data/recipes/demo";
 import { SupabaseServingHabitRepository } from "@/data/cooking/habits";
-import { EdgeRecipeWriter } from "@/data/eat/edgeWriter";
 import { CombinedRecipeRepository, SupabaseMyRecipeRepository } from "@/data/recipes/mine";
 import * as A from "@/domain/assistant";
 import { toDateKey } from "@/domain/nutrition";
@@ -36,7 +35,7 @@ const depsFor = (token: string): A.AssistantDeps => {
     plans: new SupabaseMealPlanRepository(db),
     prep: new SupabasePrepDoneRepository(db),
     habits: new SupabaseServingHabitRepository(db),
-    writer: new EdgeRecipeWriter(db),
+    // No writer here: in the connector the person's own Claude or ChatGPT writes dishes (write_recipe), on their tokens.
     recipes: new CombinedRecipeRepository(new DemoRecipeRepository(), mine),
     mine,
     newId: () => crypto.randomUUID(),
@@ -137,7 +136,7 @@ export const mcp = createMcpHandler(
     server.registerTool("what_to_eat", {
       title: "What should I eat?",
       _meta: { ui: { resourceUri: MEALS_URI }, "ui/resourceUri": MEALS_URI },
-      description: "Use for what to eat, what can I cook, or recipe ideas. One meal for right now written for this person (diet, dislikes, pantry, calories left, time of day) plus two ideas, the same answer as the app's Eat screen. For 'what can I cook now', 'with what I have' or 'from my pantry' ALWAYS pass wish 'use what I have' so it uses only the pantry. Its card shows the options as stories with pictures, what is missing and Cook this / Save.",
+      description: "Use for what to eat, what can I cook, or recipe ideas. Instant: picks from the person's recipes by pantry, diet, dislikes, calories left and time of day, shown as swipeable stories. For 'what can I cook now', 'with what I have' or 'from my pantry' ALWAYS pass wish 'use what I have'. If they want something new or none fit, write it yourself with write_recipe from forWriting (diet, dislikes, pantry, kcalLeft; with 'use what I have' only pantry items plus salt, oil, water and spices).",
       inputSchema: z.object({ date, hour: z.number().int().min(0).max(23).describe("Local hour, 0-23"), wish: z.string().max(200).optional().describe("quick, light, high protein, use what I have; or the person's own words") }),
       annotations: write,
     }, run((d, i) => A.whatToEatNow(d, { date: dayOf(i.date), hour: i.hour, wish: i.wish }), true));
