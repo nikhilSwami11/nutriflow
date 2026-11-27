@@ -5,7 +5,7 @@ import { dayFromMeals, leftKcal } from "@/domain/dashboard";
 import { logRecipeEaten } from "@/domain/cooking";
 import { buildFeed, summarizeEvents, type FeedItem } from "@/domain/feed";
 import { toDateKey } from "@/domain/nutrition";
-import { isLow } from "@/domain/pantry";
+import { foodKey, isLow } from "@/domain/pantry";
 import { eatNext as pickNext, prepTasks, upcomingMeals } from "@/domain/planning";
 import { shopUnitFor } from "@/domain/shopping";
 import { cookability, swapsFor } from "@/domain/guide";
@@ -100,7 +100,8 @@ export function useHome() {
     const n = missing.length;
     const count = (k: number, w: string) => `${k} ${w}${k === 1 ? "" : "s"}`;
     const easy = [cook.swaps.length ? count(cook.swaps.length, "swap") : "", cook.skips.length ? count(cook.skips.length, "skip") : ""].filter(Boolean);
-    const onList = listed.includes(m.recipe.id);
+    // On the list this visit, or already there from an earlier one: every missing thing is a pantry item that is on the list.
+    const onList = listed.includes(m.recipe.id) || (n > 0 && cook.needed.every((x) => pantryItems.some((p) => foodKey(p.name) === foodKey(x.name) && pantry.onListIds.has(p.id))));
     // Main things we cannot be sure of: ask the person instead of claiming they are missing.
     const ask = [...cook.unknown, ...cook.needed].map((x) => ({ name: x.name, qty: x.qty, unit: x.unit, swap: swapText(m.recipe, x.name) }));
     return {
@@ -130,6 +131,10 @@ export function useHome() {
     };
   };
   const lowItems = pantryItems.filter(isLow);
+  // Shopping gets its own post when a planned meal today is blocked by things the pantry lacks (not "unknown": those are asked, never claimed).
+  const blocked = open.find((m) => cookability(m.recipe, pantryItems).state === "missing");
+  const shopCard = blocked ? card(blocked) : null;
+  const shopNow = blocked && shopCard ? { ...shopCard, urgent: blocked === open[0] && !shopCard.actionDone, names: shopCard.ask.map((x) => x.name) } : null;
 
   // The feed decides which posts, in what order. The data inside each post stays live on the client.
   const nextOpen = open[0];
@@ -145,6 +150,7 @@ export function useHome() {
     eatNext: eatNext ? { meal: eatNext.meal, recipeId: eatNext.recipe.id, tomorrow: !nextOpen } : null,
     prep: prep.length,
     chores: chores.todays.map((c) => ({ id: c.id })),
+    shopNow: shopNow ? { meal: shopNow.meal, recipeId: shopNow.id, urgent: shopNow.urgent } : null,
     lowItems: lowItems.length,
     planNotes: problems,
     stats: stats ?? summarizeEvents([], now),
@@ -200,6 +206,8 @@ export function useHome() {
     feed: { items: feed.items as FeedItem[], track },
     dateLabel: new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }),
     next: open[0] ? card(open[0]) : null,
+    /** The meal that needs shopping, when one does (see the feed item "shop-now"). */
+    shopNow,
     then: open.slice(1).map((m) => ({ id: m.recipe.id, meal: m.meal, name: m.recipe.name })),
     chart: { ...core.chart, range, setRange },
     today: {

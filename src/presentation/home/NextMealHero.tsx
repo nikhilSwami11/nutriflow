@@ -3,7 +3,7 @@ import type { HomeModel } from "@/view-models/home/useHome";
 import { NextAction } from "./NextAction";
 import { RecipeArt } from "../recipes/RecipeArt";
 
-export function NextMealHero({ next, then, onOpen, onEaten }: { next: HomeModel["next"]; then: HomeModel["then"]; onOpen?: () => void; onEaten?: () => void }) {
+export function NextMealHero({ next, onOpen, onEaten, shopElsewhere }: { next: HomeModel["next"]; onOpen?: () => void; onEaten?: () => void; shopElsewhere?: boolean }) {
   if (!next) {
     return (
       <article aria-label="Up next" className="rounded-[20px] bg-mint p-5 text-onp">
@@ -24,19 +24,14 @@ export function NextMealHero({ next, then, onOpen, onEaten }: { next: HomeModel[
           <RecipeArt image={next.image} size={84} eager />
         </span>
       </Link>
-      <div className="flex items-center justify-between gap-2">
-        <NextAction next={next} onOpen={onOpen} />
-        <button type="button" onClick={() => { onEaten?.(); next.toggle(); }} className="hoverable touch rounded-full border border-line2 px-4 text-sm font-medium">Mark eaten</button>
-      </div>
-      <Link href="/eat" className="inline-flex min-h-11 items-center self-start text-sm text-ink2 underline underline-offset-[3px]">Not hungry for this? Pick something else</Link>
-      {then.length > 0 && (
-        <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3 text-sm text-muted">
-          Then
-          {then.map((t) => (
-            <Link key={t.id} href={`/recipes/${t.id}`} onClick={onOpen} className="inline-flex min-h-11 items-center rounded-full bg-panel px-3.5 text-ink2 transition-colors hover:bg-track">{t.meal} · {t.name}</Link>
-          ))}
-        </p>
-      )}
+      <NextAction next={next} onOpen={onOpen} shopElsewhere={shopElsewhere}>
+        {(close) => (
+          <>
+            <button type="button" onClick={() => { close(); onEaten?.(); next.toggle(); }} className="touch flex w-full items-center bg-transparent px-4 text-left text-[15px] text-ink">Mark eaten</button>
+            <Link href="/eat" className="touch flex w-full items-center px-4 text-[15px] text-ink">Pick something else</Link>
+          </>
+        )}
+      </NextAction>
     </article>
   );
 }

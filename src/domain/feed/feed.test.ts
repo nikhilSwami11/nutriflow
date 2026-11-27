@@ -8,7 +8,7 @@ const ev = (kind: FeedKind, action: FeedEvent["action"], ts = NOW, dwellMs?: num
 const base: FeedContext = {
   date: "2026-11-21", now: NOW, nextMeal: { meal: "Lunch", recipeId: "dal-rice" },
   chores: [{ id: "dishes" }],
-  eatNext: { meal: "Lunch", recipeId: "dal-rice", tomorrow: false }, prep: 1, lowItems: 3, planNotes: ["Tuesday is 16 g short on protein."],
+  eatNext: { meal: "Lunch", recipeId: "dal-rice", tomorrow: false }, prep: 1, shopNow: null, lowItems: 3, planNotes: ["Tuesday is 16 g short on protein."],
   stats: summarizeEvents([], NOW),
 };
 const order = (c: Partial<FeedContext>) => buildFeed({ ...base, ...c }).items.map((i) => i.kind);
@@ -27,6 +27,20 @@ describe("summarizeEvents", () => {
   });
   it("has an entry for every kind", () => {
     expect(Object.keys(summarizeEvents([], NOW)).sort()).toEqual([...FEED_KINDS].sort());
+  });
+});
+
+describe("shop-now", () => {
+  const shop = (urgent: boolean) => ({ shopNow: { meal: "Lunch" as const, recipeId: "dal-rice", urgent } });
+  it("leads when the very next meal is blocked, and the meal follows it", () => {
+    expect(order(shop(true)).slice(0, 2)).toEqual(["shop-now", "next-meal"]);
+  });
+  it("follows the next meal when only a later meal is blocked", () => {
+    expect(order(shop(false)).slice(0, 2)).toEqual(["next-meal", "day-chart"]);
+    expect(order(shop(false))).toContain("shop-now");
+  });
+  it("is absent when nothing is blocked", () => {
+    expect(order({})).not.toContain("shop-now");
   });
 });
 

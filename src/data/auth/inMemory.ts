@@ -27,4 +27,7 @@ export class InMemoryAuthRepository implements AuthRepository {
   async decideConsent(): Promise<never> {
     throw new Error("Connecting an app needs Supabase");
   }
+  async connectedApps() {
+    return [];
+  }
 }

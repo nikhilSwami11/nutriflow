@@ -106,6 +106,13 @@ describe("neededForPlan", () => {
   it("lists what the pantry lacks once each, across days", () => {
     expect(neededForPlan(base).map((n) => n.name)).toEqual(["Onions", "Rice", "Saffron"]);
   });
+  it("leaves out kitchen basics unless the pantry says they ran out", () => {
+    const rs = [r("a", ["Onions", "Salt", "Water", "Cumin"])];
+    const day: PlanDay[] = [{ date: "2026-11-21", meals: [{ meal: "Lunch", recipeId: "a" }] }];
+    const input = { ...base, plan: day, recipes: rs };
+    expect(neededForPlan(input).map((n) => n.name)).toEqual(["Onions"]);
+    expect(neededForPlan({ ...input, pantry: [item({ id: "s", name: "salt", qty: 0 })] }).map((n) => n.name)).toEqual(["Onions", "Salt"]);
+  });
   it("skips today's meals already eaten", () => {
     expect(neededForPlan({ ...base, eatenToday: ["Lunch"] }).map((n) => n.name)).toEqual(["Onion", "Rice", "Saffron"]);
   });

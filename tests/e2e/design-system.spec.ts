@@ -8,7 +8,10 @@ import { expect, test, type Page } from "@playwright/test";
 const ROUTES = ["/", "/pantry", "/recipes", "/recipes/dal-tadka", "/plan", "/cook/dal-tadka", "/cook/dal-tadka#ingredients", "/photo", "/signin", "/chores", "/shopping", "/eat", "/profile", "/history", "/oauth/consent?authorization_id=x"];
 const settle = async (page: Page, route: string) => {
   await page.goto(route.replace("#ingredients", ""));
-  if (route.endsWith("#ingredients")) await page.getByRole("button", { name: "Ingredients" }).click();
+  if (route.endsWith("#ingredients")) {
+    await page.getByRole("button", { name: "Views" }).click();
+    await page.getByRole("button", { name: "Ingredients" }).click();
+  }
   await page.waitForTimeout(route === "/photo" ? 1800 : 1200);
 };
 

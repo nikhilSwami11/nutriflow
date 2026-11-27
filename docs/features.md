@@ -40,6 +40,7 @@ Test by hand:
 - [ ] Get started -> Home, onboarding asks three questions; Skip works; reload does not ask again.
 - [ ] As a guest, log a meal, then Continue with Google from Profile: the meal is still there.
 - [ ] Sign out (Profile) asks to confirm for a guest.
+- [ ] Profile > Use with Claude or ChatGPT: Copy puts `<app>/mcp` on the clipboard; after connecting in Claude, coming back shows "Connected since".
 
 Auto: `auth.spec.ts`, `fresh.spec.ts`. Notes:
 

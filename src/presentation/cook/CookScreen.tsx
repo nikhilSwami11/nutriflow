@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
 import { useCook, type CookModel } from "@/view-models/cook/useCook";
 import { AskSheet } from "./AskSheet";
 import { ServedDish } from "./CookMotion";
@@ -10,7 +11,7 @@ import { useSwipe } from "../shared/useSwipe";
 
 const pill = "touch rounded-full px-6 text-[15px] font-medium";
 
-function Shell({ title, children, close }: { title: string; children: React.ReactNode; close?: boolean }) {
+function Shell({ title, children, close, right }: { title: string; children: React.ReactNode; close?: boolean; right?: React.ReactNode }) {
   return (
     <div className="mx-auto flex h-dvh w-full max-w-[460px] flex-col overflow-hidden bg-bg text-ink">
       <header className="flex shrink-0 items-center gap-2 px-2 pb-1.5 pt-3">
@@ -20,7 +21,7 @@ function Shell({ title, children, close }: { title: string; children: React.Reac
           </Link>
         ) : <span className="h-11 w-11" />}
         <h1 className="m-0 min-w-0 flex-1 truncate text-center text-base font-medium">{title}</h1>
-        <span className="h-11 w-11" />
+        {right ?? <span className="h-11 w-11" />}
       </header>
       {children}
     </div>
@@ -30,13 +31,21 @@ function Shell({ title, children, close }: { title: string; children: React.Reac
 function Steps({ c }: { c: CookModel }) {
   const swipe = useSwipe(c.next, c.prev);
   const p = c.position;
+  // One thing at a time: the Ingredients and Recipe views sit behind a small button, and stay open while one is showing.
+  const [views, setViews] = useState(false);
+  const switcher = views || c.view !== "actions";
+  const more = (
+    <button type="button" onClick={() => setViews(!views)} aria-label="Views" aria-expanded={switcher} className="flex h-11 w-11 items-center justify-center bg-transparent text-ink">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
+    </button>
+  );
   return (
-    <Shell title={c.recipe.name}>
-      <div role="group" aria-label="View" className="mx-5 mb-2 flex shrink-0 gap-0.5 self-start rounded-full bg-track p-[3px]">
+    <Shell title={c.recipe.name} right={more}>
+      {switcher && <div role="group" aria-label="View" className="mx-5 mb-2 flex shrink-0 gap-0.5 self-start rounded-full bg-track p-[3px]">
         {(["actions", "ingredients", "recipe"] as const).map((v) => (
           <button key={v} type="button" aria-pressed={c.view === v} onClick={() => c.setView(v)} className={`min-h-11 rounded-full px-4 text-sm ${c.view === v ? "bg-bg font-medium text-ink shadow-[0_1px_5px_rgba(0,0,0,0.10)]" : "text-ink2"}`}>{v === "actions" ? "Actions" : v === "ingredients" ? "Ingredients" : "Recipe"}</button>
         ))}
-      </div>
+      </div>}
       <ActionStrip c={c} />
 
       <div {...swipe} key={c.view === "actions" ? p.number : c.view} className="story-in flex min-h-0 flex-1 touch-pan-y flex-col gap-4 overflow-y-auto px-5 pb-4">

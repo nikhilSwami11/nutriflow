@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { usePlan } from "@/view-models/plan/usePlan";
 import { AppShell } from "../shell/AppShell";
 import { Skeleton } from "../shared/Skeleton";
+import { RecipeArt } from "../recipes/RecipeArt";
 
 const DOT = { ok: "bg-mint", under: "bg-butter", over: "bg-peach" } as const;
 const WORD = { ok: "on goal", under: "under", over: "over" } as const;
@@ -40,6 +41,8 @@ export function PlanScreen() {
               ))}
             </div>
 
+            <p className="m-0 text-sm text-muted">{p.focus === "protein" ? "Picks more protein-rich dishes." : "Picks dishes to stay near your calorie range."}</p>
+
             <div ref={tabs} role="tablist" aria-label="Day" className="rail -mx-5 flex gap-2 overflow-x-auto px-5 py-1 lg:mx-0 lg:px-0">
               {p.days.map((d, i) => (
                 <button
@@ -75,7 +78,7 @@ export function PlanScreen() {
                   <div className="mt-3">
                     {d.meals.map((m) => (
                       <Link key={m.meal} href={`/recipes/${m.id}`} className="flex min-h-14 items-center gap-3 border-t border-line py-2.5">
-                        <span className="h-10 w-10 shrink-0 rounded-2xl" style={{ background: m.tint }} aria-hidden="true" />
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl" style={{ background: m.tint }} aria-hidden="true"><RecipeArt image={m.image} size={44} /></span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[15px]">{m.name}</span>
                           <span className="block text-xs text-muted">{m.meal}</span>

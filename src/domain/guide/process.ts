@@ -47,7 +47,8 @@ const WASH = /tomato|spinach|palak|coriander|cilantro|mint|parsley|cucumber|lett
 const washKind = (i: Ingredient): "rinse" | "wash" | null => {
   const n = i.name.toLowerCase();
   if (RINSE.test(n) && !/oats|rolled/.test(n)) return "rinse";
-  return WASH.test(n) ? "wash" : null;
+  // Powders, pastes, seeds, juice and tins come ready to use: nothing to wash.
+  return WASH.test(n) && !/powder|ground|paste|seed|juice|dried|canned|tinned|flake|sauce|pickle/.test(n) ? "wash" : null;
 };
 
 const named = (text: string, name: string) => {

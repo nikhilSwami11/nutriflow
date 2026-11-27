@@ -5,23 +5,15 @@ import { usePantryScreen } from "@/view-models/pantry/usePantryScreen";
 import { AppShell } from "../shell/AppShell";
 import { tint } from "../shared/tint";
 import { AddItemsSheet } from "./AddItemsSheet";
-import { Orb } from "./Orb";
 import { Skeleton } from "../shared/Skeleton";
 
+
+/** Out of stock first, then low stock, then the rest. */
+const rank = (r: { low: boolean; out: boolean }) => (r.out ? 2 : r.low ? 1 : 0);
 
 export function PantryScreen() {
   const s = usePantryScreen();
   const [adding, setAdding] = useState(false);
-  const v = s.voice;
-  const listening = v.mode === "listening";
-
-  const title = listening ? "Listening" : v.mode === "heard" ? "I heard" : "Tell me what you have";
-  const sub = listening
-    ? "Go ahead, I am listening."
-    : v.mode === "heard"
-      ? `“${v.heardText}”`
-      : "Say it like “I have 3 onions, 2 tomatoes and butter”.";
-
   return (
     <AppShell current="pantry">
       <header className="flex shrink-0 items-end justify-between px-5 pb-2 pt-4 lg:max-w-3xl">
@@ -35,50 +27,6 @@ export function PantryScreen() {
       </header>
 
       <div className="rail flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4 pt-1 lg:max-w-3xl">
-        <div className="flex shrink-0 flex-col gap-3.5 rounded-3xl bg-panel p-4">
-          <div className="flex items-center gap-3.5">
-            <button
-              type="button"
-              onClick={v.tapMic}
-              aria-label="Tell me what you have"
-              aria-pressed={listening}
-              className="relative flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-full bg-ink p-0 text-bg"
-            >
-              <Orb active={listening} />
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="9" y="3" width="6" height="11" rx="3" />
-                <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
-              </svg>
-            </button>
-            <div className="min-w-0 flex-1">
-              <div className="text-[15px] font-medium">{title}</div>
-              <div className="mt-0.5 text-sm leading-[1.4] text-ink2">{sub}</div>
-            </div>
-          </div>
-          {v.mode === "heard" && (
-            <>
-              <div className="flex flex-wrap gap-2">
-                {v.heardChips.map((c) => (
-                  <span key={c.name} className="rounded-full border border-line2 bg-bg px-3.5 py-[7px] text-sm">
-                    <span className="font-medium">{c.name}</span> <span className="text-muted">{c.qty}</span>
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-2.5">
-                <button type="button" onClick={v.addHeard} className="min-h-12 flex-1 rounded-full bg-ink text-sm font-medium text-bg">
-                  Add to pantry
-                </button>
-                <button type="button" onClick={v.redo} className="min-h-12 rounded-full border border-line2 bg-transparent px-[18px] text-sm text-ink">
-                  Redo
-                </button>
-              </div>
-            </>
-          )}
-          {v.added && v.mode === "idle" && (
-            <div role="status" className="rounded-2xl bg-mint px-3.5 py-2.5 text-sm font-medium text-onp">{v.added}</div>
-          )}
-        </div>
-
         {s.lowCount > 0 && (
           <button
             type="button"
@@ -96,20 +44,6 @@ export function PantryScreen() {
           </button>
         )}
 
-        <div role="group" aria-label="Filter" className="flex gap-[22px] border-b border-line">
-          {(["all", "low"] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              aria-pressed={s.filter === f}
-              onClick={() => s.setFilter(f)}
-              className={`touch border-0 border-b-[1.5px] bg-transparent px-0.5 text-[15px] ${s.filter === f ? "border-ink font-medium text-ink" : "border-transparent font-normal text-muted"}`}
-            >
-              {f === "all" ? `All ${s.filterCounts.all}` : `Running low ${s.filterCounts.low}`}
-            </button>
-          ))}
-        </div>
-
         {s.isLoading && <Skeleton />}
         {!s.isLoading && s.filterCounts.all === 0 && (
           <div className="flex flex-col gap-1 pt-2">
@@ -118,16 +52,14 @@ export function PantryScreen() {
           </div>
         )}
         <ul aria-label="Pantry items" className="m-0 flex list-none flex-col p-0">
-          {s.groups.flatMap((g) => g.rows).map((r) => (
+          {s.groups.flatMap((g) => g.rows).sort((a, b) => rank(b) - rank(a)).map((r) => (
             <li key={r.id} className="flex min-h-16 items-center gap-3 border-b border-line py-2">
-              <div role="img" aria-label={r.name} className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl ${r.image ? "bg-panel" : tint(r.name)}`}>
-                {r.image && <Image src={r.image} alt="" width={44} height={44} className="object-contain" />}
+              <div role="img" aria-label={r.name} className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl ${r.image ? "bg-panel" : tint(r.name)} ${r.out ? "opacity-50 grayscale" : ""}`}>
+                {r.image ? <Image src={r.image} alt="" width={44} height={44} className="object-contain" /> : <span aria-hidden="true" className="text-lg font-medium text-onp">{r.name.charAt(0).toUpperCase()}</span>}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[15px]">{r.name}</span>
-                  {r.low && <span className="rounded-full bg-peach px-[9px] py-0.5 text-xs font-medium text-onp">Low</span>}
-                </div>
+                <div className={`text-[15px] ${r.out ? "text-muted" : ""}`}>{r.name}</div>
+                {r.low && <div className="text-xs text-muted">{r.out ? "Out of stock" : "Low stock"}</div>}
               </div>
               <div className="flex shrink-0 items-center">
                 <button type="button" onClick={() => s.adjust(r.id, -1)} aria-label={`Less ${r.name}`} className="h-11 w-11 bg-transparent p-0 text-xl text-ink">&minus;</button>

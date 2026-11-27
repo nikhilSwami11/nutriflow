@@ -1,6 +1,6 @@
 import type { MealName } from "../recipes/types";
 
-export type FeedKind = "next-meal" | "all-done" | "day-chart" | "pantry-alert" | "plan-nudge";
+export type FeedKind = "next-meal" | "all-done" | "day-chart" | "pantry-alert" | "plan-nudge" | "shop-now";
 
 /**
  * One post. The feed says WHICH posts, in WHAT order, and WHY. Live numbers (the chart, pantry quantities,
@@ -9,6 +9,8 @@ export type FeedKind = "next-meal" | "all-done" | "day-chart" | "pantry-alert" |
  */
 export type FeedItem =
   | { id: string; kind: "next-meal"; meal: MealName; recipeId: string; reason?: string }
+  /** A planned meal is blocked by things the pantry lacks: shopping leads when it is the next meal, follows it when it is later. */
+  | { id: string; kind: "shop-now"; meal: MealName; recipeId: string; urgent: boolean; reason?: string }
   | { id: string; kind: "all-done"; reason?: string }
   | { id: string; kind: "day-chart"; reason?: string }
   | { id: string; kind: "pantry-alert"; reason?: string }
@@ -47,4 +49,4 @@ export interface FeedEvent {
   ts: number;
 }
 
-export const FEED_KINDS: FeedKind[] = ["next-meal", "all-done", "day-chart", "pantry-alert", "plan-nudge"];
+export const FEED_KINDS: FeedKind[] = ["next-meal", "all-done", "day-chart", "pantry-alert", "plan-nudge", "shop-now"];

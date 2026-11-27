@@ -42,7 +42,7 @@ export function usePlan() {
         proteinStatus: b.proteinStatus,
         meals: day.meals.map((m) => {
           const r = byId.get(m.recipeId) as Recipe;
-          return { meal: m.meal, id: r.id, name: r.name, kcal: r.kcal, protein: r.protein, tint: r.tint };
+          return { meal: m.meal, id: r.id, name: r.name, kcal: r.kcal, protein: r.protein, tint: r.tint, image: r.image };
         }),
       };
     }),

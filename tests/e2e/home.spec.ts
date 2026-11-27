@@ -15,13 +15,17 @@ test("home is three things: next meal, one chart with today, pantry", async ({ p
   await expect(page.getByRole("article", { name: "Calories and macros" })).toBeVisible();
   await expect(todayLine(page)).toContainText("of 1,900 kcal");
   await expect(page.getByLabel("Pantry alert")).toBeVisible();
-  await expect(page.getByRole("article", { name: "Up next" }).getByText("Then")).toBeVisible();
+  // one main action; everything else is behind More
+  const card = page.getByRole("article", { name: "Up next" });
+  await expect(card.getByRole("button", { name: "Mark eaten" })).toHaveCount(0);
+  await card.getByRole("button", { name: "More" }).click();
+  await expect(card.getByRole("button", { name: "Mark eaten" })).toBeVisible();
 });
 
 test("tapping the next meal opens its recipe", async ({ page }) => {
   const hero = page.getByRole("article", { name: "Up next" });
   await expect(hero).toContainText("Up next · Lunch");
-  await hero.getByRole("link").first().click(); // the recipe card; the rest are the "Then" links
+  await hero.getByRole("link").first().click(); // the recipe card
   await expect(page).toHaveURL(/\/recipes\/[a-z-]+$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
@@ -31,13 +35,12 @@ test("marking a meal eaten moves on and updates today", async ({ page }) => {
   const left = todayLine(page).getByText(/[\d,]+ left/);
   await expect(left).toBeVisible();
   const before = await left.textContent();
-  await hero.getByRole("button", { name: "Mark eaten" }).click();
+  await eaten(hero);
   await expect(hero).toContainText("Up next · Snack");
   await expect(left).not.toHaveText(before!); // eating lunch uses up part of the day
-  await hero.getByRole("button", { name: "Mark eaten" }).click();
+  await eaten(hero);
   await expect(hero).toContainText("Up next · Dinner");
-  await expect(hero.getByText("Then")).toHaveCount(0); // nothing left after dinner
-  await hero.getByRole("button", { name: "Mark eaten" }).click();
+  await eaten(hero);
   await expect(page.getByText("All meals eaten for today")).toBeVisible();
 });
 
@@ -114,6 +117,25 @@ test("feed posts can be liked and saved", async ({ page, isMobile }) => {
   await expect(post.getByRole("button", { name: "Like" })).toHaveAttribute("aria-pressed", "false");
 });
 
+/** Mark eaten lives behind the card's More button. */
+const eaten = async (card: import("@playwright/test").Locator) => {
+  await card.getByRole("button", { name: "More" }).click();
+  await card.getByRole("button", { name: "Mark eaten" }).click();
+};
+
+test("a blocked next meal gives shopping its own post, and the meal card is only about cooking", async ({ page }) => {
+  const labels = () => page.locator("article[aria-label], section[aria-label]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
+  const shop = page.getByRole("article", { name: "Shop now" });
+  const up = page.getByRole("article", { name: "Up next" });
+  await expect(shop).toBeVisible();
+  expect((await labels())[0]).toBe("Shop now"); // blocked next meal: shopping leads
+  await expect(up.getByRole("button", { name: /to shopping$/ })).toHaveCount(0);
+  await expect(up.getByRole("link", { name: "Start cooking" })).toBeVisible();
+  await shop.getByRole("button", { name: /to shopping$/ }).click();
+  await expect(shop.getByRole("link", { name: /on your shopping list/ })).toBeVisible();
+  await expect.poll(async () => (await labels())[0]).toBe("Up next"); // on the list now: the meal leads again
+});
+
 const events = (page: import("@playwright/test").Page) =>
   page.evaluate(() => JSON.parse(localStorage.getItem("nutriflow.feedEvents") ?? "[]") as { kind: string; action: string; position: number; dwellMs?: number }[]);
 
@@ -121,7 +143,7 @@ test("taps and likes are recorded as feed events", async ({ page, isMobile }) =>
   test.skip(!isMobile, "the feed is the mobile layout");
   const post = page.getByRole("article", { name: "Up next" });
   await post.getByRole("button", { name: "Like" }).click();
-  await post.getByRole("button", { name: "Mark eaten" }).click();
+  await eaten(post);
   await page.evaluate(() => window.dispatchEvent(new Event("pagehide"))); // flushes the batch
   await expect.poll(async () => (await events(page)).map((e) => `${e.kind}:${e.action}`)).toEqual(expect.arrayContaining(["next-meal:like", "next-meal:mark-eaten"]));
 });
@@ -151,12 +173,12 @@ test("past engagement reorders the feed on the next visit", async ({ page, isMob
   await expect(page.getByRole("article", { name: "Pantry alert" })).toBeVisible();
   const after = await labels();
   expect(after.indexOf("Pantry alert")).toBeLessThan(after.indexOf("Your day"));
-  expect(after[0]).toBe("Up next"); // the next meal stays on top
+  expect(after.slice(0, 2)).toContain("Up next"); // the next meal stays at the top, shopping may lead it
 });
 
 test("desktop dashboard records the same events and follows the same feed", async ({ page, isMobile }) => {
   test.skip(isMobile, "desktop layout");
-  await page.getByRole("article", { name: "Up next" }).getByRole("button", { name: "Mark eaten" }).click();
+  await eaten(page.getByRole("article", { name: "Up next" }));
   await page.getByLabel("Pantry alert").getByRole("button", { name: /list/i }).click();
   await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
   await expect.poll(async () => (await events(page)).map((e) => `${e.kind}:${e.action}`)).toEqual(expect.arrayContaining(["next-meal:mark-eaten", "pantry-alert:add-to-list"]));

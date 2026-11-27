@@ -33,18 +33,20 @@ test("plus and minus change quantity, minus stops at 0", async ({ page }) => {
   await expect(page.getByText("0 packs")).toBeVisible();
 });
 
-test("running low filter and list toggle", async ({ page }) => {
-  await page.getByRole("button", { name: /Running low/ }).click();
-  await expect(page.getByRole("list", { name: "Pantry items" }).getByRole("listitem").first()).toBeVisible();
-  await page.getByRole("button", { name: /running low/ }).first().click();
+test("low and out items are greyed with a plain stock note, and the list button toggles", async ({ page }) => {
+  const list = page.getByRole("list", { name: "Pantry items" });
+  await expect(list.getByText("Out of stock")).toHaveCount(1); // butter
+  await expect(list.getByText("Low stock").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "All 9" })).toHaveCount(0); // no tab switch
+  await page.getByRole("button", { name: /Add to list/ }).click();
   await expect(page.getByText("On the list")).toBeVisible();
 });
 
-test("voice: hear, confirm, pantry updated", async ({ page }) => {
-  await page.getByRole("button", { name: "Tell me what you have" }).click();
-  await expect(page.getByText("I heard")).toBeVisible();
+test("voice: tell the orb what you have, confirm, pantry updated", async ({ page }) => {
+  await page.getByRole("button", { name: "Ask NutriFlow" }).click();
+  await page.getByLabel("Message NutriFlow").fill("I have 3 onions and 2 tomatoes");
+  await page.getByRole("button", { name: "Send" }).click();
   await page.getByRole("button", { name: "Add to pantry" }).click();
-  await expect(page.getByRole("status")).toHaveText("Pantry updated. I added 3 onions, 2 tomatoes and butter.");
   await expect(page.getByText("4 pcs")).toHaveCount(2); // onions 1+3, tomatoes 2+2
 });
 

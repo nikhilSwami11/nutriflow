@@ -4,6 +4,7 @@ import type { HomeModel } from "@/view-models/home/useHome";
 import { RecipeArt } from "../../recipes/RecipeArt";
 import { MacroChart } from "../MacroChart";
 import { NextAction } from "../NextAction";
+import { MissingChips } from "../ShopNow";
 import { TodayLine } from "../TodayLine";
 import { Post } from "./Post";
 import { Tracked } from "./Tracked";
@@ -11,6 +12,7 @@ import { Tracked } from "./Tracked";
 const BOWL = <path d="M3 12h18a9 9 0 0 1-18 0zM8 8c0-1.6 1-2 1-3.5M12 8c0-1.6 1-2 1-3.5M16 8c0-1.6 1-2 1-3.5" />;
 const BARS = <path d="M5 20V10M12 20V4M19 20v-7" />;
 const PANTRY = <><rect x="6" y="8" width="12" height="13" rx="3" /><path d="M8 4h8v4H8z" /></>;
+const CART = <path d="M4 5h2l2 10h9l2-7H7M10 20h.01M17 20h.01" />;
 const CALENDAR = <><rect x="4" y="5" width="16" height="15" rx="3" /><path d="M8 3v4M16 3v4M4 10h16" /></>;
 
 /**
@@ -42,20 +44,28 @@ export function Feed({ h }: { h: HomeModel }) {
                   <h3 className="m-0 text-base font-medium">Cook {n.name.toLowerCase()}</h3>
                   <p className="m-0 mt-1 text-sm text-ink2 tabular-nums"><span className={n.ready ? "" : "text-ink"}>{n.readyText}</span></p>
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <NextAction next={n} onOpen={open} />
-                  <button type="button" onClick={() => { track(item, "mark-eaten", position); n.toggle(); }} className="hoverable touch rounded-full border border-line2 px-4 text-sm font-medium">Mark eaten</button>
-                </div>
-                {h.then.length > 0 && (
-                  <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
-                    Then
-                    {h.then.map((t) => (
-                      <Link key={t.id} href={`/recipes/${t.id}`} onClick={open} className="inline-flex min-h-11 items-center rounded-full bg-panel px-3.5 text-ink2">{t.meal} · {t.name}</Link>
-                    ))}
-                  </p>
-                )}
+                <NextAction next={n} onOpen={open} shopElsewhere={!!h.shopNow && h.shopNow.id === n.id}>
+                  {(close) => (
+                    <>
+                      <button type="button" onClick={() => { close(); track(item, "mark-eaten", position); n.toggle(); }} className="touch flex w-full items-center bg-transparent px-4 text-left text-[15px] text-ink">Mark eaten</button>
+                      <Link href="/eat" onClick={open} className="touch flex w-full items-center px-4 text-[15px] text-ink">Pick something else</Link>
+                    </>
+                  )}
+                </NextAction>
               </>
             }
+          />
+        );
+      }
+      case "shop-now": {
+        const sn = h.shopNow;
+        if (!sn) return null;
+        const next = { ...sn, addMissing: async () => { track(item, "add-to-list", position); await sn.addMissing(); } };
+        return (
+          <Post
+            label="Shop now" social={false} color="var(--peach)" icon={CART} title="Shop now" sub={`For ${sn.meal.toLowerCase()} · ${sn.name}`} onToggle={toggle}
+            media={<div className="mx-5 rounded-[20px] bg-panel p-4"><MissingChips names={sn.names} /></div>}
+            caption={<NextAction next={next} onOpen={open} />}
           />
         );
       }

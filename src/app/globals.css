@@ -221,7 +221,7 @@ button:not(:disabled):not([data-nopress]):active {
   }
 }
 .pop {
-  animation: pop 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+  animation: pop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 @keyframes story-progress {
@@ -325,6 +325,8 @@ h3 {
 /* Chat launcher and panel (Home): anchored bottom right, above the phone nav; right edge follows the 430px phone column. */
 .chat-anchor { position: fixed; z-index: 30; right: max(16px, calc(50vw - 215px + 16px)); bottom: 92px; }
 @media (min-width: 1024px) { .chat-anchor { right: 32px; bottom: 32px; } }
+/* Room under a phone screen's scrolling list so the orb never covers its last row. */
+@media (max-width: 1023px) { .rail.overflow-y-auto::after { content: ""; display: block; flex: none; height: 72px; } }
 @keyframes chat-spin { to { transform: rotate(360deg); } }
 .chat-orb { position: relative; display: inline-block; border-radius: 9999px; background: var(--ink); }
 .chat-orb::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: conic-gradient(from 0deg, var(--mint), var(--sky), var(--lavender), var(--rose), var(--butter), var(--mint)); animation: chat-spin 6s linear infinite; }

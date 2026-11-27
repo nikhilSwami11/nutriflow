@@ -4,11 +4,12 @@ import type { HomeModel } from "@/view-models/home/useHome";
 import { MacroChart } from "../MacroChart";
 import { NextMealHero } from "../NextMealHero";
 import { PantryNudge } from "../Nudges";
+import { ShopNowCard } from "../ShopNow";
 import { TodayLine } from "../TodayLine";
 import { Tracked } from "./Tracked";
 
 /** The meal and the chart stack in the wide column (chart right under the meal); the rest sit beside them. The feed's order decides who comes first. */
-const SPAN: Record<string, string> = { "next-meal": "col-span-7", "day-chart": "col-span-7", default: "col-span-5" };
+const SPAN: Record<string, string> = { "next-meal": "col-span-7", "shop-now": "col-span-7", "day-chart": "col-span-7", default: "col-span-5" };
 
 /**
  * Desktop Home: the same feed as mobile, drawn as dashboard cards instead of posts.
@@ -21,7 +22,9 @@ export function FeedGrid({ h }: { h: HomeModel }) {
     const open = () => track(item, "open", position);
     switch (item.kind) {
       case "next-meal":
-        return <NextMealHero next={h.next} then={h.then} onOpen={open} onEaten={() => track(item, "mark-eaten", position)} />;
+        return <NextMealHero next={h.next} shopElsewhere={!!h.shopNow && h.shopNow.id === h.next?.id} onOpen={open} onEaten={() => track(item, "mark-eaten", position)} />;
+      case "shop-now":
+        return h.shopNow ? <ShopNowCard s={h.shopNow} onOpen={open} onAdd={() => track(item, "add-to-list", position)} /> : null;
       case "all-done":
         return (
           <article aria-label="Up next" className="rounded-[20px] bg-mint p-5 text-onp">

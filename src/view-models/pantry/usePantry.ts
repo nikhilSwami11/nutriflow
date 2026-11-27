@@ -74,6 +74,8 @@ export function usePantry() {
     adjust: (id: string, delta: number) => adjust.mutate({ id, delta }),
     hear: (text: string) => hear.mutateAsync(text),
     addHeard: (parsed: ParsedItem[]) => addHeard.mutateAsync(parsed),
+    /** Ids of pantry items that are on the shopping list. */
+    onListIds: onList,
     toggleList: () => toggleList.mutate(),
     addNames: (needs: Need[]) => addNames.mutateAsync(needs),
   };

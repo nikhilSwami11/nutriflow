@@ -48,6 +48,7 @@ test("servings picked on the recipe page carry into the cook", async ({ page }) 
   await page.getByRole("button", { name: "More servings" }).click();
   await page.getByRole("link", { name: "Start cooking" }).click();
   await expect(page).toHaveURL(/servings=6/);
+  await page.getByRole("button", { name: "Views" }).click();
   await page.getByRole("button", { name: "Ingredients" }).click();
   await expect(page.getByText("for 6 servings")).toBeVisible();
   await page.getByRole("button", { name: "Actions" }).click();
@@ -173,6 +174,7 @@ test("an unknown recipe shows not found", async ({ page }) => {
 test.describe("the cooking guide", () => {
   test("Ingredients: a checklist to tick off, and what to use for anything missing", async ({ page }) => {
     await page.goto("/cook/dal-tadka");
+    await page.getByRole("button", { name: "Views" }).click();
     await page.getByRole("button", { name: "Ingredients" }).click();
     await expect(page.getByText("Set these out before you start. About 40 minutes for 4 servings.")).toBeVisible();
     const items = page.getByRole("list", { name: "Ingredients" }).getByRole("checkbox");
@@ -255,6 +257,7 @@ test("Parallel shows what can run while a timed action runs", async ({ page }) =
 
 test("Recipe view: the whole recipe in order, split into its parts, every step numbered", async ({ page }) => {
   await page.goto("/cook/dal-tadka");
+  await page.getByRole("button", { name: "Views" }).click();
   await page.getByRole("button", { name: "Recipe" }).click();
   await expect(page.getByLabel("Dal")).toContainText("Toor dal");
   await expect(page.getByLabel("Dal").getByRole("listitem").filter({ hasText: "Boil the dal with the water" })).toContainText("20 min");

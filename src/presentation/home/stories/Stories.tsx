@@ -46,7 +46,7 @@ export function Stories({ s }: { s: HomeModel["stories"] }) {
                   </span>
                 )}
               </button>
-              <span className="max-w-full truncate text-xs text-ink2">{st.label}</span>
+              <span className="line-clamp-2 max-w-full text-center text-xs leading-tight text-ink2">{st.label}</span>
             </div>
           );
         })}

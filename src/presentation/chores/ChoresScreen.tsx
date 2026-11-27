@@ -61,31 +61,34 @@ export function ChoresScreen() {
         <Section title="Done" rows={s.done} toggle={s.toggle} remove={s.remove} />
 
         <form
-          className="flex shrink-0 flex-col gap-3 rounded-[20px] bg-panel p-4"
+          className="flex shrink-0 flex-col gap-3"
           onSubmit={async (e) => {
             e.preventDefault();
             if (await s.add(title, repeat)) setTitle("");
           }}
         >
-          <label htmlFor="new-chore" className="text-[15px] font-medium">Add a chore</label>
-          <input
-            id="new-chore"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Water the plants"
-            maxLength={120}
-            className="touch rounded-2xl border border-line2 bg-bg px-4 text-[15px]"
-          />
-          <div role="group" aria-label="How often" className="flex flex-wrap gap-2">
-            {REPEATS.map((r) => (
-              <button key={r.value} type="button" aria-pressed={repeat === r.value} onClick={() => setRepeat(r.value)} className={`touch rounded-full border px-4 text-sm font-medium ${repeat === r.value ? "border-transparent bg-mint text-onp" : "border-line2 bg-bg"}`}>
-                {r.label}
-              </button>
-            ))}
+          <div className="flex gap-2">
+            <input
+              aria-label="Add a chore"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Add a chore, like Water the plants"
+              maxLength={120}
+              className="touch min-w-0 flex-1 rounded-full border border-line2 bg-bg px-4 text-[15px]"
+            />
+            <button type="submit" disabled={!title.trim()} className="touch shrink-0 rounded-full border-0 bg-ink px-5 text-[15px] font-medium text-bg disabled:bg-track disabled:text-muted">
+              Add
+            </button>
           </div>
-          <button type="submit" disabled={!title.trim()} className="touch self-start rounded-full border-0 bg-ink px-5 text-[15px] font-medium text-bg disabled:bg-track disabled:text-muted">
-            Add
-          </button>
+          {title.trim() && (
+            <div role="group" aria-label="How often" className="fade-in flex flex-wrap gap-2">
+              {REPEATS.map((r) => (
+                <button key={r.value} type="button" aria-pressed={repeat === r.value} onClick={() => setRepeat(r.value)} className={`touch rounded-full border px-4 text-sm font-medium ${repeat === r.value ? "border-transparent bg-mint text-onp" : "border-line2 bg-bg"}`}>
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          )}
         </form>
       </div>
     </AppShell>

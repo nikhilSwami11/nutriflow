@@ -1,3 +1,4 @@
+import { isStaple } from "../guide/cookability";
 import { foodKey as norm } from "../pantry/foodKey";
 import type { Need, PantryItem } from "../pantry/types";
 import type { PlanDay } from "../planning/types";
@@ -29,6 +30,8 @@ export function neededForPlan(input: {
       for (const s of ingredientStatus(recipe, input.pantry)) {
         if (s.inPantry) continue;
         const key = norm(s.ingredient.name);
+        // Kitchen basics (salt, oil, water, common spices) are assumed at home, as on Home, unless the pantry says they ran out.
+        if (isStaple(s.ingredient) && !input.pantry.some((p) => norm(p.name) === key)) continue;
         const unit = shopUnitFor(s.ingredient.unit);
         const have = needs.get(key);
         if (!have) needs.set(key, { name: s.ingredient.name, qty: s.ingredient.qty, unit });

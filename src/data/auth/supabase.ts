@@ -1,5 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { AuthMessage, type AuthRepository, type AuthUser, type ConsentLookup, type SignUpResult } from "@/domain/auth";
+import { AuthMessage, type AuthRepository, type AuthUser, type ConnectedApp, type ConsentLookup, type SignUpResult } from "@/domain/auth";
 
 /** Supabase errors in plain words; anything else stays hidden behind the generic message. */
 const friendly = (e: { message?: string; code?: string }): never => {
@@ -85,6 +85,14 @@ export class SupabaseAuthRepository implements AuthRepository {
       : await this.db.auth.oauth.denyAuthorization(id, opts);
     if (error || !data) throw error ?? new Error("No redirect");
     return data.redirect_url;
+  }
+
+  async connectedApps(): Promise<ConnectedApp[]> {
+    const { data, error } = await this.db.auth.oauth.listGrants();
+    if (error) throw error;
+    return (data ?? [])
+      .map((g) => ({ name: g.client.name, since: g.granted_at }))
+      .sort((a, b) => b.since.localeCompare(a.since));
   }
 
   async continueAsGuest() {

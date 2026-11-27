@@ -1,7 +1,7 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { addChore, isDue, isOverdue, markChore, type Chore, type ChoreDraft, type Repeat } from "@/domain/chores";
+import { addChore, isDue, markChore, type Chore, type ChoreDraft, type Repeat } from "@/domain/chores";
 import { toDateKey } from "@/domain/nutrition";
 import { useChoreDeps } from "./ChoreDeps";
 
@@ -24,7 +24,7 @@ const whenText = (c: Chore, today: string): string => {
   if (c.repeat === "daily") return "Every day";
   if (c.repeat === "once") return "Once";
   const every = `Every ${DAYS[c.day ?? 0]}`;
-  return isOverdue(c, today) ? `Late · ${every.toLowerCase()}` : every;
+  return every;
 };
 
 export function useChores() {

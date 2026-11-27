@@ -57,7 +57,7 @@ test("a new person is asked three questions once, and the answers are kept", asy
   // Client-side navigation: the offline repositories live for one page load.
   await page.getByRole("link", { name: "Profile" }).first().click();
   await expect(page.getByRole("button", { name: "Vegetarian" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByLabel("Calories from")).toHaveValue("2200");
+  await expect(page.getByRole("button", { name: "Build muscle" })).toHaveAttribute("aria-pressed", "true"); // 2,200 to 2,600
   await page.getByRole("link", { name: "Kitchen" }).first().click();
   await expect(page.getByText("eggs", { exact: false }).first()).toBeVisible();
 });

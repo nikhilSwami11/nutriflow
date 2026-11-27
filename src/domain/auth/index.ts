@@ -19,6 +19,23 @@ export interface ConsentRequest {
 /** Either the app still needs a yes or no, or it was already allowed and the browser goes straight back to it. */
 export type ConsentLookup = { kind: "ask"; request: ConsentRequest } | { kind: "done"; redirectTo: string };
 
+/** An app this account has allowed through the connector. */
+export interface ConnectedApp {
+  name: string;
+  /** ISO date-time it was allowed. */
+  since: string;
+}
+
+export type Assistant = "claude" | "chatgpt";
+
+/** Which assistant a connected app is, by the name it registered with; null when it is neither. */
+export const assistantOf = (name: string): Assistant | null => {
+  const n = name.toLowerCase();
+  if (n.includes("claude") || n.includes("anthropic")) return "claude";
+  if (n.includes("chatgpt") || n.includes("openai")) return "chatgpt";
+  return null;
+};
+
 export interface AuthRepository {
   /** The signed-in user, or null when there is no session. */
   current(): Promise<AuthUser | null>;
@@ -33,4 +50,6 @@ export interface AuthRepository {
   consentRequest(id: string): Promise<ConsentLookup>;
   /** Allows or refuses it. Returns where to send the browser: back to the app, with a code or with a refusal. */
   decideConsent(id: string, allow: boolean): Promise<string>;
+  /** Apps allowed through the connector, newest first. */
+  connectedApps(): Promise<ConnectedApp[]>;
 }

@@ -3,7 +3,6 @@ import { useHome } from "@/view-models/home/useHome";
 import Link from "next/link";
 import { AppShell } from "../shell/AppShell";
 import { useMediaQuery } from "../shared/useMediaQuery";
-import { ChatDock } from "./ChatDock";
 import { OnboardingSheet } from "./OnboardingSheet";
 import { Feed } from "./feed/Feed";
 import { FeedGrid } from "./feed/FeedGrid";
@@ -15,7 +14,7 @@ export function HomeScreen() {
   const h = useHome();
   const desktop = useMediaQuery("(min-width: 1024px)");
   return (
-    <AppShell current="home">
+    <AppShell current="home" chatNext={h.next ? { id: h.next.id, name: h.next.name } : undefined}>
       <header className="flex items-center justify-between pb-1.5 pl-5 pr-2 pt-3.5 lg:block lg:p-2 lg:pb-5">
         <div className="text-[22px] font-semibold tracking-[-0.01em] lg:hidden">NutriFlow</div>
         <div className="flex items-center lg:hidden">
@@ -41,7 +40,6 @@ export function HomeScreen() {
         </div>
       )}
       {!h.isLoading && <OnboardingSheet />}
-      {!h.isLoading && <ChatDock next={h.next ? { id: h.next.id, name: h.next.name } : undefined} />}
     </AppShell>
   );
 }

@@ -24,7 +24,7 @@ export function usePantryScreen() {
 
   const groups = p.view.groups.map((g) => ({
     name: g.name,
-    rows: g.items.map((i) => ({ id: i.id, name: i.name, image: pictureFor(i.name), qtyText: `${i.qty} ${i.unit}`, low: isLow(i) })),
+    rows: g.items.map((i) => ({ id: i.id, name: i.name, image: pictureFor(i.name), qtyText: `${i.qty} ${i.unit}`, low: isLow(i), out: i.qty <= 0 })),
   }));
 
   return {

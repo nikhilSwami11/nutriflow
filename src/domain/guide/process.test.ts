@@ -26,6 +26,10 @@ describe("processTiles", () => {
     expect(tiles[0].items.map((i) => i.name)).toEqual(["Toor dal", "Tomatoes"]);
     expect(tiles[0].note).toMatch(/runs clear/);
   });
+  it("does not wash powders, pastes or juice", () => {
+    const r = { ...recipe, ingredients: [...recipe.ingredients, { name: "Coriander powder", qty: 1, unit: "tsp" }, { name: "Tomato paste", qty: 1, unit: "tbsp" }, { name: "Lemon juice", qty: 1, unit: "tbsp" }] } as Recipe;
+    expect(processTiles(r, 4)[0].items.map((i) => i.name)).toEqual(["Toor dal", "Tomatoes"]);
+  });
   it("groups steps of the same action into one tile, in first-seen order", () => {
     expect(tiles.map((t) => t.verb)).toEqual(["Wash", "Chop", "Boil", "Fry", "Serve"]);
     expect(tiles[1].steps).toEqual([1, 5]);
