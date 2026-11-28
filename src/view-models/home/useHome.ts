@@ -114,20 +114,22 @@ export function useHome() {
       tint: m.recipe.tint,
       image: m.recipe.image,
       /** Nothing blocks cooking: all there, or every gap has a stand-in at home or can be skipped. */
-      ready: cook.canCook,
+      ready: cook.canCook || cook.state === "check",
       /** Plain words for what stands between you and dinner. */
       state: cook.state,
       ask,
       assumed: cook.assumed,
-      readyText: cook.state === "check" ? "Check what you have" : !cook.canCook ? `You are missing ${count(n, "thing")}` : easy.length ? `Can cook with ${easy.join(" and ")}` : "Ready to cook",
+      readyText: cook.state === "check" ? "Check as you cook" : !cook.canCook ? `You are missing ${count(n, "thing")}` : easy.length ? `Can cook with ${easy.join(" and ")}` : "Ready to cook",
       /** The one main action: cook when nothing blocks, else shop for what is needed. */
-      actionText: cook.canCook ? "Start cooking" : cook.state === "check" ? "Check ingredients" : onList ? `${n} on your shopping list` : `Add ${n} to shopping`,
+      actionText: cook.canCook || cook.state === "check" ? "Start cooking" : onList ? `${n} on your shopping list` : `Add ${n} to shopping`,
       actionDone: n > 0 && onList,
       addMissing: async () => {
         await pantry.addNames(missing);
         setListed((l) => [...l, m.recipe.id]);
       },
       toggle: () => void toggleEaten(m.meal, m.recipe),
+      /** "Something else": the next best pick takes this slot, right on the card. */
+      swap: () => data?.swap(today, m.meal),
     };
   };
   const lowItems = pantryItems.filter(isLow);
@@ -159,7 +161,8 @@ export function useHome() {
   const stories = (feed.stories ?? []).flatMap<StoryModel>((st) => {
     const isSeen = seen.includes(st.id);
     if (st.kind === "meal") {
-      if (!eatNext) return [];
+      // Today the Up next card is the answer; a story only says what comes tomorrow.
+      if (!eatNext || !st.tomorrow) return [];
       const c = card(eatNext);
       const today = !st.tomorrow;
       const meal = { ...c, when: today ? "" : "Tomorrow", toggle: today ? c.toggle : undefined };
@@ -205,6 +208,8 @@ export function useHome() {
     },
     feed: { items: feed.items as FeedItem[], track },
     dateLabel: new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }),
+    /** One plain sentence that matches the card, never a question: the app has already decided. */
+    headline: open[0] ? `${open[0].meal} is ${open[0].recipe.name.toLowerCase()}` : eatNext ? `Tomorrow starts with ${eatNext.recipe.name.toLowerCase()}` : "Your day is done",
     next: open[0] ? card(open[0]) : null,
     /** The meal that needs shopping, when one does (see the feed item "shop-now"). */
     shopNow,

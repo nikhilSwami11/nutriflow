@@ -114,7 +114,7 @@ test.describe("a whole cook", () => {
     await expect(page.getByRole("heading", { name: /Logged/ })).toBeVisible();
     await page.getByRole("link", { name: "Back to home" }).click();
     await page.getByRole("link", { name: "Kitchen" }).first().click();
-    await expect(page.getByText("2 cups")).toBeVisible(); // toor dal 3 -> 2
+    await expect(page.getByRole("region", { name: "In stock" }).getByText("2 cups")).toBeVisible(); // toor dal 3 -> 2
   });
 });
 
@@ -245,13 +245,13 @@ test.describe("the cooking guide", () => {
   });
 });
 
-test("Parallel shows what can run while a timed action runs", async ({ page }) => {
+test("Meanwhile shows what can run while a timed action runs", async ({ page }) => {
   await page.goto("/cook/dal-tadka");
   await jump(page, "Boil");
   const card = page.getByRole("tabpanel", { name: "Boil" });
   await expect(card).toContainText("20 min");
   await expect(card.getByLabel("At the same time")).toHaveCount(0);
-  await page.getByRole("button", { name: "Parallel" }).click();
+  await page.getByRole("button", { name: "Meanwhile" }).click();
   await expect(card.getByLabel("At the same time")).toContainText("Chop");
 });
 

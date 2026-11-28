@@ -1,8 +1,9 @@
+import { dishVerb } from "../../shared/dishVerb";
 import Link from "next/link";
 import { FEED_KINDS, type FeedItem } from "@/view-models/feed/types";
 import type { HomeModel } from "@/view-models/home/useHome";
 import { RecipeArt } from "../../recipes/RecipeArt";
-import { MacroChart } from "../MacroChart";
+import { MacroChart } from "../LazyMacroChart";
 import { NextAction } from "../NextAction";
 import { MissingChips } from "../ShopNow";
 import { TodayLine } from "../TodayLine";
@@ -41,14 +42,14 @@ export function Feed({ h }: { h: HomeModel }) {
             caption={
               <>
                 <div>
-                  <h3 className="m-0 text-base font-medium">Cook {n.name.toLowerCase()}</h3>
+                  <h2 className="m-0 text-base font-medium">{dishVerb(n.name)} {n.name.toLowerCase()}</h2>
                   <p className="m-0 mt-1 text-sm text-ink2 tabular-nums"><span className={n.ready ? "" : "text-ink"}>{n.readyText}</span></p>
                 </div>
                 <NextAction next={n} onOpen={open} shopElsewhere={!!h.shopNow && h.shopNow.id === n.id}>
                   {(close) => (
                     <>
                       <button type="button" onClick={() => { close(); track(item, "mark-eaten", position); n.toggle(); }} className="touch flex w-full items-center bg-transparent px-4 text-left text-[15px] text-ink">Mark eaten</button>
-                      <Link href="/eat" onClick={open} className="touch flex w-full items-center px-4 text-[15px] text-ink">Pick something else</Link>
+                      <Link href="/eat" onClick={open} className="touch flex w-full items-center px-4 text-[15px] text-ink">More ideas</Link>
                     </>
                   )}
                 </NextAction>
@@ -70,10 +71,10 @@ export function Feed({ h }: { h: HomeModel }) {
         );
       }
       case "all-done":
-        return <Post label="Up next" color="var(--mint-soft)" icon={BOWL} title="Up next" sub="All done" onToggle={toggle} media={<div className="flex h-[120px] items-center justify-center bg-mint text-sm font-medium text-onp">All meals eaten for today</div>} />;
+        return <Post label="Up next" social={false} color="var(--mint-soft)" icon={BOWL} title="Up next" sub="All done" onToggle={toggle} media={<div className="flex h-[120px] items-center justify-center bg-mint text-sm font-medium text-onp">All meals eaten for today</div>} />;
       case "day-chart":
         return (
-          <Post label="Your day" color="var(--sky-soft)" icon={BARS} title="Your day" sub="Today, 7 days, 30 days" onToggle={toggle}
+          <Post label="Your day" social={false} color="var(--sky-soft)" icon={BARS} title="Your day" sub="Today, 7 days, 30 days" onToggle={toggle}
             media={<div className="px-2 pb-1"><MacroChart bare c={h.chart} above={<TodayLine t={h.today} />} /></div>}
           />
         );
@@ -81,7 +82,7 @@ export function Feed({ h }: { h: HomeModel }) {
         const p = h.pantry;
         if (!p) return null;
         return (
-          <Post label="Pantry alert" color="var(--peach)" icon={PANTRY} title="Pantry alert" sub={`${p.count} running low`} onToggle={toggle}
+          <Post label="Pantry alert" social={false} color="var(--peach)" icon={PANTRY} title="Pantry alert" sub={`${p.count} running low`} onToggle={toggle}
             media={
               <div className="mx-5 flex flex-col gap-4 rounded-[20px] bg-panel p-[18px]">
                 <div className="text-[15px] font-medium">Running low</div>
@@ -103,7 +104,7 @@ export function Feed({ h }: { h: HomeModel }) {
       }
       case "plan-nudge":
         return (
-          <Post label="Plan" color="var(--lavender-soft)" icon={CALENDAR} title="Plan" sub={item.reason ?? "This week"} onToggle={toggle}
+          <Post label="Plan" social={false} color="var(--lavender-soft)" icon={CALENDAR} title="Plan" sub={item.reason ?? "This week"} onToggle={toggle}
             media={
               <ul className="mx-5 m-0 flex list-none flex-col gap-2 rounded-[20px] bg-panel p-[18px] text-sm">
                 {item.notes.map((n) => <li key={n}>{n}</li>)}

@@ -28,6 +28,8 @@ export function usePlan() {
       { label: "Average protein", value: `${balance.avgProtein} g`, goal: `goal ${goals.protein} g` },
     ],
     notes: balance.notes,
+    /** A day is short on protein and the week is not already planned for protein: one tap fixes it. */
+    canFixProtein: data.focus !== "protein" && balance.days.some((d) => d.proteinStatus === "under"),
     days: plan.map((day, i) => {
       const b = dayBalance(day, recipes, goals);
       return {

@@ -6,9 +6,8 @@ test("sidebar on desktop, bottom nav on mobile", async ({ page, isMobile }) => {
   await expect(nav).toBeVisible();
   for (const name of ["Today", "Food", "Kitchen", "Chores"]) await expect(nav.getByRole("link", { name })).toHaveCount(1);
   await expect(nav.getByRole("link", { name: "Profile" })).toHaveCount(isMobile ? 0 : 1); // the phone has it in the Home header
-  if (!isMobile) {
-    await expect(page.getByRole("heading", { name: "What are we cooking tonight?" })).toBeVisible();
-  }
+  // Home says what is next as a statement (date above it), never a question.
+  await expect(page.getByRole("heading", { level: 1, name: /^(\w+ is .+|Tomorrow starts with .+|Your day is done)$/ })).toBeVisible();
 });
 
 for (const width of [320, 360, 412]) {

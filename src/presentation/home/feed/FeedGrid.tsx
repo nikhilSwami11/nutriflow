@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FEED_KINDS, type FeedItem } from "@/view-models/feed/types";
 import type { HomeModel } from "@/view-models/home/useHome";
-import { MacroChart } from "../MacroChart";
+import { MacroChart } from "../LazyMacroChart";
 import { NextMealHero } from "../NextMealHero";
 import { PantryNudge } from "../Nudges";
 import { ShopNowCard } from "../ShopNow";

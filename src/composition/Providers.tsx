@@ -10,6 +10,7 @@ import { InMemoryChoreRepository, SEED_CHORES } from "@/data/chores/inMemory";
 import { SupabaseChoreRepository } from "@/data/chores/supabase";
 import { InMemoryAuthRepository } from "@/data/auth/inMemory";
 import { SupabaseAuthRepository } from "@/data/auth/supabase";
+import { LocalLeftoverRepository } from "@/data/cooking/leftovers";
 import { LocalServingHabitRepository, SupabaseServingHabitRepository } from "@/data/cooking/habits";
 import { LocalPrepDoneRepository, SupabasePrepDoneRepository } from "@/data/planning/prep";
 import type { ServingHabitRepository } from "@/domain/cooking";
@@ -18,6 +19,7 @@ import { MirroredFeedEventRepository } from "@/data/feed/mirrored";
 import { SupabaseFeedEventRepository } from "@/data/feed/supabase";
 import { QueuedMealLogRepository } from "@/data/nutrition/queued";
 import { DemoMealDetector } from "@/data/photo/demo";
+import { EdgeMealDetector, EdgePantryScanner, FallbackMealDetector } from "@/data/photo/edge";
 import { DemoRecipeRepository } from "@/data/recipes/demo";
 import { DemoDashboardRepository } from "@/data/dashboard/demo";
 import { LogDashboardRepository } from "@/data/dashboard/logs";
@@ -54,7 +56,7 @@ import { ChoreDepsProvider } from "@/view-models/chores/ChoreDeps";
 import type { ChoreRepository } from "@/domain/chores";
 import { CookDepsProvider, type CookDeps } from "@/view-models/cook/CookDeps";
 import { FeedDepsProvider } from "@/view-models/feed/FeedDeps";
-import { PhotoDepsProvider } from "@/view-models/photo/PhotoDeps";
+import { PhotoDepsProvider, type PhotoDeps } from "@/view-models/photo/PhotoDeps";
 import { RecipeDepsProvider } from "@/view-models/recipes/RecipeDeps";
 import { DashboardDepsProvider } from "@/view-models/dashboard/DashboardDeps";
 import { NutritionDepsProvider, type NutritionDeps } from "@/view-models/nutrition/NutritionDeps";
@@ -135,7 +137,7 @@ const assemble = (
     recipes,
     chat: { brain, tools },
     feedEvents: remoteFeed ? new MirroredFeedEventRepository(new LocalFeedEventRepository(storage()), remoteFeed) : new LocalFeedEventRepository(storage()),
-    cook: { habits, pendingLogs: () => queue.pending() },
+    cook: { habits, leftovers: new LocalLeftoverRepository(storage()), pendingLogs: () => queue.pending() },
     flushLogs: () => queue.flush(),
   };
 };
@@ -161,8 +163,8 @@ const inMemory = (): Deps => {
 
 /** Supabase when env vars are set, otherwise in-memory seeded from the design. */
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Demo detector until a vision model is connected behind the same port.
-  const [detector] = useState(() => new DemoMealDetector());
+  // The example until a signed-in account can reach the vision model (edge function scan-photo).
+  const [photo, setPhoto] = useState<PhotoDeps>(() => ({ detector: new DemoMealDetector() }));
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } }));
   // Built after mount in both modes: time-based data (today, seed dates) must never be frozen at build time.
   const [deps, setDeps] = useState<Deps | null>(null);
@@ -175,8 +177,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     let stop: (() => void) | undefined;
     let cancelled = false;
     void createSupabase(URL, KEY).then((db) => {
-      // Changes made in chat or on another device refetch what is on screen.
-      if (!cancelled) stop = watchTables(db, () => void client.invalidateQueries());
+      // Changes made in chat or on another device refetch what is on screen. Not "what-to-eat": writing a meal saves a row, which would
+      // fire this again and write another meal, forever (the Food screen kept changing under you).
+      if (!cancelled) stop = watchTables(db, () => void client.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "what-to-eat" }));
+      setPhoto({ detector: new FallbackMealDetector(new EdgeMealDetector(db), new DemoMealDetector()), scanner: new EdgePantryScanner(db) });
       setDeps(
         assemble(
           true,
@@ -234,7 +238,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <FeedDepsProvider value={deps.feedEvents}>
                 <CookDepsProvider value={deps.cook}>
                   <ChatDepsProvider value={deps.chat}>
-                    <PhotoDepsProvider value={detector}>{children}</PhotoDepsProvider>
+                    <PhotoDepsProvider value={photo}>{children}</PhotoDepsProvider>
                   </ChatDepsProvider>
                 </CookDepsProvider>
               </FeedDepsProvider>

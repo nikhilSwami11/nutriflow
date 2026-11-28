@@ -5,7 +5,7 @@ import { useCapture } from "@/view-models/capture/store";
 import { usePhotoFlow, type PhotoModel } from "@/view-models/photo/usePhotoFlow";
 import { Bowl } from "../recipes/Bowl";
 
-const circle = "absolute flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-ink";
+const circle = "absolute flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-onp";
 const corner = "absolute h-7 w-7 border-ink";
 
 function Viewfinder({ p, scanning }: { p: PhotoModel; scanning: boolean }) {
@@ -42,8 +42,8 @@ function Viewfinder({ p, scanning }: { p: PhotoModel; scanning: boolean }) {
       ) : (
         <button type="button" onClick={p.toDetect} aria-label="Back" className={`${circle} left-3 top-3.5`}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>
       )}
-      <button type="button" onClick={() => { clearImage(); router.push("/"); openSheet(); }} className="absolute right-3 top-3.5 min-h-11 rounded-full bg-white/85 px-4 text-sm text-ink">Retake</button>
-      <span className="absolute bottom-3.5 left-4 rounded-full bg-white/85 px-3.5 py-1.5 text-xs text-ink">{p.dish}, {p.confidence}% sure</span>
+      <button type="button" onClick={() => { clearImage(); router.push("/"); openSheet(); }} className="absolute right-3 top-3.5 min-h-11 rounded-full bg-white/85 px-4 text-sm text-onp">Retake</button>
+      <span className="absolute bottom-3.5 left-4 rounded-full bg-white/85 px-3.5 py-1.5 text-xs text-onp">{p.dish}, {p.confidence}% sure</span>
     </div>
   );
 }
@@ -129,7 +129,7 @@ function Logged({ p }: { p: PhotoModel }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-1 flex-col gap-3.5 px-5 pt-4">
-        <div role="status" className="flex flex-col gap-2 rounded-3xl bg-ink p-6 text-bg">
+        <div role="status" className="flex flex-col gap-2 rounded-[20px] bg-ink p-6 text-bg">
           <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-mint text-onp"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 12.5l4 4 8-9" /></svg></span>
           <div className="text-4xl font-light tracking-[-0.02em] tabular-nums">{p.logged?.kcal} kcal</div>
           <div className="text-sm">Logged for {p.logged?.slot}.</div>

@@ -20,7 +20,7 @@ test("escape closes it and arrows move the choice", async ({ page, isMobile }) =
   await page.getByRole("button", { name: /Go to/ }).click();
   const box = page.getByRole("combobox", { name: "Go to a screen" });
   await box.press("ArrowDown");
-  await expect(page.getByRole("option", { selected: true })).toHaveAccessibleName("What to eat");
+  await expect(page.getByRole("option", { selected: true })).toHaveAccessibleName("Suggested");
   await box.press("Escape");
   await expect(box).toHaveCount(0);
 });

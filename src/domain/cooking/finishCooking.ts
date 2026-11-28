@@ -5,6 +5,7 @@ import { logMeal } from "../nutrition/logMeal";
 import type { MealLogRepository } from "../nutrition/ports";
 import type { DateKey, MealLog, MealSlot } from "../nutrition/types";
 import type { Recipe } from "../recipes/types";
+import { leftoverFrom, type LeftoverRepository } from "../leftovers";
 import { ingredientsToDeplete } from "./depletion";
 import { nutritionEaten } from "./eaten";
 import { updateHabit, type ServingHabit, type ServingHabitRepository } from "./habits";
@@ -13,6 +14,8 @@ export interface FinishDeps {
   pantry: PantryRepository;
   logs: MealLogRepository;
   habits: ServingHabitRepository;
+  /** Cooked more than you ate: the rest is offered later as a leftover. */
+  leftovers?: LeftoverRepository;
   newId: () => string;
 }
 
@@ -65,6 +68,12 @@ export async function finishCooking(deps: FinishDeps, { recipe, servingsMade, se
   } catch {
     habit = null;
     warnings.push("Your serving size could not be saved");
+  }
+  try {
+    const left = leftoverFrom(recipe, servingsMade, servingsEaten, deps.newId(), date);
+    if (left && deps.leftovers) await deps.leftovers.add(left);
+  } catch {
+    warnings.push("The leftovers could not be saved");
   }
   return { log, depleted, shortfalls, habit, warnings };
 }

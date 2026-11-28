@@ -8,6 +8,7 @@ export function fakePantry(seed: PantryItem[]): PantryRepository & { items: Map<
     items,
     list: async () => [...items.values()],
     save: async (xs) => xs.forEach((x) => items.set(x.id, x)),
+    remove: async (ids) => ids.forEach((i) => items.delete(i)),
   };
 }
 

@@ -15,20 +15,16 @@ export function HomeScreen() {
   const desktop = useMediaQuery("(min-width: 1024px)");
   return (
     <AppShell current="home" chatNext={h.next ? { id: h.next.id, name: h.next.name } : undefined}>
-      <header className="flex items-center justify-between pb-1.5 pl-5 pr-2 pt-3.5 lg:block lg:p-2 lg:pb-5">
-        <div className="text-[22px] font-semibold tracking-[-0.01em] lg:hidden">NutriFlow</div>
-        <div className="flex items-center lg:hidden">
-          <Link href="/eat" className="touch inline-flex items-center px-3 text-sm text-ink2">Hungry?</Link>
-          <Link href="/profile" aria-label="Profile" className="touch flex w-11 items-center justify-center text-ink2">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 20c1.5-4 4.5-5.5 8-5.5s6.5 1.5 8 5.5" /></svg>
-          </Link>
-        </div>
-        {!h.isLoading && desktop && (
-          <div className="rise">
-            <div className="mb-2.5 text-sm text-muted">{h.dateLabel}</div>
-            <h1 className="m-0 text-[28px] font-medium leading-tight tracking-[-0.02em]">What are we cooking tonight?</h1>
+      <header className="flex items-start justify-between pb-1.5 pl-5 pr-2 pt-3.5 lg:p-2 lg:pb-5">
+        {!h.isLoading && (
+          <div className="rise min-w-0">
+            <div className="text-sm text-muted">{h.dateLabel}</div>
+            <h1 className="m-0 mt-0.5 text-[26px] font-medium leading-tight tracking-[-0.02em]">{h.headline}</h1>
           </div>
         )}
+        <Link href="/profile" aria-label="Profile" className="touch flex w-11 shrink-0 items-center justify-center text-ink2 lg:hidden">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 20c1.5-4 4.5-5.5 8-5.5s6.5 1.5 8 5.5" /></svg>
+        </Link>
       </header>
 
       {h.isLoading && <Skeleton />}

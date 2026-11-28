@@ -27,7 +27,7 @@ function EditBar({ recipe }: { recipe: Parameters<typeof useRecipeEdit>[0] }) {
 export function RecipeDetailScreen({ id }: { id: string }) {
   const r = useRecipe(id);
   return (
-    <AppShell current="recipes">
+    <AppShell current="recipes" stickyAction>
       <div className="relative flex min-h-0 flex-1 flex-col lg:max-w-2xl">
         <header className="flex shrink-0 items-center gap-1 px-2 pb-1.5 pt-3">
           <Link href="/recipes" aria-label="Back" className="flex h-11 w-11 items-center justify-center text-ink">
@@ -47,12 +47,12 @@ export function RecipeDetailScreen({ id }: { id: string }) {
         {!r.isLoading && !r.notFound && (
           <>
             <div className="rail flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto px-5 pb-28">
-              <div role="img" aria-label={`Picture of ${r.recipe.name}`} className="rise flex h-[170px] shrink-0 items-center justify-center rounded-3xl" style={{ background: r.recipe.tint }}><RecipeArt image={r.recipe.image} size={150} eager /></div>
+              <div role="img" aria-label={`Picture of ${r.recipe.name}`} className="rise flex h-[170px] shrink-0 items-center justify-center rounded-[20px]" style={{ background: r.recipe.tint }}><RecipeArt image={r.recipe.image} size={150} eager /></div>
               <div>
                 <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">{r.recipe.name}</h1>
                 {r.recipe.blurb && <p className="mt-1.5 text-sm leading-normal text-ink2">{r.recipe.blurb}</p>}
               </div>
-              {r.recipe.written && !r.saved && <p className="m-0 -mb-2 rounded-2xl bg-butter-soft px-4 py-3 text-sm text-ink">Not kept yet. Tap the bookmark to keep it.</p>}
+              {r.recipe.written && !r.saved && <p className="m-0 -mb-2 rounded-2xl bg-butter-soft px-4 py-3 text-sm text-onp">Not kept yet. Tap the bookmark to keep it.</p>}
               <p className="m-0 -mb-2 text-sm text-ink2">{r.cookLine}</p>
               <div className="grid shrink-0 grid-cols-3 overflow-hidden rounded-[20px] border border-line">
                 {r.stats.map((s, i) => (
@@ -84,7 +84,7 @@ export function RecipeDetailScreen({ id }: { id: string }) {
                       {i.weight && <span className="block text-xs text-muted">≈ {i.weight}</span>}
                     </span>
                     {!i.inPantry && i.tag !== "Optional" && i.tag !== "Swap" && <button type="button" onClick={i.iHave} aria-label={`I have ${i.name}`} className="touch rounded-full border border-line2 bg-bg px-3 text-sm font-medium text-ink">I have it</button>}
-                    <span className={`rounded-full px-2.5 py-[3px] text-xs font-medium text-onp ${i.inPantry || i.tag === "Swap" || i.tag === "Optional" ? "bg-mint" : r.listed ? "bg-sky" : "bg-peach"}`}>{i.tag}</span>
+                    <span className={`rounded-full px-2.5 py-[3px] text-xs font-medium text-onp ${i.inPantry || i.tag === "Swap" || i.tag === "Optional" ? "bg-mint" : i.tag === "Check" ? "bg-butter" : r.listed ? "bg-sky" : "bg-peach"}`}>{i.tag}</span>
                   </div>
                 ))}
                 {r.missing > 0 && (

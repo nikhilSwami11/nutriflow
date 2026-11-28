@@ -5,10 +5,10 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 /** The screens the menu jumps to. Extra words so "groceries" finds Shopping and "hungry" finds What to eat. */
 const PLACES = [
   { href: "/", label: "Today", words: "home feed dashboard", tag: "Home" },
-  { href: "/eat", label: "What to eat", tag: "Food", words: "hungry suggest meal food" },
+  { href: "/eat", label: "Suggested", tag: "Food", words: "hungry suggest meal food" },
   { href: "/recipes", label: "Recipes", tag: "Food", words: "saved cook" },
   { href: "/plan", label: "Plan", tag: "Food", words: "week meals" },
-  { href: "/history", label: "History", tag: "Food", words: "calendar past meals eaten log" },
+  { href: "/history", label: "History", tag: "Profile", words: "calendar past meals eaten log" },
   { href: "/pantry", label: "Pantry", tag: "Kitchen", words: "kitchen stock have" },
   { href: "/shopping", label: "Shopping", tag: "Kitchen", words: "groceries list buy store" },
   { href: "/chores", label: "Chores", tag: "Chores", words: "tasks clean" },

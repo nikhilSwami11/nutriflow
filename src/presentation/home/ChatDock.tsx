@@ -8,10 +8,12 @@ const icon = (d: React.ReactNode, s = 22) => (
 );
 
 /** Bottom-right chat: a colour-wheel orb that opens a small panel. Replies come with one tap, never a wall of text. */
-export function ChatDock({ next }: { next: { id: string; name: string } | undefined }) {
+export function ChatDock({ next, lift }: { next: { id: string; name: string } | undefined; lift?: boolean }) {
   const c = useChat(next);
   const input = useRef<HTMLInputElement>(null);
   const end = useRef<HTMLDivElement>(null);
+  const orb = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
   const { open, setOpen } = c;
 
   useEffect(() => {
@@ -21,14 +23,19 @@ export function ChatDock({ next }: { next: { id: string; name: string } | undefi
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, setOpen]);
+  // The orb is replaced by the panel while open: give focus back to it on close, so a keyboard user keeps their place.
+  useEffect(() => {
+    if (!open && wasOpen.current) orb.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
   useEffect(() => { end.current?.scrollIntoView({ block: "end" }); }, [c.msgs.length, c.busy]);
 
   const hello = c.hour < 11 ? "Good morning" : c.hour < 17 ? "Good afternoon" : "Good evening";
 
   if (!open) {
     return (
-      <div className="chat-anchor">
-        <button type="button" onClick={() => setOpen(true)} aria-label="Ask NutriFlow" className="chat-orb flex h-14 w-14 items-center justify-center p-0 text-ink shadow-[0_6px_22px_rgba(0,0,0,0.14)]">
+      <div className="chat-anchor" data-lift={lift || undefined}>
+        <button ref={orb} type="button" onClick={() => setOpen(true)} aria-label="Ask NutriFlow" className="chat-orb flex h-14 w-14 items-center justify-center p-0 text-ink shadow-[0_6px_22px_rgba(0,0,0,0.14)]">
           {icon(SPARK)}
         </button>
       </div>
@@ -36,7 +43,7 @@ export function ChatDock({ next }: { next: { id: string; name: string } | undefi
   }
 
   return (
-    <div className="chat-anchor">
+    <div className="chat-anchor" data-lift={lift || undefined}>
       <section role="dialog" aria-label="Ask NutriFlow" className="story-in flex max-h-[min(560px,calc(100dvh-150px))] w-[min(calc(100vw-32px),380px)] flex-col overflow-hidden rounded-[28px] border border-line bg-bg shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
         <header className="flex items-center gap-3 px-4 pb-3 pt-4">
           <span className="chat-orb flex h-9 w-9 items-center justify-center text-ink" data-live={c.listening || c.busy} aria-hidden="true">{icon(SPARK, 16)}</span>

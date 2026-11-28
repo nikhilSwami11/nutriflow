@@ -85,7 +85,7 @@ export function useRecipe(id: string) {
       { label: "Diet", value: DIET[dietOf(r)] },
     ],
     /** One plain line for what stands between you and cooking, like Home. */
-    cookLine: cook.state === "check" ? "Tell me what you have and I will work out what is missing" : missing === 0 ? "Everything is in your pantry" : cook.canCook ? "You can cook this now with swaps or skips" : `Missing ${cook.needed.map((x) => x.name.toLowerCase()).join(", ")}`,
+    cookLine: cook.state === "check" ? "Check each item as you cook" : missing === 0 ? "Everything is in your pantry" : cook.canCook ? "You can cook this now with swaps or skips" : `Missing ${cook.needed.map((x) => x.name.toLowerCase()).join(", ")}`,
     servings: sv,
     fewer: () => setServings(Math.max(1, sv - 1)),
     more: () => setServings(Math.min(12, sv + 1)),
@@ -97,11 +97,11 @@ export function useRecipe(id: string) {
       inPantry: s.inPantry,
       /** The pantry may be wrong: let the person say they have it. */
       iHave: () => void have.have({ name: s.ingredient.name, qty: scaleQty(s.ingredient.qty, r.servings, sv), unit: s.ingredient.unit }),
-      tag: s.inPantry ? "In pantry" : swapOf.has(s.ingredient.name) ? "Swap" : cook.skips.includes(s.ingredient.name) ? "Optional" : listed ? "On list" : "Missing",
+      tag: s.inPantry ? "In pantry" : swapOf.has(s.ingredient.name) ? "Swap" : cook.skips.includes(s.ingredient.name) ? "Optional" : listed ? "On list" : cook.state === "check" && !cook.needed.some((x) => x.name === s.ingredient.name) ? "Check" : "Missing",
       /** What to use instead, when you own a stand-in. */
       note: swapOf.has(s.ingredient.name) ? `Use ${swapOf.get(s.ingredient.name)}` : null,
     })),
-    missing,
+    missing: cook.state === "check" ? cook.needed.length : missing,
     listed,
     toggleList: () => setListed(!listed),
     saved: my.isSaved(r.id),

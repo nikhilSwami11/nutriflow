@@ -59,6 +59,15 @@ export function usePantry() {
     onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: LIST }), qc.invalidateQueries({ queryKey: PANTRY })]),
   });
 
+  // The shopping list row goes first: a list row pointing at a deleted pantry item would linger.
+  const remove = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await list.remove(ids);
+      await pantry.remove(ids);
+    },
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: PANTRY }), qc.invalidateQueries({ queryKey: LIST })]),
+  });
+
   const all = items.data ?? [];
   const lowIds = getLowItems(all).map((i) => i.id);
   const onList = new Set(listIds.data ?? []);
@@ -78,5 +87,6 @@ export function usePantry() {
     onListIds: onList,
     toggleList: () => toggleList.mutate(),
     addNames: (needs: Need[]) => addNames.mutateAsync(needs),
+    remove: (id: string) => remove.mutate([id]),
   };
 }

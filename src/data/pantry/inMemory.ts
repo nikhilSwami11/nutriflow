@@ -12,6 +12,9 @@ export class InMemoryPantryRepository implements PantryRepository {
   async save(items: PantryItem[]) {
     items.forEach((i) => this.items.set(i.id, i));
   }
+  async remove(ids: string[]) {
+    ids.forEach((i) => this.items.delete(i));
+  }
 }
 
 export class InMemoryShoppingListRepository implements ShoppingListRepository {

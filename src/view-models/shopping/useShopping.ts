@@ -1,7 +1,7 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { addNamesToShoppingList, DEFAULT_AMOUNT, type Amount } from "@/domain/pantry";
+import { addNamesToShoppingList, DEFAULT_AMOUNT, foodKey, type Amount } from "@/domain/pantry";
 import { toDateKey } from "@/domain/nutrition";
 import {
   clampAmount,
@@ -77,6 +77,12 @@ export function useShopping() {
     if (!items.data.length) return [];
     const eatenToday = [...new Set([...plan.dashboard.eatenToday, ...todayLogs.data.map((l) => MEAL_OF_SLOT[l.slot])])];
     return neededForPlan({ plan: plan.plan, recipes: plan.recipes, pantry: items.data, today, eatenToday });
+  }, [plan, items.data, todayLogs.data, today]);
+  // The whole planned week, for one big shop: what the 3-day list above does not cover yet.
+  const weekNeeded = useMemo(() => {
+    if (!plan || !items.data?.length || !todayLogs.data) return [];
+    const eatenToday = [...new Set([...plan.dashboard.eatenToday, ...todayLogs.data.map((l) => MEAL_OF_SLOT[l.slot])])];
+    return neededForPlan({ plan: plan.plan, recipes: plan.recipes, pantry: items.data, today, eatenToday, days: 7 });
   }, [plan, items.data, todayLogs.data, today]);
   // Once per visit, so something you just ticked off is not put straight back.
   const started = useRef(false);
@@ -168,6 +174,12 @@ export function useShopping() {
       await addNamesToShoppingList({ pantry, list, newId, advisor }, [{ name: n }]).catch(() => 0);
       await refresh();
     },
+    /** "Add the whole week": what the planned 7 days need that is not on the list yet. Hidden when there is nothing more. */
+    week: (() => {
+      const have = new Set(rows.map((r) => foodKey(r.name)));
+      const more = weekNeeded.filter((n) => !have.has(foodKey(n.name)));
+      return more.length ? { count: more.length, add: async () => { await addNamesToShoppingList({ pantry, list, newId, advisor }, more).catch(() => 0); await refresh(); } } : null;
+    })(),
     savePrefs: (zip: string, storeId: StoreId) => save.mutate({ zip: zip.trim(), store: storeId }),
   };
 }

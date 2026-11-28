@@ -4,16 +4,19 @@ import { NAV } from "./navItems";
 import { SECTION, type Page } from "./pages";
 
 const icon = (d: React.ReactNode) => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     {d}
   </svg>
 );
-const cls = "flex h-12 w-[52px] items-center justify-center";
+const cls = "flex h-14 w-16 flex-col items-center justify-center gap-0.5";
 
 export function BottomNav({ current }: { current: Page }) {
   const link = (n: (typeof NAV)[number]) => {
     const on = SECTION[current] === n.section;
-    return <Link key={n.section} href={n.href} aria-label={n.label} aria-current={on ? "page" : undefined} className={`${cls} ${on ? "text-ink" : "text-ink2"}`}>{icon(n.icon)}</Link>;
+    return <Link key={n.section} href={n.href} aria-label={n.label} aria-current={on ? "page" : undefined} className={`${cls} ${on ? "font-medium text-ink" : "text-ink2"}`}>
+      <span className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors ${on ? "bg-mint text-onp" : ""}`}>{icon(n.icon)}</span>
+      <span className="text-xs">{n.label}</span>
+    </Link>;
   };
   return (
     <nav aria-label="Main" className="relative z-10 flex shrink-0 items-center justify-between border-t border-line bg-bg px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-1.5 lg:hidden">

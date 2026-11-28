@@ -82,7 +82,7 @@ test("the home feed keeps the same 20px left edge as the page", async ({ page, i
       title: left(document.querySelector("header div")),
       firstStory: left(document.querySelector('[role=list][aria-label=Stories] button')),
       postIcon: left(document.querySelector("article[aria-label='Up next'] > div:first-child > span")),
-      caption: left(document.querySelector("article[aria-label='Up next'] h3")),
+      caption: left(document.querySelector("article[aria-label='Up next'] h2")),
     };
   });
   expect(lefts).toEqual({ title: 20, firstStory: 20, postIcon: 20, caption: 20 });

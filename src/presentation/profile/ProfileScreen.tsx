@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/view-models/auth/useAuth";
@@ -7,6 +8,7 @@ import { GOALS } from "@/view-models/profile/useOnboarding";
 import { AppShell } from "../shell/AppShell";
 import { Skeleton } from "../shared/Skeleton";
 import { ConnectCard } from "./ConnectCard";
+import { ThemeCard } from "./ThemeCard";
 
 const DIET_NOTE: Record<Diet, string> = { anything: "No limits", vegetarian: "No meat or fish", eggetarian: "Vegetarian plus eggs", vegan: "No animal products" };
 const kcal = (n: number) => n.toLocaleString("en-US");
@@ -109,6 +111,11 @@ export function ProfileScreen() {
         {p.isLoading && <Skeleton rows={2} />}
         {!p.isLoading && <Form p={p} />}
 
+        <Link href="/history" className="touch flex items-center justify-between rounded-[20px] bg-panel px-4 text-[15px] font-medium text-ink">
+          Meal history
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+        </Link>
+        <ThemeCard />
         <ConnectCard />
 
         <section aria-label="Account" className="flex flex-col gap-2 rounded-[20px] bg-panel p-4">

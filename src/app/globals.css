@@ -28,6 +28,34 @@
   --butter-soft: #fbe3a6;
 }
 
+/* Dark: the same neutrals flipped for a dim kitchen. The pastels stay light and keep dark text on them (--onp is not flipped).
+   Follows the system unless the person chose Light or Dark on Profile (data-theme on <html>, set before paint in layout.tsx). */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #121212;
+    --ink: #f2f2f2;
+    --ink2: #c4c4c4;
+    --muted: #a0a0a0;
+    --line: #242424;
+    --line2: #383838;
+    --panel: #1b1b1b;
+    --track: #262626;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #121212;
+      --ink: #f2f2f2;
+      --ink2: #c4c4c4;
+      --muted: #a0a0a0;
+      --line: #242424;
+      --line2: #383838;
+      --panel: #1b1b1b;
+      --track: #262626;
+  }
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-ink: var(--ink);
@@ -253,20 +281,25 @@ button:not(:disabled):not([data-nopress]):active {
 /* Meal photo: scan line and pulsing boxes (from the Meal detector design). */
 .scan {
   position: absolute;
-  left: 0;
-  right: 0;
-  height: 70px;
-  top: -70px;
-  background: linear-gradient(180deg, rgba(158, 200, 243, 0), rgba(158, 200, 243, 0.5));
-  border-bottom: 2px solid #9ec8f3;
+  inset: 0;
+  pointer-events: none;
   animation: scan 2.6s ease-in-out infinite;
+}
+.scan::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 70px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sky) 0%, transparent), color-mix(in srgb, var(--sky) 50%, transparent));
+  border-bottom: 2px solid var(--sky);
 }
 @keyframes scan {
   0% {
-    top: -70px;
+    transform: translateY(-100%);
   }
   100% {
-    top: 100%;
+    transform: translateY(0);
   }
 }
 .bx {
@@ -324,6 +357,7 @@ h3 {
 
 /* Chat launcher and panel (Home): anchored bottom right, above the phone nav; right edge follows the 430px phone column. */
 .chat-anchor { position: fixed; z-index: 30; right: max(16px, calc(50vw - 215px + 16px)); bottom: 92px; }
+@media (max-width: 1023px) { .chat-anchor[data-lift] { bottom: 180px; } }
 @media (min-width: 1024px) { .chat-anchor { right: 32px; bottom: 32px; } }
 /* Room under a phone screen's scrolling list so the orb never covers its last row. */
 @media (max-width: 1023px) { .rail.overflow-y-auto::after { content: ""; display: block; flex: none; height: 72px; } }

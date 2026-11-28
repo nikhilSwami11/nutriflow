@@ -26,6 +26,7 @@ Plan of record. Edit as things ship. Product feel: the app decides and makes the
 - Login: `/signin` (Google + guest) already works once the dashboard setup below is done.
 
 ## You do (dashboards, I cannot)
+- Deploy the new edge function: `supabase functions deploy scan-photo` (uses the existing `OPENAI_API_KEY`). Until then shelf and receipt scans fail with "I could not read that photo" and meal photos show the example. Also still pending: migration `0016_feed_shop_now.sql`.
 - ChatGPT / Claude connector (built 2026-11-23, see CLAUDE.md "Connector"):
   a. Apply migration `0010_chat_meal_source.sql` (`supabase db push`), or chat logs fail the `source` check.
   b. Supabase > Authentication > OAuth Server: enable it, Authorization Path `/oauth/consent`, allow dynamic client registration. Site URL must be where the app runs (consent page = Site URL + path).

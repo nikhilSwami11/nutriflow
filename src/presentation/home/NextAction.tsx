@@ -25,8 +25,9 @@ export function NextAction({ next, onOpen, shopElsewhere, children }: { next: No
     primary = <Link href={`/cook/${next.id}`} onClick={onOpen} className={`${BTN} border border-line2 text-ink`}>Start cooking</Link>;
     extras = <button type="button" onClick={ask} className={ROW}>I have some of these</button>;
   } else if (next.state === "check") {
-    primary = <button type="button" onClick={ask} className={`${BTN} border-0 bg-ink text-bg`}>{next.actionText}</button>;
-    extras = cook("Cook anyway");
+    // Assume yes: cook now, check the pantry only if the person asks.
+    primary = <Link href={`/cook/${next.id}`} onClick={onOpen} className={`${BTN} bg-ink text-bg`}>{next.actionText}</Link>;
+    extras = <button type="button" onClick={ask} className={ROW}>Check what I have</button>;
   } else if (next.ready) {
     primary = <Link href={`/cook/${next.id}`} onClick={onOpen} className={`${BTN} bg-ink text-bg`}>{next.actionText}</Link>;
   } else if (next.actionDone) {
@@ -46,6 +47,11 @@ export function NextAction({ next, onOpen, shopElsewhere, children }: { next: No
     <>
       <div className="flex items-center gap-2">
         {primary}
+        {next.swap && (
+          <button type="button" aria-label="New recipe" onClick={() => { close(); next.swap?.(); }} className="hoverable touch flex w-11 shrink-0 items-center justify-center rounded-full border border-line2 bg-transparent text-ink">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4.5L4 9M4 4v5h5M4 13a8 8 0 0 0 14 4.5l2-2.5M20 20v-5h-5" /></svg>
+          </button>
+        )}
         <button type="button" aria-label="More" aria-expanded={more} onClick={() => setMore(!more)} className="hoverable touch flex w-11 shrink-0 items-center justify-center rounded-full border border-line2 bg-transparent text-ink">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
         </button>

@@ -59,6 +59,7 @@ export function ChoresScreen() {
       <div className="rail flex min-h-0 w-full flex-1 flex-col gap-5 overflow-y-auto px-5 pb-4 pt-1 lg:max-w-3xl">
         <Section title="To do" rows={s.toDo} toggle={s.toggle} remove={s.remove} />
         <Section title="Done" rows={s.done} toggle={s.toggle} remove={s.remove} />
+        {!s.isLoading && s.toDo.length === 0 && s.done.length === 0 && <p className="m-0 text-sm text-ink2">No chores yet. Name one below and choose how often.</p>}
 
         <form
           className="flex shrink-0 flex-col gap-3"

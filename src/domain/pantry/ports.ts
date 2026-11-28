@@ -4,6 +4,8 @@ export interface PantryRepository {
   list(): Promise<PantryItem[]>;
   /** Insert or update by id. */
   save(items: PantryItem[]): Promise<void>;
+  /** Deletes items for good (Edit mode). */
+  remove(ids: string[]): Promise<void>;
 }
 
 /** Ids of pantry items on the shopping list. */

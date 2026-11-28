@@ -1,5 +1,6 @@
 "use client";
 import { useRef } from "react";
+import { useModalFocus } from "./useModalFocus";
 
 /**
  * Drag a bottom sheet down to close it (touch and pen; a mouse uses the Close button or Escape).
@@ -8,6 +9,7 @@ import { useRef } from "react";
  */
 export function useSwipeDismiss(onClose: () => void) {
   const sheet = useRef<HTMLDivElement>(null);
+  useModalFocus(sheet);
   const start = useRef<{ y: number; t: number; dragging: boolean } | null>(null);
   const move = (dy: number, settle: boolean) => {
     const el = sheet.current;

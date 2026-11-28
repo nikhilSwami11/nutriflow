@@ -9,7 +9,7 @@ import type { Page } from "./pages";
 
 /** Mobile layout is the design: one column + bottom nav. From lg up it gains the sidebar. */
 /** The voice and chat orb sits bottom right on every screen. `chatNext` lets Home offer "Start cooking" in it. */
-export function AppShell({ current, children, chatNext }: { current: Page; children: React.ReactNode; chatNext?: { id: string; name: string } }) {
+export function AppShell({ current, children, chatNext, stickyAction }: { current: Page; children: React.ReactNode; chatNext?: { id: string; name: string }; /** The screen has a main button pinned above the phone nav: the orb rides above it. */ stickyAction?: boolean }) {
   return (
     <div className="mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-bg text-ink lg:max-w-[1440px] lg:flex-row lg:gap-6 lg:p-6">
       <Sidebar current={current} />
@@ -18,7 +18,7 @@ export function AppShell({ current, children, chatNext }: { current: Page; child
         <ViewTransition>{children}</ViewTransition>
       </div>
       <BottomNav current={current} />
-      <ChatDock next={chatNext} />
+      <ChatDock next={chatNext} lift={stickyAction} />
       <CaptureSheet />
       <CommandMenu />
     </div>

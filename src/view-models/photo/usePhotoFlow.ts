@@ -113,7 +113,7 @@ export function usePhotoFlow() {
     confidence: det.confidence,
     count: `${kept.length} of ${items.length}`,
     tiles: items.map((i) => ({ id: i.id, name: i.name, sub: `${i.confidence}% sure`, on: !off.includes(i.id), color: i.color, toggle: () => toggle(i.id) })),
-    boxes: items.filter((i) => !off.includes(i.id)).map((i) => ({ id: i.id, color: i.color, box: i.box, label: i.name, labelWithAmount: `${i.name} ${i.amount} ${i.unit}` })),
+    boxes: items.filter((i) => !off.includes(i.id) && i.box.w > 0).map((i) => ({ id: i.id, color: i.color, box: i.box, label: i.name, labelWithAmount: `${i.name} ${i.amount} ${i.unit}` })),
     matchedText: matched.length ? `Matched with your pantry: ${matched.join(", ")}.` : "",
     cta: kept.length ? `Estimate with ${kept.length} ${kept.length === 1 ? "item" : "items"}` : "Pick at least one item",
     canEstimate: kept.length > 0,

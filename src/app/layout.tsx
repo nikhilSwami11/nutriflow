@@ -20,7 +20,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${plex.variable} h-full antialiased`}>
+    <html lang="en" className={`${plex.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem("nutriflow.theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}` }} />
+      </head>
       <body className="min-h-full flex flex-col"><Providers><AuthGate>{children}</AuthGate></Providers></body>
     </html>
   );

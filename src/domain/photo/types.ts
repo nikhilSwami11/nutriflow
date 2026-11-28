@@ -1,3 +1,5 @@
+import type { ParsedItem } from "../pantry/types";
+
 /** One thing the detector found on the plate. Nutrition is per unit of `unit`. */
 export interface DetectedItem {
   id: string;
@@ -29,6 +31,13 @@ export interface Detection {
   confidence: number;
   /** "vision" once a real model reads the photo. "context" and "demo" are guesses and must be shown as such. */
   source: "vision" | "context" | "demo";
+}
+
+/** What a photo of a shelf, fridge or receipt can add to the pantry. */
+export type ScanMode = "pantry" | "receipt";
+
+export interface PantryScanner {
+  scan(image: Blob, mode: ScanMode): Promise<ParsedItem[]>;
 }
 
 export interface MealDetector {

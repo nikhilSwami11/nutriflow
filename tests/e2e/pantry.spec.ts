@@ -21,25 +21,28 @@ test.beforeEach(async ({ page }) => {
 test("shows counts and one flat list", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Pantry" })).toBeVisible();
   await expect(page.getByText("9 items, 5 running low")).toBeVisible();
-  await expect(page.getByRole("list", { name: "Pantry items" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "In stock" })).toBeVisible(); // available first
+  await expect(page.getByRole("region", { name: "Out of stock" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Produce" })).toHaveCount(0); // no group headings
 });
 
-test("plus and minus change quantity, minus stops at 0", async ({ page }) => {
+test("Edit shows plus and minus; minus stops at 0; Done goes back to a clean view", async ({ page }) => {
+  await expect(page.getByRole("button", { name: "More Garlic" })).toHaveCount(0); // view mode: no steppers
+  await page.getByRole("button", { name: "Edit" }).click();
   await page.getByRole("button", { name: "More Garlic" }).click();
-  await expect(page.getByText("9 cloves")).toBeVisible();
+  await expect(page.getByText("9 cloves").first()).toBeVisible();
   const less = page.getByRole("button", { name: "Less Butter" });
   await less.click();
-  await expect(page.getByText("0 packs")).toBeVisible();
+  await expect(page.getByText("0 packs").first()).toBeVisible();
 });
 
 test("low and out items are greyed with a plain stock note, and the list button toggles", async ({ page }) => {
-  const list = page.getByRole("list", { name: "Pantry items" });
-  await expect(list.getByText("Out of stock")).toHaveCount(1); // butter
-  await expect(list.getByText("Low stock").first()).toBeVisible();
+  const out = page.getByRole("region", { name: "Out of stock" });
+  await expect(out.getByText("Butter")).toBeVisible();
+  await expect(page.getByRole("region", { name: "In stock" }).getByText(/^Low · /).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "All 9" })).toHaveCount(0); // no tab switch
-  await page.getByRole("button", { name: /Add to list/ }).click();
-  await expect(page.getByText("On the list")).toBeVisible();
+  await out.getByRole("button", { name: "Add to list" }).click(); // an out item goes straight to the shopping list
+  await expect(out.getByText("On the list")).toBeVisible();
 });
 
 test("voice: tell the orb what you have, confirm, pantry updated", async ({ page }) => {
@@ -47,7 +50,16 @@ test("voice: tell the orb what you have, confirm, pantry updated", async ({ page
   await page.getByLabel("Message NutriFlow").fill("I have 3 onions and 2 tomatoes");
   await page.getByRole("button", { name: "Send" }).click();
   await page.getByRole("button", { name: "Add to pantry" }).click();
-  await expect(page.getByText("4 pcs")).toHaveCount(2); // onions 1+3, tomatoes 2+2
+  await expect(page.getByRole("region", { name: "In stock" }).getByText("4 pcs")).toHaveCount(2); // onions 1+3, tomatoes 2+2
+});
+
+test("type what you have and it is added at once; Edit can remove an item", async ({ page }) => {
+  await page.getByLabel("Type what you have").fill("3 onions");
+  await page.getByRole("button", { name: "Add typed item" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Added" })).toBeVisible();
+  await page.getByRole("button", { name: "Edit" }).click();
+  await page.getByRole("button", { name: "Remove Garlic" }).click();
+  await expect(page.getByRole("button", { name: "More Garlic" })).toHaveCount(0);
 });
 
 test("add manually: select squares, export the selection, add them", async ({ page }) => {
@@ -61,5 +73,6 @@ test("add manually: select squares, export the selection, add them", async ({ pa
   await expect(sheet.getByRole("button", { name: "Image" })).toBeVisible();
   await sheet.getByRole("button", { name: "Add 2 to pantry" }).click();
   await expect(sheet).toHaveCount(0);
+  await page.getByRole("button", { name: "Edit" }).click();
   await expect(page.getByRole("button", { name: "More Rice" })).toBeVisible();
 });

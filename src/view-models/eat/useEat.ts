@@ -10,6 +10,7 @@ import { useEatDeps } from "./EatDeps";
 import { usePantry } from "../pantry/usePantry";
 import { useNutritionDeps } from "../nutrition/NutritionDeps";
 import { PROFILE } from "../profile/useProfile";
+import { useRecipeRepo } from "../recipes/RecipeDeps";
 import { useMyRecipes } from "../recipes/useMyRecipes";
 
 export type { Want };
@@ -25,6 +26,8 @@ export function useEat() {
   const deps = useEatDeps();
   const pantry = usePantry();
   const my = useMyRecipes();
+  const recipesRepo = useRecipeRepo();
+  const all = useQuery({ queryKey: ["recipes"], queryFn: () => recipesRepo.list() });
   const qc = useQueryClient();
   const { profile, logs } = useNutritionDeps();
   const [wants, setWants] = useState<Want[]>([]);
@@ -45,6 +48,8 @@ export function useEat() {
     enabled: ready,
     // Written once per wish: coming back to the tab must not write (and pay for) a new meal.
     staleTime: Infinity,
+    // A new wish keeps the last meal on screen until the next one is ready, instead of blanking to a skeleton.
+    placeholderData: (prev) => prev,
     queryFn: async () => {
       const dayMax = prof.data?.range.max ?? DEFAULT_RANGE.max;
       const eaten = (todayLogs.data ?? []).reduce((sum, l) => sum + l.kcal, 0);
@@ -65,10 +70,10 @@ export function useEat() {
     return {
       id: r.id, name: r.name, blurb: r.blurb, tint: r.tint, image: r.image, recipe: r,
       written: m.source === "ai",
-      ready: cook.canCook,
+      ready: cook.canCook || cook.state === "check",
       state: cook.state,
       missing: cook.needed.length,
-      status: cook.canCook ? "Ready to cook" : cook.state === "check" ? "Check what you have" : `Missing ${cook.needed.length}`,
+      status: cook.canCook ? "Ready to cook" : cook.state === "check" ? "Check as you cook" : `Missing ${cook.needed.length}`,
       ask: [...cook.unknown, ...cook.needed].map((x) => ({ name: x.name, qty: x.qty, unit: x.unit, swap: swapText(r, x.name) })),
       assumed: cook.assumed,
       facts: `${r.minutes} min · ${r.kcal} kcal · ${r.protein} g protein`,
@@ -78,9 +83,15 @@ export function useEat() {
 
   return {
     isLoading: !ready || meal.isPending,
+    /** A new meal is being written while the last one is still shown. */
+    busy: meal.isPlaceholderData,
     error: meal.isError ? (meal.error instanceof Error ? meal.error.message : "Could not find a meal.") : null,
     best,
-    ideas: (m?.ideas ?? []) as Idea[],
+    ideas: ((m?.ideas ?? []) as Idea[]).map((i) => {
+      // A built-in idea borrows its dish picture; a written one gets a steady pastel and the drawn bowl.
+      const r = i.recipeId ? all.data?.find((x) => x.id === i.recipeId) : undefined;
+      return { ...i, image: r?.image, tint: r?.tint, facts: r ? `${r.minutes} min · ${r.kcal} kcal` : "" };
+    }),
     wants,
     /** Nothing saved yet: the answer is a guess, so say how to improve it. */
     needsProfile: prof.data === null,

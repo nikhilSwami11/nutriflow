@@ -31,8 +31,10 @@ test("plan does not claim a history", async ({ page }) => {
 test("an empty pantry asks what you have instead of saying everything is missing", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText(/You are missing/)).toHaveCount(0);
-  await expect(page.getByText("Check what you have").first()).toBeVisible();
-  await page.getByRole("button", { name: "Check ingredients" }).first().click();
+  await expect(page.getByText("Check as you cook").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Start cooking" }).first()).toBeVisible();
+  await page.getByRole("button", { name: "More" }).first().click();
+  await page.getByRole("button", { name: "Check what I have" }).first().click();
   const sheet = page.getByRole("dialog", { name: "Do you have these?" });
   await expect(sheet).toBeVisible();
   const first = sheet.getByRole("button", { name: /^I have / }).first();
@@ -64,7 +66,8 @@ test("a new person is asked three questions once, and the answers are kept", asy
 
 test("don't have: offers a stand-in first, and shopping only if asked", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Check ingredients" }).first().click();
+  await page.getByRole("button", { name: "More" }).first().click();
+  await page.getByRole("button", { name: "Check what I have" }).first().click();
   const sheet = page.getByRole("dialog", { name: "Do you have these?" });
   const nos = sheet.getByRole("button", { name: /^Don't have / });
   const n = await nos.count();

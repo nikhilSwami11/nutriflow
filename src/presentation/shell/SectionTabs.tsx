@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SECTION, SECTION_PAGES, type Page } from "./pages";
 
-/** Switch between the pages of one section (Food: what to eat, recipes, plan; Kitchen: pantry, shopping). */
+/** Switch between the pages of one section (Food: suggested, plan; Kitchen: pantry, shopping). */
 export function SectionTabs({ current }: { current: Page }) {
   const section = SECTION[current];
   const pages = SECTION_PAGES[section];

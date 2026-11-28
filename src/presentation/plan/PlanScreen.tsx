@@ -55,7 +55,7 @@ export function PlanScreen() {
                   tabIndex={p.selected === i ? 0 : -1}
                   onClick={() => p.select(i)}
                   onKeyDown={(e) => move(e, p.days.length, i)}
-                  className={`flex min-h-[64px] w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border text-xs transition-colors ${p.selected === i ? "border-transparent bg-ink text-bg" : "border-line2 bg-bg text-ink2 hover:border-ink"}`}
+                  className={`flex min-h-[64px] w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border text-xs transition-colors ${p.selected === i ? "border-transparent bg-mint text-onp" : "border-line2 bg-bg text-ink2 hover:border-ink"}`}
                 >
                   <span>{d.short}</span>
                   <span className="text-base font-medium tabular-nums">{d.dayNumber}</span>
@@ -106,6 +106,7 @@ export function PlanScreen() {
             <ul className="m-0 mt-3 flex list-none flex-col gap-1 border-t border-line p-0 pt-3 text-sm text-ink2" aria-label="Notes">
               {p.notes.map((n) => <li key={n}>{n}</li>)}
             </ul>
+            {p.canFixProtein && <button type="button" onClick={() => p.setFocus("protein")} className="touch mt-3 rounded-full border-0 bg-ink px-5 text-sm font-medium text-bg">Fix it: plan for protein</button>}
           </section>
         </div>
       )}

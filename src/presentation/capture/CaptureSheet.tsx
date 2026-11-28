@@ -5,10 +5,10 @@ import { useCaptureSheet, type CamMode } from "@/view-models/capture/useCaptureS
 import { Orb } from "../pantry/Orb";
 import { useSwipeDismiss } from "../shared/useSwipeDismiss";
 
-const MODES: { id: CamMode; label: string; ready: boolean }[] = [
-  { id: "meal", label: "Meal", ready: true },
-  { id: "pantry", label: "Pantry shelf", ready: false },
-  { id: "receipt", label: "Receipt", ready: false },
+const MODES: { id: CamMode; label: string; needsAccount: boolean }[] = [
+  { id: "meal", label: "Meal", needsAccount: false },
+  { id: "pantry", label: "Pantry shelf", needsAccount: true },
+  { id: "receipt", label: "Receipt", needsAccount: true },
 ];
 const EXAMPLES = ["I have 3 onions, 2 tomatoes and butter", "What can I make tonight?", "Start cooking"];
 const tab = (on: boolean) => `min-h-11 rounded-full px-4 text-sm ${on ? "bg-bg font-medium text-ink shadow-[0_1px_5px_rgba(0,0,0,0.10)]" : "text-ink2"}`;
@@ -30,7 +30,7 @@ function Body() {
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col justify-end">
-      <button type="button" aria-label="Close" onClick={s.close} className="absolute inset-0 bg-black/30" />
+      <button type="button" tabIndex={-1} aria-label="Close" onClick={s.close} className="absolute inset-0 bg-black/30" />
       <div ref={sheet} role="dialog" aria-modal="true" aria-label="Camera or voice" className="story-in relative mx-auto flex w-full max-w-[460px] flex-col gap-4 rounded-t-[28px] bg-bg px-5 pb-[max(30px,env(safe-area-inset-bottom))] pt-2.5">
         <div {...handle} className="flex touch-none flex-col gap-4">
         <span className="mx-auto block h-1 w-10 rounded-sm bg-line2" aria-hidden="true" />
@@ -47,7 +47,7 @@ function Body() {
 
         {s.tab === "camera" ? (
           <>
-            <div className="relative flex h-[280px] items-center justify-center overflow-hidden rounded-3xl bg-track">
+            <div className="relative flex h-[280px] items-center justify-center overflow-hidden rounded-[20px] bg-track">
               <video ref={setVideo} playsInline muted aria-label="Camera preview" className={`absolute inset-0 h-full w-full object-cover ${s.cam.state === "live" ? "" : "hidden"}`} />
               <span aria-hidden="true" className={`${corner} left-[18px] top-[18px] rounded-tl-lg border-l-2 border-t-2`} />
               <span aria-hidden="true" className={`${corner} right-[18px] top-[18px] rounded-tr-lg border-r-2 border-t-2`} />
@@ -62,9 +62,27 @@ function Body() {
             </div>
             <div role="group" aria-label="What to scan" className="flex flex-wrap justify-center gap-2">
               {MODES.map((m) => (
-                <button key={m.id} type="button" aria-pressed={s.mode === m.id} disabled={!m.ready} onClick={() => s.setMode(m.id)} title={m.ready ? undefined : "Needs photo recognition, which is not connected yet"} className={`touch rounded-full border px-4 text-sm ${s.mode === m.id ? "border-transparent bg-mint text-onp" : "border-line2 text-ink"} disabled:opacity-40`}>{m.label}</button>
+                <button key={m.id} type="button" aria-pressed={s.mode === m.id} disabled={m.needsAccount && !s.canScan} onClick={() => s.setMode(m.id)} title={m.needsAccount && !s.canScan ? "Sign in to read shelf and receipt photos" : undefined} className={`touch rounded-full border px-4 text-sm ${s.mode === m.id ? "border-transparent bg-mint text-onp" : "border-line2 text-ink"} disabled:opacity-40`}>{m.label}</button>
               ))}
             </div>
+            {(s.scanning || s.scanStatus || s.scanned) && (
+              <div role="status" className="flex flex-col gap-3 rounded-[20px] border border-line p-4">
+                {s.scanning && <p className="m-0 text-sm text-ink2">Reading the photo</p>}
+                {!s.scanning && s.scanStatus && !s.scanned && <p className="m-0 text-sm text-ink2">{s.scanStatus}</p>}
+                {s.scanned && (
+                  <>
+                    <p className="m-0 text-sm text-ink2">I found these. Add them to your pantry?</p>
+                    <div className="flex flex-wrap gap-2">
+                      {s.scanned.chips.map((c) => <span key={c.name} className="rounded-full border border-line2 px-3.5 py-[7px] text-sm"><span className="font-medium">{c.name}</span> <span className="text-muted">{c.qty}</span></span>)}
+                    </div>
+                    <div className="flex gap-2.5">
+                      <button type="button" onClick={() => void s.scanned?.add()} className="min-h-12 flex-1 rounded-full bg-ink text-sm font-medium text-bg">Add to pantry</button>
+                      <button type="button" onClick={s.scanned.redo} className="min-h-12 rounded-full border border-line2 px-[18px] text-sm">Retake</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             <div className="flex items-center justify-between px-3">
               <input ref={file} type="file" accept="image/*" className="sr-only" aria-label="Photo file" tabIndex={-1} onChange={(e) => s.fromFile(e.target.files?.[0])} />
               <button type="button" aria-label="Choose from photos" onClick={() => file.current?.click()} className="flex h-12 w-12 items-center justify-center rounded-2xl border border-line2 bg-bg">
@@ -78,7 +96,7 @@ function Body() {
           </>
         ) : (
           <>
-            <div className="relative flex h-[216px] items-center justify-center rounded-3xl bg-panel">
+            <div className="relative flex h-[216px] items-center justify-center rounded-[20px] bg-panel">
               <button type="button" onClick={s.voice.mic} aria-pressed={s.voice.listening} aria-label={s.voice.listening ? "Stop listening" : "Start listening"} className="relative flex h-[76px] w-[76px] items-center justify-center rounded-full bg-ink p-0 text-bg">
                 <Orb active={s.voice.listening} />
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>

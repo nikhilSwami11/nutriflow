@@ -165,6 +165,10 @@ export function ShoppingScreen() {
           </form>
         )}
 
+        {!s.isLoading && !editing && s.week && (
+          <button type="button" onClick={() => void s.week?.add()} className="touch mx-5 shrink-0 self-start rounded-full border border-line2 bg-transparent px-4 text-sm font-medium text-ink">Add the whole week · {s.week.count} more</button>
+        )}
+
         {s.isLoading && s.rows.length === 0 && <Skeleton />}
         {s.rows.length > 0 && (
           <section aria-label="To buy">
@@ -180,7 +184,7 @@ export function ShoppingScreen() {
           <div className="flex flex-col items-start gap-3 px-5">
             <p className="m-0 text-[15px] font-medium">Start with your pantry</p>
             <p className="m-0 max-w-[40ch] text-sm text-ink2">Once I know what you have, what your meals need lands here by itself.</p>
-            <Link href="/pantry" className="touch inline-flex items-center rounded-full bg-ink px-5 text-[15px] font-medium text-bg">Open pantry</Link>
+            <Link href="/pantry" className="touch inline-flex items-center rounded-full bg-ink px-5 text-[15px] font-medium text-bg">Add what you have</Link>
           </div>
         )}
         {!s.isLoading && s.rows.length === 0 && n === 0 && !s.pantryEmpty && (

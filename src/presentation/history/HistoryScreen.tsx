@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useHistory, type HistoryCell } from "@/view-models/history/useHistory";
 import { RecipeArt } from "../recipes/RecipeArt";
 import { AppShell } from "../shell/AppShell";
@@ -37,7 +38,12 @@ export function HistoryScreen() {
   return (
     <AppShell current="history">
       <header className="flex shrink-0 items-center justify-between px-5 pb-2 pt-4 lg:max-w-3xl">
-        <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">History</h1>
+        <div className="flex items-center gap-1">
+          <Link href="/profile" aria-label="Back to profile" className="-ml-3 flex h-11 w-11 items-center justify-center text-ink">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+          </Link>
+          <h1 className="m-0 text-[26px] font-medium tracking-[-0.02em]">History</h1>
+        </div>
         <div className="flex items-center gap-1">
           <button type="button" onClick={h.prev} aria-label="Previous month" className="flex h-11 w-11 items-center justify-center rounded-full border border-line2">{arrow("M15 5l-7 7 7 7")}</button>
           <span className="min-w-[132px] text-center text-[15px] font-medium">{h.title}</span>

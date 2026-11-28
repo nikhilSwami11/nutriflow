@@ -58,6 +58,11 @@ export class SupabasePantryRepository implements PantryRepository {
     const { error } = await this.db.from("pantry_items").upsert(items.map(toRow));
     if (error) throw error;
   }
+  async remove(ids: string[]) {
+    if (!ids.length) return;
+    const { error } = await this.db.from("pantry_items").delete().in("id", ids);
+    if (error) throw error;
+  }
 }
 
 export class SupabaseShoppingListRepository implements ShoppingListRepository {

@@ -373,7 +373,7 @@ export function LoopAnimation() {
           {CAPTIONS.map((k) => (
             <div key={k.c} className={`${k.c} [grid-area:1/1]`}>
               <p className="m-0 text-sm font-medium text-ink lg:text-lg">{k.title}</p>
-              <p className="m-0 mt-1 hidden text-sm leading-snug text-ink2 lg:block lg:text-[15px]">
+              <p className="m-0 mt-1 hidden [text-wrap:pretty] text-sm leading-snug text-ink2 lg:block lg:text-[15px]">
                 {k.line}
               </p>
             </div>

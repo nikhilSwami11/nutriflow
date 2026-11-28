@@ -33,7 +33,7 @@ export function useCook(id: string, servingsMade?: number) {
   const repo = useRecipeRepo();
   const { pantry, newId } = usePantryDeps();
   const { logs } = useNutritionDeps();
-  const { habits, pendingLogs } = useCookDeps();
+  const { habits, leftovers, pendingLogs } = useCookDeps();
   const qc = useQueryClient();
   const pantryView = usePantry();
   const my = useMyRecipes();
@@ -69,7 +69,7 @@ export function useCook(id: string, servingsMade?: number) {
   // Re-render while a timer runs. The countdown itself reads the clock, so a slow tab stays accurate.
   useEffect(() => {
     if (!running) return;
-    const t = setInterval(() => setNow(clock()), 250);
+    const t = setInterval(() => setNow(clock()), 1000);
     return () => clearInterval(t);
   }, [running]);
 
@@ -79,6 +79,8 @@ export function useCook(id: string, servingsMade?: number) {
     if (finished && buzzed.current !== timerKey) {
       buzzed.current = timerKey;
       navigator.vibrate?.([200, 100, 200]);
+      // iOS has no vibration: say it, for hands that are busy and eyes that are not on the screen.
+      speak("Time is up");
     }
   }, [finished, timerKey]);
 
@@ -141,8 +143,8 @@ export function useCook(id: string, servingsMade?: number) {
     setSubmitting(true);
     setError(null);
     try {
-      const r = await finishCooking({ pantry, logs, habits, newId }, { recipe, servingsMade: made, servingsEaten: eaten, date: toDateKey(new Date()) });
-      await Promise.all([qc.invalidateQueries({ queryKey: ["meal-logs"] }), qc.invalidateQueries({ queryKey: ["pantry"] }), qc.invalidateQueries({ queryKey: ["habit", id] })]);
+      const r = await finishCooking({ pantry, logs, habits, leftovers, newId }, { recipe, servingsMade: made, servingsEaten: eaten, date: toDateKey(new Date()) });
+      await Promise.all([qc.invalidateQueries({ queryKey: ["meal-logs"] }), qc.invalidateQueries({ queryKey: ["pantry"] }), qc.invalidateQueries({ queryKey: ["habit", id] }), qc.invalidateQueries({ queryKey: ["leftovers"] })]);
       setResult(r);
       setPhase("done");
       // Cooked it: it belongs in Recipes now. A failure here never undoes the logged meal.

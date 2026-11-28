@@ -4,16 +4,14 @@ export type Page = "home" | "recipes" | "plan" | "history" | "pantry" | "chores"
 export type Section = "today" | "food" | "kitchen" | "chores" | "profile";
 
 export const SECTION: Record<Page, Section> = {
-  home: "today", eat: "food", recipes: "food", plan: "food", history: "food", pantry: "kitchen", shopping: "kitchen", chores: "chores", profile: "profile",
+  home: "today", eat: "food", recipes: "food", plan: "food", history: "profile", pantry: "kitchen", shopping: "kitchen", chores: "chores", profile: "profile",
 };
 
 /** Pages inside a section, in switch order. The first is where the nav link goes. */
 export const SECTION_PAGES: Partial<Record<Section, { page: Page; href: string; label: string }[]>> = {
   food: [
-    { page: "eat", href: "/eat", label: "What to eat" },
-    { page: "recipes", href: "/recipes", label: "Recipes" },
+    { page: "eat", href: "/eat", label: "Suggested" },
     { page: "plan", href: "/plan", label: "Plan" },
-    { page: "history", href: "/history", label: "History" },
   ],
   kitchen: [
     { page: "pantry", href: "/pantry", label: "Pantry" },

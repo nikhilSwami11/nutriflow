@@ -40,7 +40,7 @@ export function HaveSheet({ dish, items, assumed, onClose }: { dish: string; ite
   // In the body, not where it is opened: an animated parent (the desktop cards) would turn "fixed" into "inside the card".
   return createPortal(
     <div className="fixed inset-0 z-40 flex flex-col justify-end">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/30" />
+      <button type="button" tabIndex={-1} aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/30" />
       <div ref={sheet} role="dialog" aria-modal="true" aria-label="Do you have these?" className="story-in relative mx-auto flex max-h-[88dvh] w-full max-w-[460px] flex-col gap-3 rounded-t-[28px] bg-bg px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-2.5">
         <div {...handle} className="flex touch-none flex-col gap-3">
           <span className="mx-auto block h-1 w-10 rounded-sm bg-line2" aria-hidden="true" />

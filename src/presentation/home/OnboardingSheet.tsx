@@ -1,5 +1,6 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useModalFocus } from "../shared/useModalFocus";
 import { ALWAYS, DIET_LABEL, DIETS, GOALS, useOnboarding } from "@/view-models/profile/useOnboarding";
 
 const NOTE = { anything: "No limits", vegetarian: "No meat or fish", eggetarian: "Vegetarian plus eggs", vegan: "No animal products" } as const;
@@ -9,6 +10,8 @@ const pick = (on: boolean) => `touch rounded-2xl border px-4 py-3 text-left ${on
 export function OnboardingSheet() {
   const o = useOnboarding();
   const { skip } = o;
+  const dialog = useRef<HTMLDivElement>(null);
+  useModalFocus(dialog, o.show);
   useEffect(() => {
     if (!o.show) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && skip();
@@ -20,8 +23,8 @@ export function OnboardingSheet() {
   const last = o.step === o.steps - 1;
   return (
     <div className="fixed inset-0 z-40 flex flex-col justify-end">
-      <button type="button" aria-label="Skip for now" onClick={o.skip} className="absolute inset-0 bg-black/30" />
-      <div role="dialog" aria-modal="true" aria-label="A few questions" className="story-in relative mx-auto flex max-h-[90dvh] w-full max-w-[460px] flex-col gap-4 rounded-t-[28px] bg-bg px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-4">
+      <button type="button" tabIndex={-1} aria-label="Skip for now" onClick={o.skip} className="absolute inset-0 bg-black/30" />
+      <div ref={dialog} role="dialog" aria-modal="true" aria-label="A few questions" className="story-in relative mx-auto flex max-h-[90dvh] w-full max-w-[460px] flex-col gap-4 rounded-t-[28px] bg-bg px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-4">
         <div className="flex items-center justify-between">
           <div role="progressbar" aria-label="Question" aria-valuemin={1} aria-valuemax={o.steps} aria-valuenow={o.step + 1} className="flex gap-1.5">
             {Array.from({ length: o.steps }, (_, i) => <span key={i} className={`h-1.5 w-8 rounded-full ${i <= o.step ? "bg-ink" : "bg-track"}`} />)}

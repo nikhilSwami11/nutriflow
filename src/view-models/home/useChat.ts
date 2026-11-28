@@ -85,7 +85,7 @@ export function useChat(next: { id: string; name: string } | undefined) {
         history.current = turn.history;
         push({ from: "bot", text: turn.text, go: buttonFor(turn.used) });
         // Tools may have logged a meal or changed the pantry: let every screen read fresh data.
-        if (turn.used.length) void queries.invalidateQueries();
+        if (turn.used.length) void queries.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "what-to-eat" });
         return;
       } catch {
         // Fall through to the rules: the chat never leaves a line unanswered.

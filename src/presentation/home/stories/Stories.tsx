@@ -37,7 +37,7 @@ export function Stories({ s }: { s: HomeModel["stories"] }) {
               >
                 <span className="flex h-full w-full items-center justify-center rounded-full border-[3px] border-bg" style={{ background: st.tint }}>
                   {st.kind === "meal" ? <RecipeArt image={st.meal.image} size={st.meal.image ? 46 : 50} /> : (
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICON[st.kind]}</svg>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--onp)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICON[st.kind]}</svg>
                   )}
                 </span>
                 {eaten && (

@@ -51,7 +51,7 @@ Goal: three things only: the next meal, one chart, the pantry nudge. Plus storie
 Must:
 - Up next: the meal picked by the clock (first uneaten meal whose time has not passed, else tomorrow's first).
 - One plain line ("Ready to cook" or "You are missing 5 things") and ONE main action: Start cooking, or Add 5 to shopping.
-- "Check ingredients" when the app is unsure; the "Do you have these?" sheet lets the person answer each item.
+- When the app is unsure (pantry not set up) the main button is still "Start cooking"; "Check what I have" sits in More and opens the "Do you have these?" sheet.
 - Mark eaten logs one serving and moves Up next on; unmark removes the log.
 - Chart: today, 7 days, 30 days; tap or hover picks a day; keyboard works (arrows, Home/End).
 - Pantry nudge puts running-low items on the shopping list.
@@ -114,7 +114,7 @@ Goal: hands-busy cooking. One screen, actions not steps.
 
 Must:
 - Action strip (Wash, Chop, Boil...) always on screen; current in mint, done ones ticked.
-- Card: animation, tasks that tick one by one, Look for, Tip, big timer on timed tasks, Parallel, Ask.
+- Card: animation, tasks that tick one by one, Look for, Tip, big timer on timed tasks, Meanwhile (what can run at the same time), Ask.
 - Swipe or arrows move between actions; main button ticks and moves on; Finish on the last.
 - Views: Ingredients (tick list with stand-ins), Recipe (whole recipe by part).
 - Timer keeps true time when the phone sleeps; screen stays awake; optional voice ("next", "start timer").

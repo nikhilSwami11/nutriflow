@@ -92,17 +92,19 @@ export function StoryViewer({ s, index, setIndex, onClose }: { s: HomeModel["sto
         onPointerCancel={() => setPaused(false)}
         onPointerEnter={(e) => e.pointerType === "mouse" && setPaused(true)}
         onPointerLeave={() => setPaused(false)}
-        className="relative flex h-dvh w-full flex-col overflow-hidden text-onp lg:h-[min(760px,90dvh)] lg:w-[390px] lg:rounded-3xl"
+        onFocus={(e) => e.target.matches(":focus-visible") && setPaused(true)}
+        onBlur={() => setPaused(false)}
+        className="relative flex h-dvh w-full flex-col overflow-hidden text-onp lg:h-[min(760px,90dvh)] lg:w-[390px] lg:rounded-[28px]"
         style={{ background: st.tint }}
       >
         <div className="absolute inset-x-0 top-0 z-20 flex gap-1 px-3 pt-3" aria-hidden="true">
           {items.map((it, i) => (
             <span key={it.id} className="h-[3px] flex-1 overflow-hidden rounded-full bg-black/15">
-              {(i < index || (i === index && !auto)) && <span className="block h-full w-full bg-ink" />}
+              {(i < index || (i === index && !auto)) && <span className="block h-full w-full bg-onp" />}
               {i === index && auto && (
                 <span
                   key={it.id}
-                  className="story-bar block h-full w-full bg-ink"
+                  className="story-bar block h-full w-full bg-onp"
                   style={{ "--story-ms": `${SLIDE_MS}ms`, animationPlayState: hold ? "paused" : "running" } as React.CSSProperties}
                   onAnimationEnd={next}
                 />

@@ -16,7 +16,7 @@ const off = "font-normal text-ink2";
 export function Sidebar({ current }: { current: Page }) {
   const items = [...NAV, { section: "profile" as const, href: "/profile", label: "Profile", icon: PROFILE_ICON }];
   return (
-    <nav aria-label="Main" className="hidden w-[232px] shrink-0 flex-col gap-7 self-start rounded-3xl border border-line bg-bg px-4 py-6 lg:flex">
+    <nav aria-label="Main" className="hidden w-[232px] shrink-0 flex-col gap-7 self-start rounded-[20px] border border-line bg-bg px-4 py-6 lg:flex">
       <div className="flex items-center gap-2.5 px-3 text-xl font-semibold tracking-[-0.01em]">
         <span className="block h-3 w-3 rounded-full bg-ink" />
         <span>NutriFlow</span>

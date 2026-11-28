@@ -30,7 +30,7 @@ export function AddItemsSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col justify-end">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/30" />
+      <button type="button" tabIndex={-1} aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/30" />
       <div ref={sheet} role="dialog" aria-modal="true" aria-label="Add items" className="story-in relative mx-auto flex max-h-[92dvh] w-full max-w-[520px] flex-col gap-3 rounded-t-[28px] bg-bg px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-2.5">
         <div {...handle} className="flex touch-none flex-col gap-3">
           <span className="mx-auto block h-1 w-10 rounded-sm bg-line2" aria-hidden="true" />
@@ -55,7 +55,7 @@ export function AddItemsSheet({ onClose }: { onClose: () => void }) {
               </button>
             </li>
           ))}
-          {a.tiles.length === 0 && <li className="col-span-full text-sm text-ink2">Nothing matches. Use “Tell me what you have” for anything else.</li>}
+          {a.tiles.length === 0 && <li className="col-span-full text-sm text-ink2">Nothing matches. Use the mic in the chat orb for anything else.</li>}
         </ul>
 
         {a.count > 0 && (

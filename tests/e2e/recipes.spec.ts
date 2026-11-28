@@ -10,7 +10,7 @@ test("Recipes holds only saved recipes: empty at first, then what you save, with
   await page.goto("/recipes/dal-tadka");
   await page.getByRole("button", { name: "Save recipe" }).click();
   await expect(page.getByRole("button", { name: "Save recipe" })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("navigation", { name: "Food" }).getByRole("link", { name: "Recipes" }).click();
+  await page.getByRole("link", { name: "Back" }).click();
   await expect(page.getByRole("link", { name: "Dal tadka" })).toBeVisible();
   await expect(page.getByText(/\d+ ready to cook/)).toBeVisible();
   await page.getByRole("textbox", { name: "Search recipes" }).fill("omelette");
@@ -52,6 +52,6 @@ test("edit a recipe by hand: a built-in becomes your own saved copy", async ({ p
   await expect(page.getByRole("heading", { name: "Dal tadka, my way", level: 1 })).toBeVisible();
   await expect(page).toHaveURL(/\/recipes\/ai-/);
   await expect(page.getByRole("button", { name: "Save recipe" })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("navigation", { name: "Food" }).getByRole("link", { name: "Recipes" }).click();
+  await page.getByRole("link", { name: "Back" }).click();
   await expect(page.getByRole("link", { name: "Dal tadka, my way" })).toBeVisible();
 });

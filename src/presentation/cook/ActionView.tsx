@@ -31,7 +31,6 @@ export function ActionCard({ c }: { c: CookModel }) {
       <div className="flex items-center gap-3">
         <div className="w-[96px] shrink-0"><CookMotion verb={x.verb} tint={c.recipe.tint} image={c.recipe.image} small /></div>
         <div className="flex flex-col items-start gap-1.5">
-          <span className="rounded-full px-3 py-1 text-xs font-medium text-onp" style={{ background: color(x.verb) }}>{x.verb}</span>
           <span className="text-sm text-muted tabular-nums">Action {c.position.number} of {c.position.count}{x.minutes ? ` · ${x.minutes} min` : ""}</span>
         </div>
       </div>
@@ -50,6 +49,7 @@ export function ActionCard({ c }: { c: CookModel }) {
 
       {c.timer && (
         <div aria-label="Timer" role="group" className="flex items-center justify-between gap-3 rounded-[20px] bg-panel py-3 pl-5 pr-3">
+          <span role="status" className="sr-only">{c.timer.done ? "Time is up" : ""}</span>
           <div role="timer" aria-live="off" className="text-[48px] font-medium leading-none tracking-[-0.02em] tabular-nums">{c.timer.done ? "0:00" : c.timer.label}</div>
           {c.timer.done ? (
             <span className="rounded-full bg-mint px-4 py-3 text-sm font-medium text-onp">Time&apos;s up</span>
@@ -62,7 +62,7 @@ export function ActionCard({ c }: { c: CookModel }) {
       <GuideCards look={c.look} tip={c.tip} />
 
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={() => setParallel((p) => !p)} aria-pressed={parallel} className={`touch rounded-full border px-4 text-sm font-medium ${parallel ? "border-transparent bg-sky text-onp" : "border-line2 bg-bg text-ink"}`}>Parallel</button>
+        <button type="button" onClick={() => setParallel((p) => !p)} aria-pressed={parallel} className={`touch rounded-full border px-4 text-sm font-medium ${parallel ? "border-transparent bg-sky text-onp" : "border-line2 bg-bg text-ink"}`}>Meanwhile</button>
         <button type="button" onClick={() => c.ask.setOpen(true)} className="hoverable touch inline-flex items-center gap-2 rounded-full border border-line2 px-4 text-sm font-medium">Ask about this step</button>
       </div>
       {parallel && (

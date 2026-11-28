@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const story = (page: import("@playwright/test").Page, label: string) => page.getByRole("button", { name: new RegExp(`^${label} story`) });
 const dialog = (page: import("@playwright/test").Page) => page.getByRole("dialog");
-// Eat next goes by the clock: pin it to noon so breakfast (eaten in the demo) has passed and lunch is next.
+// Up next goes by the clock: pin it to noon so breakfast (eaten in the demo) has passed and lunch is next.
 const noon = () => { const d = new Date(); d.setHours(12, 0, 0, 0); return d; };
 test.beforeEach(async ({ page }) => { await page.clock.setSystemTime(noon()); });
 test.describe("with reduced motion (nothing advances on its own)", () => {
@@ -10,30 +10,29 @@ test.describe("with reduced motion (nothing advances on its own)", () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
-    await expect(story(page, "Eat next")).toBeVisible();
+    await expect(story(page, "Prep")).toBeVisible();
   });
 
-  test("one Eat next story, no meal names in the row", async ({ page }) => {
-    for (const l of ["Eat next", "Pantry"]) await expect(story(page, l)).toBeVisible();
+  test("no Eat next story while meals are still ahead today (the Up next card says it), no meal names in the row", async ({ page }) => {
+    for (const l of ["Prep", "Pantry"]) await expect(story(page, l)).toBeVisible();
     for (const l of ["Breakfast", "Lunch", "Snack", "Dinner"]) await expect(story(page, l)).toHaveCount(0);
-    await expect(story(page, "Eat next")).toHaveAccessibleName("Eat next story, new");
+    await expect(story(page, "Prep")).toHaveAccessibleName("Prep story, new");
   });
 
-  test("Eat next shows the dish with one main action; Escape closes and returns focus", async ({ page }) => {
-    await story(page, "Eat next").click();
-    await expect(dialog(page)).toHaveAccessibleName("Eat next story");
-    await expect(dialog(page).getByRole("link", { name: "Start cooking" }).or(dialog(page).getByRole("button", { name: /^Add \d+ to shopping$/ }))).toBeVisible();
+  test("a story opens as a dialog; Escape closes it and returns focus", async ({ page }) => {
+    await story(page, "Prep").click();
+    await expect(dialog(page)).toHaveAccessibleName("Prep story");
     await page.keyboard.press("Escape");
     await expect(dialog(page)).toHaveCount(0);
-    await expect(story(page, "Eat next")).toBeFocused();
-    await expect(story(page, "Eat next")).toHaveAccessibleName("Eat next story, seen");
+    await expect(story(page, "Prep")).toBeFocused();
+    await expect(story(page, "Prep")).toHaveAccessibleName("Prep story, seen");
   });
 
-  test("marking eaten moves Eat next on to the following meal", async ({ page }) => {
-    await expect(page.getByRole("article", { name: "Up next" })).toContainText("Lunch");
-    await story(page, "Eat next").click();
-    await dialog(page).getByRole("button", { name: "Mark eaten" }).click();
-    await page.keyboard.press("Escape");
+  test("marking eaten on the card moves Up next on to the following meal", async ({ page }) => {
+    const card = page.getByRole("article", { name: "Up next" });
+    await expect(card).toContainText("Lunch");
+    await card.getByRole("button", { name: "More" }).click();
+    await card.getByRole("button", { name: "Mark eaten" }).click();
     await expect(page.getByRole("article", { name: "Up next" })).toContainText("Snack");
   });
 
@@ -69,12 +68,12 @@ test.describe("with reduced motion (nothing advances on its own)", () => {
   });
 
   test("arrow keys and tap zones move between stories; the last one closes", async ({ page }) => {
-    await story(page, "Eat next").click();
-    await expect(dialog(page)).toHaveAccessibleName("Eat next story");
+    await story(page, "Prep").click();
+    await expect(dialog(page)).toHaveAccessibleName("Prep story");
     await page.keyboard.press("ArrowRight");
-    await expect(dialog(page)).not.toHaveAccessibleName("Eat next story");
+    await expect(dialog(page)).not.toHaveAccessibleName("Prep story");
     await page.keyboard.press("ArrowLeft");
-    await expect(dialog(page)).toHaveAccessibleName("Eat next story");
+    await expect(dialog(page)).toHaveAccessibleName("Prep story");
     for (let i = 0; i < 20 && (await dialog(page).count()); i++) await page.keyboard.press("ArrowRight");
     await expect(dialog(page)).toHaveCount(0);
   });
@@ -98,16 +97,16 @@ test.describe("with motion", () => {
     test.setTimeout(30_000);
     await page.goto("/");
     // a real finger taps; a mobile "click" would also send a mouse hover, which pauses the story
-    if (isMobile) await story(page, "Eat next").tap();
-    else await story(page, "Eat next").click();
-    await expect(dialog(page)).toHaveAccessibleName("Eat next story");
+    if (isMobile) await story(page, "Prep").tap();
+    else await story(page, "Prep").click();
+    await expect(dialog(page)).toHaveAccessibleName("Prep story");
     if (!isMobile) {
       // hovering pauses: after well over one slide duration it is still on the same slide
       await page.mouse.move(await dialog(page).evaluate((e) => e.getBoundingClientRect().x + 100), 400);
       await page.waitForTimeout(7500);
-      await expect(dialog(page)).toHaveAccessibleName("Eat next story");
+      await expect(dialog(page)).toHaveAccessibleName("Prep story");
       await page.mouse.move(2, 2);
     }
-    await expect(dialog(page)).not.toHaveAccessibleName("Eat next story", { timeout: 9000 });
+    await expect(dialog(page)).not.toHaveAccessibleName("Prep story", { timeout: 9000 });
   });
 });
