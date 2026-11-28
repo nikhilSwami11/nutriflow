@@ -31,7 +31,6 @@ test.describe("with reduced motion (nothing advances on its own)", () => {
   test("marking eaten on the card moves Up next on to the following meal", async ({ page }) => {
     const card = page.getByRole("article", { name: "Up next" });
     await expect(card).toContainText("Lunch");
-    await card.getByRole("button", { name: "More" }).click();
     await card.getByRole("button", { name: "Mark eaten" }).click();
     await expect(page.getByRole("article", { name: "Up next" })).toContainText("Snack");
   });

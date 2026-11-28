@@ -19,20 +19,13 @@ export function NextMealHero({ next, onOpen, onEaten, shopElsewhere }: { next: H
         <span className="min-w-0 flex-1">
           <span className="block text-xs font-medium text-muted">Up next · {next.meal}</span>
           <span className="mt-1 block text-[22px] font-medium leading-tight tracking-[-0.01em] lg:text-2xl">{dishVerb(next.name)} {next.name.toLowerCase()}</span>
-          <span className="mt-1.5 block text-sm text-ink2 tabular-nums">{next.readyText} · {next.minutes} min</span>
+          <span className="mt-1.5 block text-sm text-ink2 tabular-nums">{next.readyText ? `${next.readyText} · ` : ""}{next.minutes} min</span>
         </span>
         <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[20px] transition-transform duration-300 group-hover:scale-[1.04] lg:h-28 lg:w-28" style={{ background: next.tint }} aria-hidden="true">
           <RecipeArt image={next.image} size={84} eager />
         </span>
       </Link>
-      <NextAction next={next} onOpen={onOpen} shopElsewhere={shopElsewhere}>
-        {(close) => (
-          <>
-            <button type="button" onClick={() => { close(); onEaten?.(); next.toggle(); }} className="touch flex w-full items-center bg-transparent px-4 text-left text-[15px] text-ink">Mark eaten</button>
-            <Link href="/eat" className="touch flex w-full items-center px-4 text-[15px] text-ink">More ideas</Link>
-          </>
-        )}
-      </NextAction>
+      <NextAction next={next} onOpen={onOpen} onEaten={() => { onEaten?.(); next.toggle(); }} shopElsewhere={shopElsewhere} />
     </article>
   );
 }

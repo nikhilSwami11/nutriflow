@@ -14,9 +14,18 @@ export async function setTargetRange(repo: ProfileRepository, range: TargetRange
 }
 
 /** Saves the whole profile from the profile screen. Dislikes are trimmed, lower-cased and de-duplicated. */
-export async function saveProfile(repo: ProfileRepository, input: { range: TargetRange; diet: Diet; dislikes: string[] }): Promise<Profile> {
+export async function saveProfile(repo: ProfileRepository, input: { range: TargetRange; diet: Diet; dislikes: string[]; allergens?: string[]; appliances?: string[]; heightCm?: number; weightKg?: number }): Promise<Profile> {
   if (!(input.range.min > 0) || !(input.range.max > input.range.min)) throw new Error("Range needs 0 < min < max");
-  const profile: Profile = { range: input.range, diet: input.diet, dislikes: cleanList(input.dislikes) };
+  const old = await repo.get().catch(() => null);
+  const allergens = cleanList(input.allergens ?? old?.allergens ?? []);
+  // Allergens also go into dislikes, so every place that skips disliked foods (planner, Suggested, writer, chat) skips them with no extra rule.
+  const profile: Profile = {
+    range: input.range, diet: input.diet, dislikes: cleanList([...input.dislikes, ...allergens]),
+    allergens,
+    appliances: input.appliances ?? old?.appliances,
+    heightCm: input.heightCm ?? old?.heightCm,
+    weightKg: input.weightKg ?? old?.weightKg,
+  };
   await repo.save(profile);
   return profile;
 }

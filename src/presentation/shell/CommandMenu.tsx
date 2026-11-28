@@ -8,6 +8,7 @@ const PLACES = [
   { href: "/eat", label: "Suggested", tag: "Food", words: "hungry suggest meal food" },
   { href: "/recipes", label: "Recipes", tag: "Food", words: "saved cook" },
   { href: "/plan", label: "Plan", tag: "Food", words: "week meals" },
+  { href: "/prep", label: "Cook plan", tag: "Food", words: "meal prep batch cook week" },
   { href: "/history", label: "History", tag: "Profile", words: "calendar past meals eaten log" },
   { href: "/pantry", label: "Pantry", tag: "Kitchen", words: "kitchen stock have" },
   { href: "/shopping", label: "Shopping", tag: "Kitchen", words: "groceries list buy store" },

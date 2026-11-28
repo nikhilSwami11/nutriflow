@@ -3,7 +3,7 @@ import { useHome } from "@/view-models/home/useHome";
 import Link from "next/link";
 import { AppShell } from "../shell/AppShell";
 import { useMediaQuery } from "../shared/useMediaQuery";
-import { OnboardingSheet } from "./OnboardingSheet";
+import { Onboarding } from "../onboarding/Onboarding";
 import { Feed } from "./feed/Feed";
 import { FeedGrid } from "./feed/FeedGrid";
 import { Stories } from "./stories/Stories";
@@ -35,7 +35,7 @@ export function HomeScreen() {
           <FeedGrid h={h} />
         </div>
       )}
-      {!h.isLoading && <OnboardingSheet />}
+      <Onboarding />
     </AppShell>
   );
 }

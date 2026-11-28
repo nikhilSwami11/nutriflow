@@ -33,47 +33,33 @@ test("an empty pantry asks what you have instead of saying everything is missing
   await expect(page.getByText(/You are missing/)).toHaveCount(0);
   await expect(page.getByText("Check as you cook").first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Start cooking" }).first()).toBeVisible();
-  await page.getByRole("button", { name: "More" }).first().click();
-  await page.getByRole("button", { name: "Check what I have" }).first().click();
-  const sheet = page.getByRole("dialog", { name: "Do you have these?" });
-  await expect(sheet).toBeVisible();
-  const first = sheet.getByRole("button", { name: /^I have / }).first();
-  await first.click();
-  await expect(first).toHaveAttribute("aria-pressed", "true");
-  await page.keyboard.press("Escape");
-  await expect(sheet).toHaveCount(0);
 });
 
-test("a new person is asked three questions once, and the answers are kept", async ({ page }) => {
+test("a new person answers a few illustrated questions once and gets a week and a cook plan", async ({ page }) => {
   await page.addInitScript(() => localStorage.removeItem("nutriflow.onboarded"));
   await page.goto("/");
-  const sheet = page.getByRole("dialog", { name: "A few questions" });
-  await expect(sheet.getByRole("heading", { name: "How do you eat?" })).toBeVisible();
-  await sheet.getByRole("button", { name: "Vegetarian" }).click();
+  const sheet = page.getByRole("dialog", { name: "Set up NutriFlow" });
+  await expect(sheet.getByRole("heading", { name: /Cook two days/ })).toBeVisible();
+  await sheet.getByRole("button", { name: "Let's start" }).click();
+  await sheet.getByLabel("Height (cm)").fill("170");
+  await sheet.getByLabel("Weight (kg)").fill("70");
   await sheet.getByRole("button", { name: "Next" }).click();
   await sheet.getByRole("button", { name: /Build muscle/ }).click();
+  await expect(sheet.getByText(/Your range: about/)).toBeVisible();
+  await sheet.getByRole("button", { name: "Next" }).click();
+  await sheet.getByRole("button", { name: "Vegetarian" }).click();
   await sheet.getByRole("button", { name: "Next" }).click();
   await sheet.getByRole("button", { name: "Eggs" }).click();
-  await sheet.getByRole("button", { name: "Done" }).click();
+  await sheet.getByRole("button", { name: "Next" }).click();
+  await expect(sheet.getByRole("heading", { name: "What is in your kitchen?" })).toBeVisible();
+  await sheet.getByRole("group", { name: "Appliances" }).getByRole("button", { name: "Oven" }).click(); // no oven
+  await sheet.getByRole("button", { name: "Build my week" }).click();
+  await expect(sheet.getByRole("heading", { name: "Your week is ready" })).toBeVisible();
+  await expect(sheet.getByText(/meals planned around/)).toBeVisible();
+  await expect(sheet.getByText(/^Cook \d days?:/)).toBeVisible();
+  await sheet.getByRole("button", { name: "Go to Today" }).click();
   await expect(sheet).toHaveCount(0);
   // Client-side navigation: the offline repositories live for one page load.
   await page.getByRole("link", { name: "Profile" }).first().click();
   await expect(page.getByRole("button", { name: "Vegetarian" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: "Build muscle" })).toHaveAttribute("aria-pressed", "true"); // 2,200 to 2,600
-  await page.getByRole("link", { name: "Kitchen" }).first().click();
-  await expect(page.getByText("eggs", { exact: false }).first()).toBeVisible();
-});
-
-test("don't have: offers a stand-in first, and shopping only if asked", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "More" }).first().click();
-  await page.getByRole("button", { name: "Check what I have" }).first().click();
-  const sheet = page.getByRole("dialog", { name: "Do you have these?" });
-  const nos = sheet.getByRole("button", { name: /^Don't have / });
-  const n = await nos.count();
-  for (let i = 0; i < n; i++) await nos.nth(i).click();
-  await expect(sheet.getByText("Instead:").first()).toBeVisible();
-  const use = sheet.getByRole("button", { name: "I'll use that" });
-  while (await use.count()) await use.first().click();
-  await expect(sheet.getByRole("button", { name: /Done · .*stand-in/ })).toBeVisible();
 });

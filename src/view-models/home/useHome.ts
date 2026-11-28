@@ -119,7 +119,7 @@ export function useHome() {
       state: cook.state,
       ask,
       assumed: cook.assumed,
-      readyText: cook.state === "check" ? "Check as you cook" : !cook.canCook ? `You are missing ${count(n, "thing")}` : easy.length ? `Can cook with ${easy.join(" and ")}` : "Ready to cook",
+      readyText: cook.state === "check" ? "Check as you cook" : !cook.canCook ? "" : easy.length ? `Can cook with ${easy.join(" and ")}` : "Ready to cook",
       /** The one main action: cook when nothing blocks, else shop for what is needed. */
       actionText: cook.canCook || cook.state === "check" ? "Start cooking" : onList ? `${n} on your shopping list` : `Add ${n} to shopping`,
       actionDone: n > 0 && onList,

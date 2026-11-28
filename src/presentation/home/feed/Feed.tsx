@@ -4,7 +4,7 @@ import { FEED_KINDS, type FeedItem } from "@/view-models/feed/types";
 import type { HomeModel } from "@/view-models/home/useHome";
 import { RecipeArt } from "../../recipes/RecipeArt";
 import { MacroChart } from "../LazyMacroChart";
-import { NextAction } from "../NextAction";
+import { NextAction, ShopAction } from "../NextAction";
 import { MissingChips } from "../ShopNow";
 import { TodayLine } from "../TodayLine";
 import { Post } from "./Post";
@@ -43,16 +43,9 @@ export function Feed({ h }: { h: HomeModel }) {
               <>
                 <div>
                   <h2 className="m-0 text-base font-medium">{dishVerb(n.name)} {n.name.toLowerCase()}</h2>
-                  <p className="m-0 mt-1 text-sm text-ink2 tabular-nums"><span className={n.ready ? "" : "text-ink"}>{n.readyText}</span></p>
+                  {n.readyText && <p className="m-0 mt-1 text-sm text-ink2 tabular-nums">{n.readyText}</p>}
                 </div>
-                <NextAction next={n} onOpen={open} shopElsewhere={!!h.shopNow && h.shopNow.id === n.id}>
-                  {(close) => (
-                    <>
-                      <button type="button" onClick={() => { close(); track(item, "mark-eaten", position); n.toggle(); }} className="touch flex w-full items-center bg-transparent px-4 text-left text-[15px] text-ink">Mark eaten</button>
-                      <Link href="/eat" onClick={open} className="touch flex w-full items-center px-4 text-[15px] text-ink">More ideas</Link>
-                    </>
-                  )}
-                </NextAction>
+                <NextAction next={n} onOpen={open} onEaten={() => { track(item, "mark-eaten", position); n.toggle(); }} shopElsewhere={!!h.shopNow && h.shopNow.id === n.id} />
               </>
             }
           />
@@ -66,7 +59,7 @@ export function Feed({ h }: { h: HomeModel }) {
           <Post
             label="Shop now" social={false} color="var(--peach)" icon={CART} title="Shop now" sub={`For ${sn.meal.toLowerCase()} · ${sn.name}`} onToggle={toggle}
             media={<div className="mx-5 rounded-[20px] bg-panel p-4"><MissingChips names={sn.names} /></div>}
-            caption={<NextAction next={next} onOpen={open} />}
+            caption={<ShopAction next={next} onOpen={open} />}
           />
         );
       }

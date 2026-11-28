@@ -47,12 +47,12 @@ export class SupabaseMealLogRepository implements MealLogRepository {
 export class SupabaseProfileRepository implements ProfileRepository {
   constructor(private db: SupabaseClient) {}
   async get(): Promise<Profile | null> {
-    const { data, error } = await this.db.from("profiles").select("kcal_min,kcal_max,diet,dislikes").maybeSingle();
+    const { data, error } = await this.db.from("profiles").select("kcal_min,kcal_max,diet,dislikes,allergens,appliances,height_cm,weight_kg").maybeSingle();
     if (error) throw error;
-    return data ? { range: { min: Number(data.kcal_min), max: Number(data.kcal_max) }, diet: data.diet, dislikes: data.dislikes ?? [] } : null;
+    return data ? { range: { min: Number(data.kcal_min), max: Number(data.kcal_max) }, diet: data.diet, dislikes: data.dislikes ?? [], allergens: data.allergens ?? [], appliances: data.appliances ?? undefined, heightCm: data.height_cm ?? undefined, weightKg: data.weight_kg ?? undefined } : null;
   }
   async save(p: Profile) {
-    const { error } = await this.db.from("profiles").upsert({ kcal_min: p.range.min, kcal_max: p.range.max, diet: p.diet ?? "anything", dislikes: p.dislikes ?? [] });
+    const { error } = await this.db.from("profiles").upsert({ kcal_min: p.range.min, kcal_max: p.range.max, diet: p.diet ?? "anything", dislikes: p.dislikes ?? [], allergens: p.allergens ?? [], appliances: p.appliances ?? null, height_cm: p.heightCm ?? null, weight_kg: p.weightKg ?? null });
     if (error) throw error;
   }
 }

@@ -6,3 +6,4 @@ export * from "./logMeal";
 export * from "./setTargetRange";
 export * from "./dates";
 export * from "./history";
+export * from "./bodyTarget";

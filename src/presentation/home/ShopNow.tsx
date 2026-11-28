@@ -1,5 +1,5 @@
 import type { HomeModel } from "@/view-models/home/useHome";
-import { NextAction } from "./NextAction";
+import { ShopAction } from "./NextAction";
 
 type Shop = NonNullable<HomeModel["shopNow"]>;
 
@@ -24,7 +24,7 @@ export function ShopNowCard({ s, onAdd, onOpen }: { s: Shop; onAdd: () => void; 
         <span className="mt-1 block text-xl font-medium leading-tight">{s.names.length === 1 ? `${s.names[0]} for ${s.name.toLowerCase()}` : `${s.names.length} things for ${s.name.toLowerCase()}`}</span>
       </div>
       <div className="rounded-2xl bg-panel p-3.5"><MissingChips names={s.names} /></div>
-      <NextAction next={next} onOpen={onOpen} />
+      <ShopAction next={next} onOpen={onOpen} />
     </article>
   );
 }

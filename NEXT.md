@@ -83,3 +83,6 @@ Open questions for the user: should the Claude/ChatGPT doors be free or paid; sh
 - Recipe units like "3 cups milk" are turned into buy amounts by the model only when Supabase is on.
 - Shopping history (12h) and shopping prefs live in the browser, not the account.
 - No sign-out or way back to `/signin` for guests except the Profile screen (new).
+
+## You do (added 2026-11-27)
+- Apply migration `0017_profile_body.sql` (`supabase db push`): onboarding saves allergens, appliances, height, weight. Until then saving the profile with those fields fails against the real project.

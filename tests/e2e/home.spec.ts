@@ -15,11 +15,12 @@ test("home is three things: next meal, one chart with today, pantry", async ({ p
   await expect(page.getByRole("article", { name: "Calories and macros" })).toBeVisible();
   await expect(todayLine(page)).toContainText("of 1,900 kcal");
   await expect(page.getByLabel("Pantry alert")).toBeVisible();
-  // one main action; everything else is behind More
+  // two buttons (cook, and mark eaten or add to shopping), no menu, no "missing" line
   const card = page.getByRole("article", { name: "Up next" });
-  await expect(card.getByRole("button", { name: "Mark eaten" })).toHaveCount(0);
-  await card.getByRole("button", { name: "More" }).click();
+  await expect(card.getByRole("link", { name: "Start cooking" })).toBeVisible();
   await expect(card.getByRole("button", { name: "Mark eaten" })).toBeVisible();
+  await expect(card.getByRole("button", { name: "More" })).toHaveCount(0);
+  await expect(card.getByText(/missing/i)).toHaveCount(0);
 });
 
 test("tapping the next meal opens its recipe", async ({ page }) => {
@@ -90,7 +91,7 @@ test("tapping the chart on touch jumps to that day", async ({ page, isMobile }) 
 
 test("plan is in Food: nav, then the Plan switch", async ({ page }) => {
   await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Food" }).click();
-  await page.getByRole("navigation", { name: "Food" }).getByRole("link", { name: "Plan" }).click();
+  await page.getByRole("navigation", { name: "Food" }).getByRole("link", { name: "Plan", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Plan", level: 1 })).toBeVisible();
 });
 
@@ -117,11 +118,7 @@ test("feed posts can be liked and saved", async ({ page, isMobile }) => {
   await expect(post.getByRole("button", { name: "Like" })).toHaveAttribute("aria-pressed", "false");
 });
 
-/** Mark eaten lives behind the card's More button. */
-const eaten = async (card: import("@playwright/test").Locator) => {
-  await card.getByRole("button", { name: "More" }).click();
-  await card.getByRole("button", { name: "Mark eaten" }).click();
-};
+const eaten = (card: import("@playwright/test").Locator) => card.getByRole("button", { name: "Mark eaten" }).click();
 
 test("a blocked next meal gives shopping its own post, and the meal card is only about cooking", async ({ page }) => {
   const labels = () => page.locator("article[aria-label], section[aria-label]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));

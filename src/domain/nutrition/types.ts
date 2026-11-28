@@ -16,6 +16,13 @@ export interface Profile {
   diet?: Diet;
   /** Foods to keep out of suggestions, one word or two each. */
   dislikes?: string[];
+  /** Allergens are skipped like dislikes, and never suggested. */
+  allergens?: string[];
+  /** Asked once in onboarding; only used to suggest a calorie range. */
+  /** What the person cooks with (ids from domain/kitchen). Missing = not asked, so nothing is ruled out. */
+  appliances?: string[];
+  heightCm?: number;
+  weightKg?: number;
 }
 
 /** Only real logged intake: a cook session, a photo estimate, or what the person told an assistant they ate. Never a guessed "usual day". */

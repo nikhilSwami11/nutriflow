@@ -41,7 +41,7 @@ test("Food and Kitchen switch between their pages", async ({ page }) => {
   const food = page.getByRole("navigation", { name: "Food" });
   await expect(food.getByRole("link", { name: "Suggested" })).toHaveAttribute("aria-current", "page");
   await expect(food.getByRole("link", { name: "Recipes" })).toHaveCount(0);
-  await food.getByRole("link", { name: "Plan" }).click();
+  await food.getByRole("link", { name: "Plan", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Plan", level: 1 })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Food" })).toHaveAttribute("aria-current", "page");
 
